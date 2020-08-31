@@ -1,5 +1,12 @@
 package main
 
+import (
+	"log"
+	"os"
+
+	"github.com/urfave/cli/v2"
+)
+
 var (
 	prefixdir     string
 	bindir        string
@@ -14,5 +21,13 @@ var (
 )
 
 func main() {
-	panic("Not implemented")
+	app := cli.NewApp()
+
+	app.Flags = []cli.Flag{}
+
+	app.Commands = []*cli.Command{}
+
+	if err := app.Run(os.Args); err != nil {
+		log.Fatal(err)
+	}
 }
