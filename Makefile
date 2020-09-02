@@ -28,17 +28,18 @@ GOSRC += go.mod go.sum
 
 TARGETS = yggd ygg-exec data/dbus/com.redhat.yggdrasil1.service
 
-GOFLAGS += -ldflags "-X github.com/redhatinsights/yggdrasil/pkg.Version=$(VERSION) \
-	-X main.prefix=$(PREFIX) \
-	-X main.bindir=$(BINDIR) \
-	-X main.sbindir=$(SBINDIR) \
-	-X main.libexecdir=$(LIBEXECDIR) \
-	-X main.sysconfdir=$(SYSCONFDIR) \
-	-X main.datadir=$(DATADIR) \
-	-X main.datarootdir=$(DATAROOTDIR) \
-	-X main.mandir=$(MANDIR) \
-	-X main.docdir=$(DOCDIR) \
-	-X main.localstatedir=$(LOCALSTATEDIR)"
+GOFLAGS += -ldflags "\
+	-X github.com/redhatinsights/yggdrasil/pkg.Version=$(VERSION) \
+	-X github.com/redhatinsights/yggdrasil/internal.PrefixDir=$(PREFIX) \
+	-X github.com/redhatinsights/yggdrasil/internal.BinDir=$(BINDIR) \
+	-X github.com/redhatinsights/yggdrasil/internal.SbinDir=$(SBINDIR) \
+	-X github.com/redhatinsights/yggdrasil/internal.LibexecDir=$(LIBEXECDIR) \
+	-X github.com/redhatinsights/yggdrasil/internal.SysconfDir=$(SYSCONFDIR) \
+	-X github.com/redhatinsights/yggdrasil/internal.DataDir=$(DATADIR) \
+	-X github.com/redhatinsights/yggdrasil/internal.DatarootDir=$(DATAROOTDIR) \
+	-X github.com/redhatinsights/yggdrasil/internal.ManDir=$(MANDIR) \
+	-X github.com/redhatinsights/yggdrasil/internal.DocDir=$(DOCDIR) \
+	-X github.com/redhatinsights/yggdrasil/internal.LocalstateDir=$(LOCALSTATEDIR)"
 build: $(TARGETS)
 
 yggd: $(GOSRC)
