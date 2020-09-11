@@ -4,16 +4,16 @@
 PKGNAME = yggdrasil
 VERSION = $(shell git describe --tags --always --dirty --match=v*)
 
-PREFIX       ?= /usr/local
-BINDIR        = $(PREFIX)/bin
-SBINDIR       = $(PREFIX)/sbin
-LIBEXECDIR    = $(PREFIX)/libexec
-SYSCONFDIR    = $(PREFIX)/etc
-DATADIR       = $(PREFIX)/share
-DATAROOTDIR   = $(PREFIX)/share
-MANDIR        = $(DATADIR)/man
-DOCDIR        = $(PREFIX)/doc
-LOCALSTATEDIR = $(PREFIX)/var
+PREFIX        ?= /usr/local
+BINDIR        ?= $(PREFIX)/bin
+SBINDIR       ?= $(PREFIX)/sbin
+LIBEXECDIR    ?= $(PREFIX)/libexec
+SYSCONFDIR    ?= $(PREFIX)/etc
+DATADIR       ?= $(PREFIX)/share
+DATAROOTDIR   ?= $(PREFIX)/share
+MANDIR        ?= $(DATADIR)/man
+DOCDIR        ?= $(PREFIX)/doc
+LOCALSTATEDIR ?= $(PREFIX)/var
 
 GO      ?= go
 RM      ?= rm -f
