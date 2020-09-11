@@ -62,17 +62,20 @@ func NewHTTPClientCertAuth(baseURL, caRoot, certFile, keyFile, userAgent string)
 		MaxVersion: tls.VersionTLS12, // cloud.redhat.com appears to exhibit this openssl bug https://github.com/openssl/openssl/issues/9767
 	}
 
-	caCert, err := ioutil.ReadFile(caRoot)
-	if err != nil {
-		return nil, err
-	}
-	caCertPool, err := x509.SystemCertPool()
-	if err != nil {
-		return nil, err
-	}
-	caCertPool.AppendCertsFromPEM(caCert)
+	if caRoot != "" {
+		caCert, err := ioutil.ReadFile(caRoot)
+		if err != nil {
+			return nil, err
+		}
+		
+		caCertPool, err := x509.SystemCertPool()
+		if err != nil {
+			return nil, err
+		}
+		caCertPool.AppendCertsFromPEM(caCert)
 
-	tlsConfig.RootCAs = caCertPool
+		tlsConfig.RootCAs = caCertPool
+	}
 
 	cert, err := tls.LoadX509KeyPair(certFile, keyFile)
 	if err != nil {
