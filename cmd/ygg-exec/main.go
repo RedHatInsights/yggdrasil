@@ -93,6 +93,15 @@ func main() {
 						return fmt.Errorf("invalid collector: %v", c.String("collector"))
 					case yggdrasil.ErrPayloadTooLarge:
 						return fmt.Errorf("archive too large: %v", c.Args().First())
+					case yggdrasil.ErrUnauthorized:
+						switch c.String("auth-mode") {
+						case "basic":
+							return fmt.Errorf("authentication failed: username/password incorrect")
+						case "cert":
+							return fmt.Errorf("authentication failed: certificate incorrect")
+						default:
+							return fmt.Errorf("authentication failed: %w", err)
+						}
 					default:
 						return err
 					}
