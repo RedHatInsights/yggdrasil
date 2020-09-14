@@ -87,6 +87,9 @@ func main() {
 				}
 
 				_, err = upload(client, c.Args().First(), c.String("collector"), c.String("metadata"))
+				if err != nil {
+					return err
+				}
 				return nil
 			},
 		},
