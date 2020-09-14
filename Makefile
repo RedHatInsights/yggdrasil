@@ -53,6 +53,7 @@ install: build
 	$(INSTALL) -D -m755 ./ygg-exec $(DESTDIR)$(BINDIR)/ygg-exec
 	$(INSTALL) -D -m644 ./data/dbus/yggdrasil.conf $(DESTDIR)$(SYSCONFDIR)/dbus-1/system.d/yggdrasil.conf
 	$(INSTALL) -D -m644 ./data/dbus/com.redhat.yggdrasil1.service $(DESTDIR)$(DATADIR)/dbus/services/com.redhat.yggdrasil1.service
+	$(INSTALL) -D -m644 ./data/yggdrasil/config.toml $(DESTDIR)$(SYSCONFDIR)/yggdrasl/config.toml
 
 %: %.in Makefile
 	$(SED) \
