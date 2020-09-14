@@ -5,39 +5,62 @@ import (
 	"fmt"
 	"os"
 
+	internal "github.com/redhatinsights/yggdrasil/internal"
 	yggdrasil "github.com/redhatinsights/yggdrasil/pkg"
 	"github.com/urfave/cli/v2"
+	"github.com/urfave/cli/v2/altsrc"
 )
 
 func main() {
 	app := cli.NewApp()
 	app.Version = yggdrasil.Version
 
+	defaultConfigFilePath, err := internal.ConfigPath()
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+
 	app.Flags = []cli.Flag{
 		&cli.StringFlag{
-			Name: "config",
+			Name:      "config",
+			Value:     defaultConfigFilePath,
+			TakesFile: true,
 		},
-		&cli.StringFlag{
+		altsrc.NewStringFlag(&cli.StringFlag{
 			Name: "base-url",
-		},
-		&cli.StringFlag{
+		}),
+		altsrc.NewStringFlag(&cli.StringFlag{
 			Name: "auth-mode",
-		},
-		&cli.StringFlag{
+		}),
+		altsrc.NewStringFlag(&cli.StringFlag{
 			Name: "username",
-		},
-		&cli.StringFlag{
+		}),
+		altsrc.NewStringFlag(&cli.StringFlag{
 			Name: "password",
-		},
-		&cli.StringFlag{
+		}),
+		altsrc.NewStringFlag(&cli.StringFlag{
 			Name: "cert-file",
-		},
-		&cli.StringFlag{
+		}),
+		altsrc.NewStringFlag(&cli.StringFlag{
 			Name: "key-file",
-		},
-		&cli.StringFlag{
+		}),
+		altsrc.NewStringFlag(&cli.StringFlag{
 			Name: "ca-root",
-		},
+		}),
+	}
+
+	// This BeforeFunc will load flag values from a config file only if the
+	// "config" flag value is non-zero.
+	app.Before = func(c *cli.Context) error {
+		if c.String("config") != "" {
+			inputSource, err := altsrc.NewTomlSourceFromFlagFunc("config")(c)
+			if err != nil {
+				return err
+			}
+			return altsrc.ApplyInputSourceValues(c, inputSource, app.Flags)
+		}
+		return nil
 	}
 
 	app.Commands = []*cli.Command{

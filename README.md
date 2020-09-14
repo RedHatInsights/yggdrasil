@@ -102,3 +102,21 @@ are executed in process as if they were executed by a `yggd` process.
 For example, to upload a pre-existing archive:
 
 `ygg-exec upload --content-type foo /var/tmp/foo.tar.gz`
+
+## Configuration
+
+Configuration of `yggd` and `ygg-exec` can be done by specifying values in a
+configuration file or via command-line arguments. Command-line arguments take
+precendence over configuration file values. The configuration file is
+[TOML|https:/toml.io].
+
+When running `yggd` or `ygg-exec` as root, a system-wide configuration file is
+loaded, located at `/etc/yggdrasil/config.toml`. If `ygg-exec` or `yggd` is run
+as a non-root user, a configuration file located inside the user's home
+directory is loaded: `~/.config/yggdrasil/config.toml`. Note that either the
+system-wide file or the local home directory file is loaded, but not both. If
+the default configuration file does not exist, it is not created. Instead, only
+command-line argument values are used.
+
+The location of the file may be overridden by passing the `--config` command-
+line argument to `yggd` or `ygg-exec`.

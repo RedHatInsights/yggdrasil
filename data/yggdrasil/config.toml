@@ -1,0 +1,9 @@
+# yggdrasil global configuration settings
+
+base-url = ""
+auth-mode = ""
+username = ""
+password = ""
+cert-file = ""
+key-file = ""
+ca-root = ""
