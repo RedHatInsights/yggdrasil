@@ -62,7 +62,7 @@ For more detailed, interactive call graphs, install `callgraph` and `digraph`.
 
 ```bash
 go get -u golang.org/x/tools/cmd/callgraph
-go get -u gilang.org/x/tools/cmd/digraph
+go get -u golang.org/x/tools/cmd/digraph
 ```
 
 Generate a call graph using `callgraph`, filter the resulting graph to exclude
