@@ -9,8 +9,6 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-
-	yggdrasil "github.com/redhatinsights/yggdrasil/internal"
 )
 
 // CanonicalFacts contain several identification strings that collectively
@@ -31,12 +29,12 @@ func GetCanonicalFacts() (*CanonicalFacts, error) {
 	var facts CanonicalFacts
 	var err error
 
-	facts.InsightsID, err = readFile(filepath.Join(yggdrasil.SysconfDir, "insights-client", "machine-id"))
+	facts.InsightsID, err = readFile("/etc/insights-client/machine-id")
 	if err != nil {
 		return nil, err
 	}
 
-	facts.MachineID, err = readFile(filepath.Join(yggdrasil.SysconfDir, "machine-id"))
+	facts.MachineID, err = readFile("/etc/machine-id")
 	if err != nil {
 		return nil, err
 	}
@@ -46,7 +44,7 @@ func GetCanonicalFacts() (*CanonicalFacts, error) {
 		return nil, err
 	}
 
-	facts.SubscriptionManagerID, err = readCert(filepath.Join(yggdrasil.SysconfDir, "pki", "consumer", "cert.pem"))
+	facts.SubscriptionManagerID, err = readCert("/etc/pki/consumer/cert.pem")
 	if err != nil {
 		return nil, err
 	}
