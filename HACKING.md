@@ -70,5 +70,5 @@ standard library calls and pipe the result into `digraph`. See the `-help`
 output of `digraph` for how to interact with the graph.
 
 ```bash
-`callgraph -algo pta -format digraph ./cmd/ygg-exec | grep github.com/redhatinsights/yggdrasil | sort | uniq | digraph
+callgraph -algo pta -format digraph ./cmd/ygg-exec | grep github.com/redhatinsights/yggdrasil | sort | uniq | digraph
 ```
