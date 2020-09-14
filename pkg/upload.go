@@ -20,7 +20,7 @@ import (
 // (optionally) metadata, creates an HTTP request, and uses the provided client
 // to send the data to the platform. Upon successful upload, the request UUID is
 // returned.
-func Upload(client *HTTPClient, file string, collector string, metadata map[string]interface{}) (string, error) {
+func Upload(client *HTTPClient, file string, collector string, metadata *CanonicalFacts) (string, error) {
 	URL, err := url.Parse(client.baseURL)
 	if err != nil {
 		return "", err
@@ -56,12 +56,12 @@ func Upload(client *HTTPClient, file string, collector string, metadata map[stri
 	}
 
 	if metadata != nil {
-		facts, err := json.Marshal(metadata)
+		data, err := json.Marshal(metadata)
 		if err != nil {
 			return "", err
 		}
 
-		if err := w.WriteField("metadata", string(facts)); err != nil {
+		if err := w.WriteField("metadata", string(data)); err != nil {
 			return "", err
 		}
 	}

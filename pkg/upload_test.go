@@ -15,7 +15,7 @@ func TestUpload(t *testing.T) {
 		desc  string
 		input struct {
 			collector string
-			metadata  map[string]interface{}
+			metadata  *CanonicalFacts
 		}
 		want string
 	}{
@@ -23,12 +23,10 @@ func TestUpload(t *testing.T) {
 			desc: "valid",
 			input: struct {
 				collector string
-				metadata  map[string]interface{}
+				metadata  *CanonicalFacts
 			}{
 				collector: "foo",
-				metadata: map[string]interface{}{
-					"footh": true,
-				},
+				metadata:  &CanonicalFacts{},
 			},
 			want: "dc99c9e6-c708-40a1-987a-e798c39cb3dc",
 		},

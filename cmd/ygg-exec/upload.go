@@ -8,7 +8,7 @@ import (
 )
 
 func upload(client *yggdrasil.HTTPClient, filePath string, collector, metadataPath string) (string, error) {
-	var metadata map[string]interface{}
+	var metadata *yggdrasil.CanonicalFacts
 	if metadataPath != "" {
 		f, err := os.Open(metadataPath)
 		if err != nil {
@@ -17,7 +17,7 @@ func upload(client *yggdrasil.HTTPClient, filePath string, collector, metadataPa
 		defer f.Close()
 
 		decoder := json.NewDecoder(f)
-		if err := decoder.Decode(&metadata); err != nil {
+		if err := decoder.Decode(metadata); err != nil {
 			return "", err
 		}
 	}
