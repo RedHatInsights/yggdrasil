@@ -88,7 +88,14 @@ func main() {
 
 				_, err = upload(client, c.Args().First(), c.String("collector"), c.String("metadata"))
 				if err != nil {
-					return err
+					switch err {
+					case yggdrasil.ErrInvalidContentType:
+						return fmt.Errorf("invalid collector: %v", c.String("collector"))
+					case yggdrasil.ErrPayloadTooLarge:
+						return fmt.Errorf("archive too large: %v", c.Args().First())
+					default:
+						return err
+					}
 				}
 				return nil
 			},
