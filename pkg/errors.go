@@ -12,5 +12,9 @@ type APIResponseError struct {
 }
 
 func (e APIResponseError) Error() string {
-	return fmt.Sprintf("unexpected response: %v - %v (%v)", e.code, http.StatusText(e.code), e.body)
+	v := fmt.Sprintf("unexpected response: %v - %v", e.code, http.StatusText(e.code))
+	if e.body != "" {
+		v += fmt.Sprintf(" (%v)", e.body)
+	}
+	return v
 }
