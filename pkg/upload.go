@@ -85,7 +85,7 @@ func Upload(client *HTTPClient, file string, collector string, metadata map[stri
 	}
 
 	switch res.StatusCode {
-	case http.StatusAccepted:
+	case http.StatusAccepted, http.StatusCreated:
 		break
 	default:
 		return "", &APIResponseError{res.StatusCode, string(data)}
