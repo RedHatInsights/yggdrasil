@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 
@@ -63,6 +64,33 @@ func main() {
 				}
 
 				_, err = upload(client, c.Args().First(), c.String("collector"), c.String("metadata"))
+				return nil
+			},
+		},
+		{
+			Name:   "canonical-facts",
+			Hidden: true,
+			Flags: []cli.Flag{
+				&cli.StringFlag{
+					Name:  "format",
+					Value: "",
+				},
+			},
+			Action: func(c *cli.Context) error {
+				facts, err := yggdrasil.GetCanonicalFacts()
+				if err != nil {
+					return err
+				}
+
+				switch c.String("format") {
+				default:
+					data, err := json.Marshal(facts)
+					if err != nil {
+						return err
+					}
+					fmt.Println(string(data))
+				}
+
 				return nil
 			},
 		},
