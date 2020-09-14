@@ -18,6 +18,12 @@ var ErrPayloadTooLarge = &APIResponseError{
 	body: "Payload too large",
 }
 
+// ErrUnauthorized indicates an upload request without an Authentication header.
+var ErrUnauthorized = &APIResponseError{
+	Code: http.StatusUnauthorized,
+	body: "Authentication missing from request",
+}
+
 // An APIResponseError represents an unexpected response from an HTTP method call.
 type APIResponseError struct {
 	Code int

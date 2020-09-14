@@ -91,6 +91,8 @@ func Upload(client *HTTPClient, file string, collector string, metadata map[stri
 		return "", ErrInvalidContentType
 	case http.StatusRequestEntityTooLarge:
 		return "", ErrPayloadTooLarge
+	case http.StatusUnauthorized:
+		return "", ErrUnauthorized
 	default:
 		return "", &APIResponseError{res.StatusCode, string(data)}
 	}
