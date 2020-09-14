@@ -16,11 +16,15 @@ on the system bus:
   </policy>
 ```
 
+# Run `./cmd/ygg-exec`
+
+`go run ./cmd/ygg-exec --base-url https://cloud.stage.redhat.com/api --username $(USER) --password s3cr3t upload --collector advisor $HOME/insights-ic-rhel8-dev-thelio-20200521100458.tar.gz`
+
 # Run `./cmd/yggd`
 
 `go run ./cmd/yggd --base-url https://cloud.stage.redhat.com/api --username $(USER) --password s3cr3t`
 
-# GDBus
+## GDBus
 
 You can install D-Feet to browse the bus objects in a graphical way, or use
 `gdbus` to send methods directly.
