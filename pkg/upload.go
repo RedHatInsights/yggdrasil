@@ -13,6 +13,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"strings"
 )
 
 // Upload constructs a multi-part MIME body composed of the contents of file and
@@ -94,7 +95,7 @@ func Upload(client *HTTPClient, file string, collector string, metadata map[stri
 	case http.StatusUnauthorized:
 		return "", ErrUnauthorized
 	default:
-		return "", &APIResponseError{res.StatusCode, string(data)}
+		return "", &APIResponseError{res.StatusCode, strings.TrimSpace(string(data))}
 	}
 
 	var body struct {
