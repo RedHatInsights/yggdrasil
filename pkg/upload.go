@@ -87,6 +87,10 @@ func Upload(client *HTTPClient, file string, collector string, metadata map[stri
 	switch res.StatusCode {
 	case http.StatusAccepted, http.StatusCreated:
 		break
+	case http.StatusUnsupportedMediaType:
+		return "", ErrInvalidContentType
+	case http.StatusRequestEntityTooLarge:
+		return "", ErrPayloadTooLarge
 	default:
 		return "", &APIResponseError{res.StatusCode, string(data)}
 	}
