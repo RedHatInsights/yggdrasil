@@ -26,7 +26,7 @@ GOFLAGS ?=
 GOSRC != find . -name '*.go'
 GOSRC += go.mod go.sum
 
-TARGETS = yggd ygg-exec data/dbus/com.redhat.yggdrasil1.service
+TARGETS = yggd ygg-exec data/dbus/com.redhat.yggdrasil.service
 
 GOFLAGS += -ldflags "\
 	-X github.com/redhatinsights/yggdrasil/pkg.Version=$(VERSION) \
@@ -52,8 +52,9 @@ install: build
 	$(INSTALL) -D -m755 ./yggd $(DESTDIR)$(SBINDIR)/yggd
 	$(INSTALL) -D -m755 ./ygg-exec $(DESTDIR)$(BINDIR)/ygg-exec
 	$(INSTALL) -D -m644 ./data/dbus/yggdrasil.conf $(DESTDIR)$(SYSCONFDIR)/dbus-1/system.d/yggdrasil.conf
-	$(INSTALL) -D -m644 ./data/dbus/com.redhat.yggdrasil1.service $(DESTDIR)$(DATADIR)/dbus/services/com.redhat.yggdrasil1.service
-	$(INSTALL) -D -m644 ./data/yggdrasil/config.toml $(DESTDIR)$(SYSCONFDIR)/yggdrasl/config.toml
+	$(INSTALL) -D -m644 ./data/dbus/com.redhat.yggdrasil.service $(DESTDIR)$(DATADIR)/dbus-1/services/com.redhat.yggdrasil.service
+	$(INSTALL) -D -m644 ./data/dbus/com.redhat.yggdrasil.xml $(DESTDIR)$(DATADIR)/dbus-1/com.redhat.yggdrasil.xml
+	$(INSTALL) -D -m644 ./data/yggdrasil/config.toml $(DESTDIR)$(SYSCONFDIR)/yggdrasil/config.toml
 
 %: %.in Makefile
 	$(SED) \
