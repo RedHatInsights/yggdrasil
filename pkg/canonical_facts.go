@@ -23,6 +23,77 @@ type CanonicalFacts struct {
 	MACAddresses          []string `json:"mac_addresses"`
 }
 
+// CanonicalFactsFromMap creates a CanonicalFacts struct from the key-value
+// pairs in a map.
+func CanonicalFactsFromMap(m map[string]interface{}) (*CanonicalFacts, error) {
+	var facts CanonicalFacts
+
+	if val, ok := m["insights_id"]; ok {
+		switch val.(type) {
+		case string:
+			facts.InsightsID = val.(string)
+		default:
+			return nil, &InvalidValueTypeError{key: "insights_id", val: val}
+		}
+	}
+
+	if val, ok := m["machine_id"]; ok {
+		switch val.(type) {
+		case string:
+			facts.MachineID = val.(string)
+		default:
+			return nil, &InvalidValueTypeError{key: "machine_id", val: val}
+		}
+	}
+
+	if val, ok := m["bios_uuid"]; ok {
+		switch val.(type) {
+		case string:
+			facts.BIOSUUID = val.(string)
+		default:
+			return nil, &InvalidValueTypeError{key: "bios_uuid", val: val}
+		}
+	}
+
+	if val, ok := m["subscription_manager_id"]; ok {
+		switch val.(type) {
+		case string:
+			facts.SubscriptionManagerID = val.(string)
+		default:
+			return nil, &InvalidValueTypeError{key: "subscription_manager_id", val: val}
+		}
+	}
+
+	if val, ok := m["ip_addresses"]; ok {
+		switch val.(type) {
+		case []string:
+			facts.IPAddresses = val.([]string)
+		default:
+			return nil, &InvalidValueTypeError{key: "ip_addresses", val: val}
+		}
+	}
+
+	if val, ok := m["fqdn"]; ok {
+		switch val.(type) {
+		case string:
+			facts.FQDN = val.(string)
+		default:
+			return nil, &InvalidValueTypeError{key: "fqdn", val: val}
+		}
+	}
+
+	if val, ok := m["mac_addresses"]; ok {
+		switch val.(type) {
+		case []string:
+			facts.MACAddresses = val.([]string)
+		default:
+			return nil, &InvalidValueTypeError{key: "mac_addresses", val: val}
+		}
+	}
+
+	return &facts, nil
+}
+
 // GetCanonicalFacts attempts to construct a CanonicalFacts struct by collecting
 // data from the localhost.
 func GetCanonicalFacts() (*CanonicalFacts, error) {

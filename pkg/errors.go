@@ -37,3 +37,14 @@ func (e APIResponseError) Error() string {
 	}
 	return v
 }
+
+// An InvalidValueTypeError represents an error when serializing data into an
+// unsupported destination.
+type InvalidValueTypeError struct {
+	key string
+	val interface{}
+}
+
+func (e InvalidValueTypeError) Error() string {
+	return fmt.Sprintf("invalid type '%T' for key '%s'", e.val, e.key)
+}
