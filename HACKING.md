@@ -18,11 +18,11 @@ on the system bus:
 
 # Run `./cmd/ygg-exec`
 
-`go run ./cmd/ygg-exec --base-url https://cloud.stage.redhat.com/api --username $(USER) --password s3cr3t upload --collector advisor $HOME/insights-ic-rhel8-dev-thelio-20200521100458.tar.gz`
+`go run ./cmd/ygg-exec --base-url https://cloud.stage.redhat.com/api --auth-mode basic --username ${USER} --password s3cr3t upload --collector advisor $HOME/insights-ic-rhel8-dev-thelio-20200521100458.tar.gz`
 
 # Run `./cmd/yggd`
 
-`go run ./cmd/yggd --base-url https://cloud.stage.redhat.com/api --username $(USER) --password s3cr3t`
+`go run ./cmd/yggd --base-url https://cloud.stage.redhat.com/api --auth-mode basic --username ${USER} --password s3cr3t --interface-file ${PWD}/data/dbus/com.redhat.yggdrasil.xml`
 
 ## GDBus
 
@@ -32,12 +32,12 @@ You can install D-Feet to browse the bus objects in a graphical way, or use
 ```bash
 gdbus introspect --system \
     --dest com.redhat.yggdrasil1 \
-    --object-path /com/redhat/yggdrasil1
+    --object-path /com/redhat/yggdrasil
 gdbus call --system \
     --dest com.redhat.yggdrasil1 \
-    --object-path /com/redhat/yggdrasil1 \
+    --object-path /com/redhat/yggdrasil \
     --method com.redhat.yggdrasil1.Upload \
-    "$HOME/insights-ic-rhel8-dev-thelio-20200521100458.tar.gz" "advisor"
+    "$HOME/insights-ic-rhel8-dev-thelio-20200521100458.tar.gz" "advisor" "{}"
 ```
 
 # Call Graphs
