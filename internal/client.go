@@ -1,4 +1,4 @@
-package main
+package yggdrasil
 
 import (
 	"fmt"
@@ -6,8 +6,11 @@ import (
 	yggdrasil "github.com/redhatinsights/yggdrasil/pkg"
 )
 
-func newClient(baseURL, authMode, username, password, certFile, keyFile, caRoot string) (*yggdrasil.HTTPClient, error) {
-	userAgent := fmt.Sprintf("ygg-exec/%v", yggdrasil.Version)
+// NewClient creates and configures an HTTPClient for either certificate-based
+// authentication if authMode is "cert" or basic HTTP authentication if authMode
+// is "basic".
+func NewClient(name, baseURL, authMode, username, password, certFile, keyFile, caRoot string) (*yggdrasil.HTTPClient, error) {
+	userAgent := fmt.Sprintf("%v/%v", name, yggdrasil.Version)
 
 	var client *yggdrasil.HTTPClient
 	var err error
@@ -32,7 +35,7 @@ func newClient(baseURL, authMode, username, password, certFile, keyFile, caRoot 
 			return nil, err
 		}
 	default:
-		return nil, &invalidArugmentError{"auth-mode", authMode}
+		return nil, &InvalidArgumentError{"auth-mode", authMode}
 	}
 
 	return client, nil

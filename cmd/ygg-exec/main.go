@@ -29,7 +29,8 @@ func main() {
 				},
 			},
 			Action: func(c *cli.Context) error {
-				client, err := newClient(c.String("base-url"),
+				client, err := internal.NewClient(app.Name,
+					c.String("base-url"),
 					c.String("auth-mode"),
 					c.String("username"),
 					c.String("password"),

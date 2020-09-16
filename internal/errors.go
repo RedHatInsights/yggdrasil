@@ -1,12 +1,12 @@
-package main
+package yggdrasil
 
-// An invalidArgumentError represents an invalid value passed to a command line
+// An InvalidArgumentError represents an invalid value passed to a command line
 // argument.
-type invalidArugmentError struct {
+type InvalidArgumentError struct {
 	flag, value string
 }
 
-func (e invalidArugmentError) Error() string {
+func (e InvalidArgumentError) Error() string {
 	if e.value == "" {
 		return "missing value for argument '--" + e.flag + "'"
 	}
