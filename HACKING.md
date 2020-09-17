@@ -51,7 +51,7 @@ For basic call graphs, install `go-callvis` (`go get -u github.com/ofabry/go-cal
 # Call graph of the main function of yggd, up to calls into the yggdrasil package
 go-callvis -nostd -format png -file yggdrasil.main ./cmd/yggd
 # Call graph of the yggdrasil package, as invoked by yggd
-go-callvis -nostd -format png -file yggdrasil.yggdrasil -focus github.com/redhatinsights/yggdrasil/pkg ./cmd/yggdrasil
+go-callvis -nostd -format png -file yggdrasil.yggdrasil -focus github.com/redhatinsights/yggdrasil/pkg ./cmd/yggd
 # Call graph of the main function of ygg-exec, up to calls into the yggdrasil package
 go-callvis -nostd -format png -file ygg-exec.main ./cmd/ygg-exec
 # Call graph of the yggdrasil package, as invoked by ygg-exec
