@@ -38,17 +38,20 @@ func (s *DBusServer) Connect() error {
 	}
 	s.conn = conn
 
-	s.conn.Export(s, "/com/redhat/yggdrasil", "com.redhat.yggdrasil1")
+	const name = "com.redhat.yggdrasil1"
+	const path = "/com/redhat/yggdrasil1"
+
+	s.conn.Export(s, path, name)
 	s.conn.Export(introspect.Introspectable(s.xmlData),
-		"/com/redhat/yggdrasil",
+		path,
 		"org.freedesktop.DBus.Introspectable")
 
-	reply, err := s.conn.RequestName("com.redhat.yggdrasil1", dbus.NameFlagDoNotQueue)
+	reply, err := s.conn.RequestName(name, dbus.NameFlagDoNotQueue)
 	if err != nil {
 		return err
 	}
 	if reply != dbus.RequestNameReplyPrimaryOwner {
-		return fmt.Errorf("failed to request name '%v'", "com.redhat.yggdrasil1")
+		return fmt.Errorf("failed to request name '%v'", name)
 	}
 	return nil
 }
