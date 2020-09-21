@@ -2,12 +2,12 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"os"
 	"os/signal"
 	"path/filepath"
 	"syscall"
 
+	"git.sr.ht/~spc/go-log"
 	internal "github.com/redhatinsights/yggdrasil/internal"
 	"github.com/urfave/cli/v2"
 )
@@ -27,6 +27,12 @@ func main() {
 	})
 
 	app.Action = func(c *cli.Context) error {
+		level, err := log.ParseLevel(c.String("log-level"))
+		if err != nil {
+			return cli.NewExitError(err, 1)
+		}
+		log.SetLevel(level)
+
 		client, err := internal.NewClient(app.Name,
 			c.String("base-url"),
 			c.String("auth-mode"),
