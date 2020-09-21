@@ -32,6 +32,7 @@ func main() {
 			return cli.NewExitError(err, 1)
 		}
 		log.SetLevel(level)
+		log.SetPrefix("[yggd] ")
 
 		client, err := internal.NewClient(app.Name,
 			c.String("base-url"),
