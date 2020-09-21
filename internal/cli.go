@@ -44,6 +44,9 @@ func NewApp(name string) (*cli.App, error) {
 		altsrc.NewStringFlag(&cli.StringFlag{
 			Name: "ca-root",
 		}),
+		altsrc.NewStringFlag(&cli.StringFlag{
+			Name: "log-level",
+		}),
 	}
 
 	// This BeforeFunc will load flag values from a config file only if the
