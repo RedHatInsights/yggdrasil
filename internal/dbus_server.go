@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io/ioutil"
 
+	"git.sr.ht/~spc/go-log"
 	"github.com/godbus/dbus/v5"
 	"github.com/godbus/dbus/v5/introspect"
 	yggdrasil "github.com/redhatinsights/yggdrasil/pkg"
@@ -53,6 +54,7 @@ func (s *DBusServer) Connect() error {
 	if reply != dbus.RequestNameReplyPrimaryOwner {
 		return fmt.Errorf("failed to request name '%v'", name)
 	}
+	log.Infof("D-Bus server listening with interface %v on %v", name, path)
 	return nil
 }
 
