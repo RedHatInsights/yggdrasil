@@ -72,3 +72,9 @@ output of `digraph` for how to interact with the graph.
 ```bash
 callgraph -algo pta -format digraph ./cmd/ygg-exec | grep github.com/redhatinsights/yggdrasil | sort | uniq | digraph
 ```
+
+# Code Guidelines
+
+* Communicate errors through return values, not logging. Library functions in
+  particular should follow this guideline. You never know under which condition
+  a library function will be called, so excessive logging should be avoided.
