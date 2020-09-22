@@ -70,6 +70,7 @@ func (s *DBusServer) Upload(file string, collector string, metadata map[string]i
 		var err error
 		facts, err = yggdrasil.CanonicalFactsFromMap(metadata)
 		if err != nil {
+			log.Errorf("canonical facts failed: %v", err)
 			return "", &dbus.Error{
 				Name: err.Error(),
 			}
@@ -78,6 +79,7 @@ func (s *DBusServer) Upload(file string, collector string, metadata map[string]i
 
 	requestID, err := yggdrasil.Upload(s.client, file, collector, facts)
 	if err != nil {
+		log.Errorf("upload failed: %v", err)
 		return "", &dbus.Error{
 			Name: err.Error(),
 		}
