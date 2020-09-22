@@ -2,6 +2,9 @@ package yggdrasil
 
 import "path/filepath"
 
+// Installation directory prefix and paths. Values are specified by compile-time
+// substitution values, and are then set to sane defaults at runtime if the
+// value is a zero-value string.
 var (
 	PrefixDir     string
 	BinDir        string
