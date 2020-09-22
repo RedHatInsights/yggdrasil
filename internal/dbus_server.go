@@ -54,7 +54,7 @@ func (s *DBusServer) Connect() error {
 	if reply != dbus.RequestNameReplyPrimaryOwner {
 		return fmt.Errorf("failed to request name '%v'", name)
 	}
-	log.Infof("D-Bus server listening with interface %v on %v", name, path)
+	log.Infof("acquired name: '%v', exporting interface = '%v', path = '%v'", name, path)
 	return nil
 }
 
@@ -77,6 +77,7 @@ func (s *DBusServer) Upload(file string, collector string, metadata map[string]i
 		}
 	}
 
+	log.Infof("upload: file = '%v', collector = '%v', facts = '%+v'", file, collector, facts)
 	requestID, err := yggdrasil.Upload(s.client, file, collector, facts)
 	if err != nil {
 		log.Errorf("upload failed: %v", err)
