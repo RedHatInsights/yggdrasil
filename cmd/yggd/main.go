@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"os"
 	"os/signal"
 	"path/filepath"
@@ -15,8 +14,7 @@ import (
 func main() {
 	app, err := internal.NewApp("yggd")
 	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
+		log.Fatal(err)
 	}
 
 	app.Flags = append(app.Flags, &cli.StringFlag{
