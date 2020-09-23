@@ -2,7 +2,7 @@
 target will build all `yggdrasil` binaries and ancillary data files. The
 `Makefile` also includes an `install` target to install the binaries and data
 into distribution-appropriate locations. To override the installation directory
-(commonly referred to as the `DESTDIR`), set the `DESTDIR` variable whne running
+(commonly referred to as the `DESTDIR`), set the `DESTDIR` variable when running
 the `install` target. Additional variables can be used to further configure the
 installation prefix and related directories.
 
