@@ -31,7 +31,7 @@ func NewDBusServer(client *yggdrasil.HTTPClient, dbusInterfaceFile string) (*DBu
 }
 
 // Connect opens a connection to the system bus, exports the server as an object
-// on the bus, and requests the well-known name "com.redhat.yggdrasil".
+// on the bus, and requests the well-known name "com.redhat.yggdrasil1".
 func (s *DBusServer) Connect() error {
 	conn, err := dbus.SystemBus()
 	if err != nil {
