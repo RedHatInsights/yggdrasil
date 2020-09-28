@@ -47,6 +47,6 @@ func init() {
 		SysconfDir = filepath.Join(PrefixDir, "etc")
 	}
 	if LocalstateDir == "" {
-		LocalstateDir = filepath.Join(LocalstateDir, "var")
+		LocalstateDir = filepath.Join(PrefixDir, "var")
 	}
 }
