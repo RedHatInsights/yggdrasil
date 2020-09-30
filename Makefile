@@ -18,8 +18,19 @@ DOCDIR        ?= $(PREFIX)/doc
 LOCALSTATEDIR ?= $(PREFIX)/var
 
 DBUS_INTERFACES_DIR := $(shell pkg-config --variable interfaces_dir dbus-1)
+ifeq ($(DBUS_INTERFACES_DIR), '')
+DBUS_INTERFACES_DIR := /usr/share/dbus-1/interfaces
+endif
+
 DBUS_SYSTEM_SERVICES_DIR := $(shell pkg-config --variable system_bus_services_dir dbus-1)
+ifeq ($(DBUS_SYSTEM_SERVICES_DIR), '')
+DBUS_SYSTEM_SERVICES_DIR := /usr/share/dbus-1/system-services
+endif
+
 DBUS_SYSCONFDIR := $(shell pkg-config --variable sysconfdir dbus-1)
+ifeq ($(DBUS_SYSCONFDIR), '')
+DBUS_SYSCONFDIR := /etc
+endif
 
 # Build flags
 LDFLAGS := 
@@ -53,6 +64,7 @@ $(BINS): $(GOSRC)
 	go build $(BUILDFLAGS) -ldflags "$(LDFLAGS)" ./cmd/$@
 
 install: build
+	pkg-config --modversion dbus-1 || exit 1
 	install -D -m755 ./yggd $(DESTDIR)$(SBINDIR)/yggd
 	install -D -m755 ./ygg-exec $(DESTDIR)$(BINDIR)/ygg-exec
 	install -D -m644 ./data/dbus/yggdrasil.conf $(DESTDIR)$(DBUS_SYSCONFDIR)/dbus-1/system.d/yggdrasil.conf
