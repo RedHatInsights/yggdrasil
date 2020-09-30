@@ -66,7 +66,7 @@ a D-Bus server object, and the base library straightforward. For example, an
 
 ## Code Architecture
 
-### `pkg/` - Go package implementing functional-level behavior
+### `./` - Go package implementing functional-level behavior
 
 This package implements the bulk of the yggdrasil functionality. While it is a
 public package that downstream Go projects can consume, its primary purpose is

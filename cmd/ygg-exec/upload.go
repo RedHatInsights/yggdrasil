@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"os"
 
-	yggdrasil "github.com/redhatinsights/yggdrasil/pkg"
+	yggdrasil "github.com/redhatinsights/yggdrasil"
 )
 
 func upload(client *yggdrasil.HTTPClient, filePath string, collector, metadataPath string) (string, error) {

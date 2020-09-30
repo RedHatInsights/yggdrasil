@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"os"
 
+	yggdrasil "github.com/redhatinsights/yggdrasil"
 	internal "github.com/redhatinsights/yggdrasil/internal"
-	yggdrasil "github.com/redhatinsights/yggdrasil/pkg"
 	"github.com/urfave/cli/v2"
 )
 

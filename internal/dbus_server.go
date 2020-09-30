@@ -7,7 +7,7 @@ import (
 	"git.sr.ht/~spc/go-log"
 	"github.com/godbus/dbus/v5"
 	"github.com/godbus/dbus/v5/introspect"
-	yggdrasil "github.com/redhatinsights/yggdrasil/pkg"
+	yggdrasil "github.com/redhatinsights/yggdrasil"
 )
 
 // DBusServer serves yggdrasil functionality over the system D-Bus.

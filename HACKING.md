@@ -51,11 +51,11 @@ For basic call graphs, install `go-callvis` (`go get -u github.com/ofabry/go-cal
 # Call graph of the main function of yggd, up to calls into the yggdrasil package
 go-callvis -nostd -format png -file yggdrasil.main ./cmd/yggd
 # Call graph of the yggdrasil package, as invoked by yggd
-go-callvis -nostd -format png -file yggdrasil.yggdrasil -focus github.com/redhatinsights/yggdrasil/pkg ./cmd/yggd
+go-callvis -nostd -format png -file yggdrasil.yggdrasil -focus github.com/redhatinsights/yggdrasil ./cmd/yggd
 # Call graph of the main function of ygg-exec, up to calls into the yggdrasil package
 go-callvis -nostd -format png -file ygg-exec.main ./cmd/ygg-exec
 # Call graph of the yggdrasil package, as invoked by ygg-exec
-go-callvis -nostd -format png -file ygg-exec.yggdrasil -focus github.com/redhatinsights/yggdrasil/pkg ./cmd/ygg-exec
+go-callvis -nostd -format png -file ygg-exec.yggdrasil -focus github.com/redhatinsights/yggdrasil ./cmd/ygg-exec
 ```
 
 For more detailed, interactive call graphs, install `callgraph` and `digraph`.

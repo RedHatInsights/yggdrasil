@@ -3,7 +3,7 @@ package yggdrasil
 import (
 	"fmt"
 
-	yggdrasil "github.com/redhatinsights/yggdrasil/pkg"
+	yggdrasil "github.com/redhatinsights/yggdrasil"
 )
 
 // NewClient creates and configures an HTTPClient for either certificate-based

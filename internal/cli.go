@@ -1,7 +1,7 @@
 package yggdrasil
 
 import (
-	yggdrasil "github.com/redhatinsights/yggdrasil/pkg"
+	yggdrasil "github.com/redhatinsights/yggdrasil"
 	"github.com/urfave/cli/v2"
 	"github.com/urfave/cli/v2/altsrc"
 )

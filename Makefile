@@ -34,7 +34,7 @@ endif
 
 # Build flags
 LDFLAGS := 
-LDFLAGS += -X github.com/redhatinsights/yggdrasil/pkg.Version=$(VERSION)
+LDFLAGS += -X github.com/redhatinsights/yggdrasil.Version=$(VERSION)
 LDFLAGS += -X github.com/redhatinsights/yggdrasil/internal.PrefixDir=$(PREFIX)
 LDFLAGS += -X github.com/redhatinsights/yggdrasil/internal.BinDir=$(BINDIR)
 LDFLAGS += -X github.com/redhatinsights/yggdrasil/internal.SbinDir=$(SBINDIR)
