@@ -54,7 +54,7 @@ func (s *DBusServer) Connect() error {
 	if reply != dbus.RequestNameReplyPrimaryOwner {
 		return fmt.Errorf("failed to request name '%v'", name)
 	}
-	log.Infof("acquired name: '%v', exporting interface = '%v', path = '%v'", name, path)
+	log.Infof("acquired name: '%v', exporting interface = '%v', path = '%v'", name, name, path)
 	return nil
 }
 
