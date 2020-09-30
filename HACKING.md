@@ -32,10 +32,10 @@ You can install D-Feet to browse the bus objects in a graphical way, or use
 ```bash
 gdbus introspect --system \
     --dest com.redhat.yggdrasil1 \
-    --object-path /com/redhat/yggdrasil
+    --object-path /com/redhat/yggdrasil1
 gdbus call --system \
     --dest com.redhat.yggdrasil1 \
-    --object-path /com/redhat/yggdrasil \
+    --object-path /com/redhat/yggdrasil1 \
     --method com.redhat.yggdrasil1.Upload \
     "$HOME/insights-ic-rhel8-dev-thelio-20200521100458.tar.gz" "advisor" "{}"
 ```
