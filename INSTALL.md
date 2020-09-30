@@ -7,16 +7,16 @@ the `install` target. Additional variables can be used to further configure the
 installation prefix and related directories.
 
 ```
-PREFIX       ?= /usr/local
-BINDIR        = $(PREFIX)/bin
-SBINDIR       = $(PREFIX)/sbin
-LIBEXECDIR    = $(PREFIX)/libexec
-SYSCONFDIR    = $(PREFIX)/etc
-DATADIR       = $(PREFIX)/share
-DATAROOTDIR   = $(PREFIX)/share
-MANDIR        = $(DATADIR)/man
-DOCDIR        = $(PREFIX)/doc
-LOCALSTATEDIR = $(PREFIX)/var
+PREFIX        ?= /usr/local
+BINDIR        ?= $(PREFIX)/bin
+SBINDIR       ?= $(PREFIX)/sbin
+LIBEXECDIR    ?= $(PREFIX)/libexec
+SYSCONFDIR    ?= $(PREFIX)/etc
+DATADIR       ?= $(PREFIX)/share
+DATAROOTDIR   ?= $(PREFIX)/share
+MANDIR        ?= $(DATADIR)/man
+DOCDIR        ?= $(PREFIX)/doc
+LOCALSTATEDIR ?= $(PREFIX)/var
 ```
 
 Any of these variables can be overriden by passing a value to `make`. For
@@ -24,4 +24,5 @@ example:
 
 ```bash
 make PREFIX=/usr SYSCONFDIR=/etc LOCALSTATEDIR=/var
+make PREFIX=/usr SYSCONFDIR=/etc LOCALSTATEDIR=/var DESTDIR=/tmp/rpmbuildroot install
 ```

@@ -1,9 +1,11 @@
 .POSIX:
 .SUFFIXES:
 
-PKGNAME = yggdrasil
-VERSION = $(shell git describe --tags --always --dirty --match=v*)
+# Project variables
+PKGNAME := yggdrasil
+VERSION := 0.0.1
 
+# Installation directories
 PREFIX        ?= /usr/local
 BINDIR        ?= $(PREFIX)/bin
 SBINDIR       ?= $(PREFIX)/sbin
@@ -15,49 +17,69 @@ MANDIR        ?= $(DATADIR)/man
 DOCDIR        ?= $(PREFIX)/doc
 LOCALSTATEDIR ?= $(PREFIX)/var
 
-GO      ?= go
-RM      ?= rm -f
-MV      ?= mv
-INSTALL ?= install
-SED     ?= sed
+DBUS_INTERFACES_DIR := $(shell pkg-config --variable interfaces_dir dbus-1)
+DBUS_SYSTEM_SERVICES_DIR := $(shell pkg-config --variable system_bus_services_dir dbus-1)
+DBUS_SYSCONFDIR := $(shell pkg-config --variable sysconfdir dbus-1)
 
-GOFLAGS ?= 
+# Build flags
+LDFLAGS := 
+LDFLAGS += -X github.com/redhatinsights/yggdrasil/pkg.Version=$(VERSION)
+LDFLAGS += -X github.com/redhatinsights/yggdrasil/internal.PrefixDir=$(PREFIX)
+LDFLAGS += -X github.com/redhatinsights/yggdrasil/internal.BinDir=$(BINDIR)
+LDFLAGS += -X github.com/redhatinsights/yggdrasil/internal.SbinDir=$(SBINDIR)
+LDFLAGS += -X github.com/redhatinsights/yggdrasil/internal.LibexecDir=$(LIBEXECDIR)
+LDFLAGS += -X github.com/redhatinsights/yggdrasil/internal.SysconfDir=$(SYSCONFDIR)
+LDFLAGS += -X github.com/redhatinsights/yggdrasil/internal.DataDir=$(DATADIR)
+LDFLAGS += -X github.com/redhatinsights/yggdrasil/internal.DatarootDir=$(DATAROOTDIR)
+LDFLAGS += -X github.com/redhatinsights/yggdrasil/internal.ManDir=$(MANDIR)
+LDFLAGS += -X github.com/redhatinsights/yggdrasil/internal.DocDir=$(DOCDIR)
+LDFLAGS += -X github.com/redhatinsights/yggdrasil/internal.LocalstateDir=$(LOCALSTATEDIR)
 
-GOSRC != find . -name '*.go'
+BUILDFLAGS :=
+ifeq ($(shell find . -name vendor), ./vendor)
+BUILDFLAGS += -mod=vendor
+endif
+
+BINS = yggd ygg-exec
+
+TARGETS = $(BINS) data/dbus/com.redhat.yggdrasil.service
+
+GOSRC := $(shell find . -name '*.go')
 GOSRC += go.mod go.sum
 
-TARGETS = yggd ygg-exec data/dbus/com.redhat.yggdrasil.service
-
-GOFLAGS += -ldflags "\
-	-X github.com/redhatinsights/yggdrasil/pkg.Version=$(VERSION) \
-	-X github.com/redhatinsights/yggdrasil/internal.PrefixDir=$(PREFIX) \
-	-X github.com/redhatinsights/yggdrasil/internal.BinDir=$(BINDIR) \
-	-X github.com/redhatinsights/yggdrasil/internal.SbinDir=$(SBINDIR) \
-	-X github.com/redhatinsights/yggdrasil/internal.LibexecDir=$(LIBEXECDIR) \
-	-X github.com/redhatinsights/yggdrasil/internal.SysconfDir=$(SYSCONFDIR) \
-	-X github.com/redhatinsights/yggdrasil/internal.DataDir=$(DATADIR) \
-	-X github.com/redhatinsights/yggdrasil/internal.DatarootDir=$(DATAROOTDIR) \
-	-X github.com/redhatinsights/yggdrasil/internal.ManDir=$(MANDIR) \
-	-X github.com/redhatinsights/yggdrasil/internal.DocDir=$(DOCDIR) \
-	-X github.com/redhatinsights/yggdrasil/internal.LocalstateDir=$(LOCALSTATEDIR)"
 build: $(TARGETS)
 
-yggd: $(GOSRC)
-	$(GO) build $(GOFLAGS) ./cmd/yggd
-
-ygg-exec: $(GOSRC)
-	$(GO) build $(GOFLAGS) ./cmd/ygg-exec
+$(BINS): $(GOSRC)
+	go build $(BUILDFLAGS) -ldflags "$(LDFLAGS)" ./cmd/$@
 
 install: build
-	$(INSTALL) -D -m755 ./yggd $(DESTDIR)$(SBINDIR)/yggd
-	$(INSTALL) -D -m755 ./ygg-exec $(DESTDIR)$(BINDIR)/ygg-exec
-	$(INSTALL) -D -m644 ./data/dbus/yggdrasil.conf $(DESTDIR)$(SYSCONFDIR)/dbus-1/system.d/yggdrasil.conf
-	$(INSTALL) -D -m644 ./data/dbus/com.redhat.yggdrasil.service $(DESTDIR)$(DATADIR)/dbus-1/services/com.redhat.yggdrasil.service
-	$(INSTALL) -D -m644 ./data/dbus/com.redhat.yggdrasil.xml $(DESTDIR)$(DATADIR)/dbus-1/interfaces/com.redhat.yggdrasil.xml
-	$(INSTALL) -D -m644 ./data/yggdrasil/config.toml $(DESTDIR)$(SYSCONFDIR)/yggdrasil/config.toml
+	install -D -m755 ./yggd $(DESTDIR)$(SBINDIR)/yggd
+	install -D -m755 ./ygg-exec $(DESTDIR)$(BINDIR)/ygg-exec
+	install -D -m644 ./data/dbus/yggdrasil.conf $(DESTDIR)$(DBUS_SYSCONFDIR)/dbus-1/system.d/yggdrasil.conf
+	install -D -m644 ./data/dbus/com.redhat.yggdrasil.service $(DESTDIR)$(DBUS_SYSTEM_SERVICES_DIR)/com.redhat.yggdrasil.service
+	install -D -m644 ./data/dbus/com.redhat.yggdrasil.xml $(DESTDIR)$(DBUS_INTERFACES_DIR)/com.redhat.yggdrasil.xml
+	install -D -m644 ./data/yggdrasil/config.toml $(DESTDIR)$(SYSCONFDIR)/yggdrasil/config.toml
+
+uninstall:
+	rm -f $(DESTDIR)$(SBINDIR)/yggd
+	rm -f $(DESTDIR)$(BINDIR)/ygg-exec
+	rm -f $(DESTDIR)$(DBUS_SYSCONFDIR)/dbus-1/system.d/yggdrasil.conf
+	rm -f $(DESTDIR)$(DBUS_SYSTEM_SERVICES_DIR)/com.redhat.yggdrasil.service
+	rm -f $(DESTDIR)$(DBUS_INTERFACES_DIR)/com.redhat.yggdrasil.xml
+	rm -f $(DESTDIR)$(SYSCONFDIR)/yggdrasil/config.toml
+
+dist:
+	go mod vendor
+	tar --create \
+		--gzip \
+		--file /tmp/$(PKGNAME)-$(VERSION).tar.gz \
+		--exclude=.git \
+		--exclude=.vscode \
+		. && mv /tmp/$(PKGNAME)-$(VERSION).tar.gz .
+	rm -rf ./vendor
 
 %: %.in Makefile
-	$(SED) \
+	sed \
 		-e 's,[@]VERSION[@],$(VERSION),g' \
 		-e 's,[@]PACKAGE[@],$(PACKAGE),g' \
 		-e 's,[@]PREFIX[@],$(PREFIX),g' \
@@ -69,10 +91,10 @@ install: build
 		-e 's,[@]SYSCONFDIR[@],$(SYSCONFDIR),g' \
 		-e 's,[@]LOCALSTATEDIR[@],$(LOCALSTATEDIR),g' \
 		-e 's,[@]DOCDIR[@],$(DOCDIR),g' \
-		$< > $@.tmp && $(MV) $@.tmp $@
+		$< > $@.tmp && mv $@.tmp $@
 
 clean:
-	$(GO) mod tidy
-	$(RM) $(TARGETS)
+	go mod tidy
+	rm $(TARGETS)
 	
-.PHONY: build clean install
+.PHONY: build clean install uninstall
