@@ -17,20 +17,11 @@ MANDIR        ?= $(DATADIR)/man
 DOCDIR        ?= $(PREFIX)/doc
 LOCALSTATEDIR ?= $(PREFIX)/var
 
+# Dependent package directories
 DBUS_INTERFACES_DIR := $(shell pkg-config --variable interfaces_dir dbus-1)
-ifeq ($(DBUS_INTERFACES_DIR), '')
-DBUS_INTERFACES_DIR := /usr/share/dbus-1/interfaces
-endif
-
 DBUS_SYSTEM_SERVICES_DIR := $(shell pkg-config --variable system_bus_services_dir dbus-1)
-ifeq ($(DBUS_SYSTEM_SERVICES_DIR), '')
-DBUS_SYSTEM_SERVICES_DIR := /usr/share/dbus-1/system-services
-endif
-
 DBUS_SYSCONFDIR := $(shell pkg-config --variable sysconfdir dbus-1)
-ifeq ($(DBUS_SYSCONFDIR), '')
-DBUS_SYSCONFDIR := /etc
-endif
+SYSTEMD_SYSTEM_UNIT_DIR := $(shell pkg-config --variable systemdsystemunitdir systemd)
 
 # Build flags
 LDFLAGS := 
@@ -53,7 +44,9 @@ endif
 
 BINS = yggd ygg-exec
 
-TARGETS = $(BINS) data/dbus/com.redhat.yggdrasil.service
+TARGETS = $(BINS) \
+	data/dbus/com.redhat.yggdrasil.service \
+	data/systemd/com.redhat.yggd.service
 
 GOSRC := $(shell find . -name '*.go')
 GOSRC += go.mod go.sum
@@ -65,13 +58,14 @@ $(BINS): $(GOSRC)
 
 install: build
 	pkg-config --modversion dbus-1 || exit 1
+	pkg-config --modversion systemd || exit 1
 	install -D -m755 ./yggd $(DESTDIR)$(SBINDIR)/yggd
 	install -D -m755 ./ygg-exec $(DESTDIR)$(BINDIR)/ygg-exec
 	install -D -m644 ./data/dbus/yggdrasil.conf $(DESTDIR)$(DBUS_SYSCONFDIR)/dbus-1/system.d/yggdrasil.conf
 	install -D -m644 ./data/dbus/com.redhat.yggdrasil.service $(DESTDIR)$(DBUS_SYSTEM_SERVICES_DIR)/com.redhat.yggdrasil.service
 	install -D -m644 ./data/dbus/com.redhat.yggdrasil.xml $(DESTDIR)$(DBUS_INTERFACES_DIR)/com.redhat.yggdrasil.xml
 	install -D -m644 ./data/yggdrasil/config.toml $(DESTDIR)$(SYSCONFDIR)/yggdrasil/config.toml
-
+	install -D -m644 ./data/systemd/com.redhat.yggd.service $(DESTDIR)$(SYSTEMD_SYSTEM_UNIT_DIR)/com.redhat.yggd.service
 uninstall:
 	rm -f $(DESTDIR)$(SBINDIR)/yggd
 	rm -f $(DESTDIR)$(BINDIR)/ygg-exec
@@ -79,6 +73,7 @@ uninstall:
 	rm -f $(DESTDIR)$(DBUS_SYSTEM_SERVICES_DIR)/com.redhat.yggdrasil.service
 	rm -f $(DESTDIR)$(DBUS_INTERFACES_DIR)/com.redhat.yggdrasil.xml
 	rm -f $(DESTDIR)$(SYSCONFDIR)/yggdrasil/config.toml
+	rm -r $(DESTDIR)$(SYSTEMD_SYSTEM_UNIT_DIR)/com.redhat.yggd.service
 
 dist:
 	go mod vendor
