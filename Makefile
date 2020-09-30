@@ -66,6 +66,7 @@ install: build
 	install -D -m644 ./data/dbus/com.redhat.yggdrasil.xml $(DESTDIR)$(DBUS_INTERFACES_DIR)/com.redhat.yggdrasil.xml
 	install -D -m644 ./data/yggdrasil/config.toml $(DESTDIR)$(SYSCONFDIR)/yggdrasil/config.toml
 	install -D -m644 ./data/systemd/com.redhat.yggd.service $(DESTDIR)$(SYSTEMD_SYSTEM_UNIT_DIR)/com.redhat.yggd.service
+
 uninstall:
 	rm -f $(DESTDIR)$(SBINDIR)/yggd
 	rm -f $(DESTDIR)$(BINDIR)/ygg-exec
