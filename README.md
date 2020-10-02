@@ -1,3 +1,5 @@
+[![PkgGoDev](https://pkg.go.dev/badge/redhatinsights/yggdrasil)](https://pkg.go.dev/redhatinsights/yggdrasil)
+
 # yggdrasil
 
 yggdrasil is a collection of utilities and system services that provide other
