@@ -1,4 +1,4 @@
-[![PkgGoDev](https://pkg.go.dev/badge/redhatinsights/yggdrasil)](https://pkg.go.dev/redhatinsights/yggdrasil)
+[![PkgGoDev](https://pkg.go.dev/badge/github.com/redhatinsights/yggdrasil)](https://pkg.go.dev/github.com/redhatinsights/yggdrasil)
 
 # yggdrasil
 
