@@ -64,7 +64,7 @@ install: build
 	install -D -m644 ./data/dbus/yggdrasil.conf $(DESTDIR)$(DBUS_SYSCONFDIR)/dbus-1/system.d/yggdrasil.conf
 	install -D -m644 ./data/dbus/com.redhat.yggdrasil.service $(DESTDIR)$(DBUS_SYSTEM_SERVICES_DIR)/com.redhat.yggdrasil.service
 	install -D -m644 ./data/dbus/com.redhat.yggdrasil.xml $(DESTDIR)$(DBUS_INTERFACES_DIR)/com.redhat.yggdrasil.xml
-	install -D -m644 ./data/yggdrasil/config.toml $(DESTDIR)$(SYSCONFDIR)/yggdrasil/config.toml
+	[[ -e $(DESTDIR)$(SYSCONFDIR)/yggdrasil/config.toml ]] || install -D -m644 ./data/yggdrasil/config.toml $(DESTDIR)$(SYSCONFDIR)/yggdrasil/config.toml
 	install -D -m644 ./data/systemd/com.redhat.yggd.service $(DESTDIR)$(SYSTEMD_SYSTEM_UNIT_DIR)/com.redhat.yggd.service
 
 uninstall:
@@ -73,7 +73,6 @@ uninstall:
 	rm -f $(DESTDIR)$(DBUS_SYSCONFDIR)/dbus-1/system.d/yggdrasil.conf
 	rm -f $(DESTDIR)$(DBUS_SYSTEM_SERVICES_DIR)/com.redhat.yggdrasil.service
 	rm -f $(DESTDIR)$(DBUS_INTERFACES_DIR)/com.redhat.yggdrasil.xml
-	rm -f $(DESTDIR)$(SYSCONFDIR)/yggdrasil/config.toml
 	rm -r $(DESTDIR)$(SYSTEMD_SYSTEM_UNIT_DIR)/com.redhat.yggd.service
 
 dist:
