@@ -26,3 +26,15 @@ example:
 make PREFIX=/usr SYSCONFDIR=/etc LOCALSTATEDIR=/var
 make PREFIX=/usr SYSCONFDIR=/etc LOCALSTATEDIR=/var DESTDIR=/tmp/rpmbuildroot install
 ```
+
+# Detailed steps how to install on RHEL 7 machine
+
+```
+yum install golang dbus-devel.x86_64
+git clone https://github.com/RedHatInsights/yggdrasil
+cd yggdrasil
+make
+./yggd --help
+./ygg-exec --help
+make install
+```

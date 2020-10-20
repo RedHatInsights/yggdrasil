@@ -29,6 +29,8 @@ on the system bus:
 You can install D-Feet to browse the bus objects in a graphical way, or use
 `gdbus` to send methods directly.
 
+Note: yggd must be running before invoking gdbus commands
+
 ```bash
 gdbus introspect --system \
     --dest com.redhat.yggdrasil1 \
