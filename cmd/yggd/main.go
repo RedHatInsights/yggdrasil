@@ -21,7 +21,7 @@ func main() {
 		Name:      "interface-file",
 		Hidden:    true,
 		TakesFile: true,
-		Value:     filepath.Join(internal.DataDir, "dbus-1", "interfaces", "com.redhat.yggdrasil.xml"),
+		Value:     filepath.Join(internal.DbusInterfacesDir, "com.redhat.yggdrasil.xml"),
 	})
 
 	app.Action = func(c *cli.Context) error {

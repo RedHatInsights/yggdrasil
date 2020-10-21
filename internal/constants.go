@@ -6,16 +6,17 @@ import "path/filepath"
 // substitution values, and are then set to sane defaults at runtime if the
 // value is a zero-value string.
 var (
-	PrefixDir     string
-	BinDir        string
-	SbinDir       string
-	LibexecDir    string
-	DataDir       string
-	DatarootDir   string
-	ManDir        string
-	DocDir        string
-	SysconfDir    string
-	LocalstateDir string
+	PrefixDir         string
+	BinDir            string
+	SbinDir           string
+	LibexecDir        string
+	DataDir           string
+	DatarootDir       string
+	ManDir            string
+	DocDir            string
+	SysconfDir        string
+	LocalstateDir     string
+	DbusInterfacesDir string
 )
 
 func init() {
@@ -48,5 +49,8 @@ func init() {
 	}
 	if LocalstateDir == "" {
 		LocalstateDir = filepath.Join(PrefixDir, "var")
+	}
+	if DbusInterfacesDir == "" {
+		DbusInterfacesDir = filepath.Join(DataDir, "dbus-1", "interfaces")
 	}
 }

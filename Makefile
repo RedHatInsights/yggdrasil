@@ -36,6 +36,7 @@ LDFLAGS += -X github.com/redhatinsights/yggdrasil/internal.DatarootDir=$(DATAROO
 LDFLAGS += -X github.com/redhatinsights/yggdrasil/internal.ManDir=$(MANDIR)
 LDFLAGS += -X github.com/redhatinsights/yggdrasil/internal.DocDir=$(DOCDIR)
 LDFLAGS += -X github.com/redhatinsights/yggdrasil/internal.LocalstateDir=$(LOCALSTATEDIR)
+LDFLAGS += -X github.com/redhatinsights/yggdrasil/internal.DbusInterfacesDir=$(DBUS_INTERFACES_DIR)
 
 BUILDFLAGS :=
 ifeq ($(shell find . -name vendor), ./vendor)
