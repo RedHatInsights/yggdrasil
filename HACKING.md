@@ -1,5 +1,6 @@
 # Prerequisites
 
+# Run yggd as local user
 In order to run `./cmd/yggd` on the system bus as your local user, you will need
 to create the following files:
 
@@ -16,6 +17,8 @@ on the system bus:
   </policy>
 ```
 
+# Run yggd and ygg-exec with command line arguments
+
 # Run `./cmd/ygg-exec`
 
 `go run ./cmd/ygg-exec --base-url https://cloud.stage.redhat.com/api --auth-mode basic --username ${USER} --password s3cr3t upload --collector advisor $HOME/insights-ic-rhel8-dev-thelio-20200521100458.tar.gz`
@@ -24,12 +27,22 @@ on the system bus:
 
 `go run ./cmd/yggd --base-url https://cloud.stage.redhat.com/api --auth-mode basic --username ${USER} --password s3cr3t --interface-file ${PWD}/data/dbus/com.redhat.yggdrasil.xml`
 
+# Run yggd as system service
+Modify /usr/local/etc/yggdrasil/config.toml and fill in values.
+
+
+Enable and start yggd service:
+```
+systemctl enable com.redhat.yggd.service
+systemctl start com.redhat.yggd.service
+```
+
+
+
 ## GDBus
 
-You can install D-Feet to browse the bus objects in a graphical way, or use
+Once `yggd` is running per above, you can install D-Feet to browse the bus objects in a graphical way, or use
 `gdbus` to send methods directly.
-
-Note: yggd must be running before invoking gdbus commands
 
 ```bash
 gdbus introspect --system \
