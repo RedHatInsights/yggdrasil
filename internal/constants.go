@@ -17,6 +17,10 @@ var (
 	SysconfDir        string
 	LocalstateDir     string
 	DbusInterfacesDir string
+
+	ShortName string
+	LongName  string
+	Summary   string
 )
 
 func init() {
@@ -52,5 +56,15 @@ func init() {
 	}
 	if DbusInterfacesDir == "" {
 		DbusInterfacesDir = filepath.Join(DataDir, "dbus-1", "interfaces")
+	}
+
+	if ShortName == "" {
+		ShortName = "ygg"
+	}
+	if LongName == "" {
+		LongName = "yggdrasil"
+	}
+	if Summary == "" {
+		Summary = "yggdrasil"
 	}
 }
