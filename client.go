@@ -9,6 +9,8 @@ import (
 	"net"
 	"net/http"
 	"time"
+
+	internal "github.com/redhatinsights/yggdrasil/internal"
 )
 
 type authType string
@@ -25,20 +27,18 @@ type HTTPClient struct {
 	authType  authType
 	username  string
 	password  string
-	baseURL   string
 	userAgent string
 }
 
 // NewHTTPClientBasicAuth creates a client configured for basic authentication with
 // the given username and password.
-func NewHTTPClientBasicAuth(baseURL, username, password, userAgent string) (*HTTPClient, error) {
+func NewHTTPClientBasicAuth(username, password, userAgent string) (*HTTPClient, error) {
 	if userAgent == "" {
-		userAgent = fmt.Sprintf("yggdrasil/%v", Version)
+		userAgent = fmt.Sprintf("%v/%v", internal.LongName, Version)
 	}
 	return &HTTPClient{
 		Client:    &http.Client{},
 		authType:  authTypeBasic,
-		baseURL:   baseURL,
 		username:  username,
 		password:  password,
 		userAgent: userAgent,
@@ -47,14 +47,13 @@ func NewHTTPClientBasicAuth(baseURL, username, password, userAgent string) (*HTT
 
 // NewHTTPClientCertAuth creates a client configured for certificate authentication
 // with the given CA root, and certificate key-pair.
-func NewHTTPClientCertAuth(baseURL, caRoot, certFile, keyFile, userAgent string) (*HTTPClient, error) {
+func NewHTTPClientCertAuth(certFile, keyFile, userAgent string) (*HTTPClient, error) {
 	if userAgent == "" {
-		userAgent = fmt.Sprintf("yggdrasil/%v", Version)
+		userAgent = fmt.Sprintf("%v/%v", internal.LongName, Version)
 	}
 	client := &HTTPClient{
 		Client:    &http.Client{},
 		authType:  authTypeCert,
-		baseURL:   baseURL,
 		userAgent: userAgent,
 	}
 
@@ -67,7 +66,7 @@ func NewHTTPClientCertAuth(baseURL, caRoot, certFile, keyFile, userAgent string)
 		if err != nil {
 			return nil, err
 		}
-		
+
 		caCertPool, err := x509.SystemCertPool()
 		if err != nil {
 			return nil, err
