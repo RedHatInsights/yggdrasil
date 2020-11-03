@@ -49,7 +49,7 @@ ifeq ($(shell find . -name vendor), ./vendor)
 BUILDFLAGS += -mod=vendor
 endif
 
-BINS = yggd ygg-exec
+BINS = yggd ygg
 
 TARGETS = $(BINS) \
 	data/dbus/com.redhat.yggdrasil.service \
@@ -67,7 +67,7 @@ install: build
 	pkg-config --modversion dbus-1 || exit 1
 	pkg-config --modversion systemd || exit 1
 	install -D -m755 ./yggd $(DESTDIR)$(SBINDIR)/$(SHORTNAME)d
-	install -D -m755 ./ygg-exec $(DESTDIR)$(BINDIR)/$(SHORTNAME)-exec
+	install -D -m755 ./ygg $(DESTDIR)$(BINDIR)/$(SHORTNAME)
 	install -D -m644 ./data/dbus/yggdrasil.conf $(DESTDIR)$(DBUS_SYSCONFDIR)/dbus-1/system.d/$(LONGNAME).conf
 	install -D -m644 ./data/dbus/com.redhat.yggdrasil.service $(DESTDIR)$(DBUS_SYSTEM_SERVICES_DIR)/com.redhat.$(LONGNAME).service
 	install -D -m644 ./data/dbus/com.redhat.yggdrasil.xml $(DESTDIR)$(DBUS_INTERFACES_DIR)/com.redhat.$(LONGNAME).xml
@@ -76,7 +76,7 @@ install: build
 
 uninstall:
 	rm -f $(DESTDIR)$(SBINDIR)/$(SHORTNAME)d
-	rm -f $(DESTDIR)$(BINDIR)/$(SHORTNAME)-exec
+	rm -f $(DESTDIR)$(BINDIR)/$(SHORTNAME)
 	rm -f $(DESTDIR)$(DBUS_SYSCONFDIR)/dbus-1/system.d/$(LONGNAME).conf
 	rm -f $(DESTDIR)$(DBUS_SYSTEM_SERVICES_DIR)/com.redhat.$(LONGNAME).service
 	rm -f $(DESTDIR)$(DBUS_INTERFACES_DIR)/com.redhat.$(LONGNAME).xml
