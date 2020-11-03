@@ -72,7 +72,7 @@ install: build
 	install -D -m644 ./data/dbus/com.redhat.yggdrasil.service $(DESTDIR)$(DBUS_SYSTEM_SERVICES_DIR)/com.redhat.$(LONGNAME).service
 	install -D -m644 ./data/dbus/com.redhat.yggdrasil.xml $(DESTDIR)$(DBUS_INTERFACES_DIR)/com.redhat.$(LONGNAME).xml
 	[[ -e $(DESTDIR)$(SYSCONFDIR)/$(LONGNAME)/config.toml ]] || install -D -m644 ./data/$(LONGNAME)/config.toml $(DESTDIR)$(SYSCONFDIR)/$(LONGNAME)/config.toml
-	install -D -m644 ./data/systemd/com.redhat.yggd.service $(DESTDIR)$(SYSTEMD_SYSTEM_UNIT_DIR)/com.redhat.$(SHORTNAME)d.service
+	install -D -m644 ./data/systemd/yggd.service $(DESTDIR)$(SYSTEMD_SYSTEM_UNIT_DIR)/$(SHORTNAME)d.service
 
 uninstall:
 	rm -f $(DESTDIR)$(SBINDIR)/$(SHORTNAME)d
@@ -80,7 +80,7 @@ uninstall:
 	rm -f $(DESTDIR)$(DBUS_SYSCONFDIR)/dbus-1/system.d/$(LONGNAME).conf
 	rm -f $(DESTDIR)$(DBUS_SYSTEM_SERVICES_DIR)/com.redhat.$(LONGNAME).service
 	rm -f $(DESTDIR)$(DBUS_INTERFACES_DIR)/com.redhat.$(LONGNAME).xml
-	rm -r $(DESTDIR)$(SYSTEMD_SYSTEM_UNIT_DIR)/com.redhat.$(SHORTNAME)d.service
+	rm -r $(DESTDIR)$(SYSTEMD_SYSTEM_UNIT_DIR)/$(SHORTNAME)d.service
 
 dist:
 	go mod vendor

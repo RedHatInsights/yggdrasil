@@ -1,11 +1,11 @@
 [Unit]
-Description=Red Hat Data Collection Service (yggdrasil)
+Description=@SUMMARY@
 Documentation=https://github.com/redhatinsights/yggdrasil
 
 [Service]
 Type=dbus
-BusName=com.redhat.yggdrasil1
-ExecStart=@SBINDIR@/yggd
+BusName=com.redhat.@LONGNAME@1
+ExecStart=@SBINDIR@/@SHORTNAME@d
 
 [Install]
 WantedBy=multi-user.target
