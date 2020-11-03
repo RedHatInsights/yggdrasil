@@ -17,6 +17,12 @@ func main() {
 		log.Fatal(err)
 	}
 
+	app.Flags = append(app.Flags, &cli.StringFlag{
+		Name:        "broker-addr",
+		Hidden:      true,
+		Destination: &yggdrasil.BrokerAddr,
+	})
+
 	app.Action = func(c *cli.Context) error {
 		level, err := log.ParseLevel(c.String("log-level"))
 		if err != nil {
@@ -30,11 +36,15 @@ func main() {
 			return err
 		}
 
+		if err := dispatcher.Connect(); err != nil {
+			return err
+		}
+
 		if err := dispatcher.PublishFacts(); err != nil {
 			return err
 		}
 
-		if err := dispatcher.ConnectAndSubscribe(); err != nil {
+		if err := dispatcher.Subscribe(); err != nil {
 			return err
 		}
 
