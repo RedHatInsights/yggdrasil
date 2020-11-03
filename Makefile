@@ -2,8 +2,11 @@
 .SUFFIXES:
 
 # Project variables
-PKGNAME := yggdrasil
-VERSION := 0.0.1
+SHORTNAME := ygg       # Used as a prefix to binary names. Cannot contain spaces.
+LONGNAME  := yggdrasil # Used as file and directory names. Cannot contain spaces.
+SUMMARY   := yggdrasil # Used as a long-form description. Can contain spaces and punctuation.
+PKGNAME   := yggdrasil # Used as the tarball file name. Cannot contain spaces.
+VERSION   := 0.0.1
 
 # Installation directories
 PREFIX        ?= /usr/local
@@ -18,14 +21,17 @@ DOCDIR        ?= $(PREFIX)/doc
 LOCALSTATEDIR ?= $(PREFIX)/var
 
 # Dependent package directories
-DBUS_INTERFACES_DIR := $(shell pkg-config --variable interfaces_dir dbus-1)
+DBUS_INTERFACES_DIR      := $(shell pkg-config --variable interfaces_dir dbus-1)
 DBUS_SYSTEM_SERVICES_DIR := $(shell pkg-config --variable system_bus_services_dir dbus-1)
-DBUS_SYSCONFDIR := $(shell pkg-config --variable sysconfdir dbus-1)
-SYSTEMD_SYSTEM_UNIT_DIR := $(shell pkg-config --variable systemdsystemunitdir systemd)
+DBUS_SYSCONFDIR          := $(shell pkg-config --variable sysconfdir dbus-1)
+SYSTEMD_SYSTEM_UNIT_DIR  := $(shell pkg-config --variable systemdsystemunitdir systemd)
 
 # Build flags
 LDFLAGS := 
 LDFLAGS += -X github.com/redhatinsights/yggdrasil.Version=$(VERSION)
+LDFLAGS += -X github.com/redhatinsights/yggdrasil/internal.ShortName=$(SHORTNAME)
+LDFLAGS += -X github.com/redhatinsights/yggdrasil/internal.LongName=$(LONGNAME)
+LDFLAGS += -X github.com/redhatinsights/yggdrasil/internal.Summary=$(SUMMARY)
 LDFLAGS += -X github.com/redhatinsights/yggdrasil/internal.PrefixDir=$(PREFIX)
 LDFLAGS += -X github.com/redhatinsights/yggdrasil/internal.BinDir=$(BINDIR)
 LDFLAGS += -X github.com/redhatinsights/yggdrasil/internal.SbinDir=$(SBINDIR)
@@ -60,21 +66,21 @@ $(BINS): $(GOSRC)
 install: build
 	pkg-config --modversion dbus-1 || exit 1
 	pkg-config --modversion systemd || exit 1
-	install -D -m755 ./yggd $(DESTDIR)$(SBINDIR)/yggd
-	install -D -m755 ./ygg-exec $(DESTDIR)$(BINDIR)/ygg-exec
-	install -D -m644 ./data/dbus/yggdrasil.conf $(DESTDIR)$(DBUS_SYSCONFDIR)/dbus-1/system.d/yggdrasil.conf
-	install -D -m644 ./data/dbus/com.redhat.yggdrasil.service $(DESTDIR)$(DBUS_SYSTEM_SERVICES_DIR)/com.redhat.yggdrasil.service
-	install -D -m644 ./data/dbus/com.redhat.yggdrasil.xml $(DESTDIR)$(DBUS_INTERFACES_DIR)/com.redhat.yggdrasil.xml
-	[[ -e $(DESTDIR)$(SYSCONFDIR)/yggdrasil/config.toml ]] || install -D -m644 ./data/yggdrasil/config.toml $(DESTDIR)$(SYSCONFDIR)/yggdrasil/config.toml
-	install -D -m644 ./data/systemd/com.redhat.yggd.service $(DESTDIR)$(SYSTEMD_SYSTEM_UNIT_DIR)/com.redhat.yggd.service
+	install -D -m755 ./yggd $(DESTDIR)$(SBINDIR)/$(SHORTNAME)d
+	install -D -m755 ./ygg-exec $(DESTDIR)$(BINDIR)/$(SHORTNAME)-exec
+	install -D -m644 ./data/dbus/yggdrasil.conf $(DESTDIR)$(DBUS_SYSCONFDIR)/dbus-1/system.d/$(LONGNAME).conf
+	install -D -m644 ./data/dbus/com.redhat.yggdrasil.service $(DESTDIR)$(DBUS_SYSTEM_SERVICES_DIR)/com.redhat.$(LONGNAME).service
+	install -D -m644 ./data/dbus/com.redhat.yggdrasil.xml $(DESTDIR)$(DBUS_INTERFACES_DIR)/com.redhat.$(LONGNAME).xml
+	[[ -e $(DESTDIR)$(SYSCONFDIR)/$(LONGNAME)/config.toml ]] || install -D -m644 ./data/$(LONGNAME)/config.toml $(DESTDIR)$(SYSCONFDIR)/$(LONGNAME)/config.toml
+	install -D -m644 ./data/systemd/com.redhat.yggd.service $(DESTDIR)$(SYSTEMD_SYSTEM_UNIT_DIR)/com.redhat.$(SHORTNAME)d.service
 
 uninstall:
-	rm -f $(DESTDIR)$(SBINDIR)/yggd
-	rm -f $(DESTDIR)$(BINDIR)/ygg-exec
-	rm -f $(DESTDIR)$(DBUS_SYSCONFDIR)/dbus-1/system.d/yggdrasil.conf
-	rm -f $(DESTDIR)$(DBUS_SYSTEM_SERVICES_DIR)/com.redhat.yggdrasil.service
-	rm -f $(DESTDIR)$(DBUS_INTERFACES_DIR)/com.redhat.yggdrasil.xml
-	rm -r $(DESTDIR)$(SYSTEMD_SYSTEM_UNIT_DIR)/com.redhat.yggd.service
+	rm -f $(DESTDIR)$(SBINDIR)/$(SHORTNAME)d
+	rm -f $(DESTDIR)$(BINDIR)/$(SHORTNAME)-exec
+	rm -f $(DESTDIR)$(DBUS_SYSCONFDIR)/dbus-1/system.d/$(LONGNAME).conf
+	rm -f $(DESTDIR)$(DBUS_SYSTEM_SERVICES_DIR)/com.redhat.$(LONGNAME).service
+	rm -f $(DESTDIR)$(DBUS_INTERFACES_DIR)/com.redhat.$(LONGNAME).xml
+	rm -r $(DESTDIR)$(SYSTEMD_SYSTEM_UNIT_DIR)/com.redhat.$(SHORTNAME)d.service
 
 dist:
 	go mod vendor
@@ -88,6 +94,9 @@ dist:
 
 %: %.in Makefile
 	sed \
+	    -e 's,[@]SHORTNAME[@],$(SHORTNAME),g' \
+		-e 's,[@]LONGNAME[@],$(LONGNAME),g' \
+		-e 's,[@]SUMMARY[@],$(SUMMARY),g' \
 		-e 's,[@]VERSION[@],$(VERSION),g' \
 		-e 's,[@]PACKAGE[@],$(PACKAGE),g' \
 		-e 's,[@]PREFIX[@],$(PREFIX),g' \
