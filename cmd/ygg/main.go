@@ -1,91 +1,108 @@
 package main
 
 import (
-	"encoding/json"
+	"bufio"
 	"fmt"
+	"log"
 	"os"
+	"strings"
 
-	yggdrasil "github.com/redhatinsights/yggdrasil"
-	internal "github.com/redhatinsights/yggdrasil/internal"
+	"github.com/godbus/dbus/v5"
+	"github.com/redhatinsights/yggdrasil"
 	"github.com/urfave/cli/v2"
+	"golang.org/x/crypto/ssh/terminal"
 )
 
 func main() {
-	app, err := internal.NewApp("ygg-exec")
+	app, err := yggdrasil.NewApp()
 	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
+		log.Fatal(err)
 	}
 
 	app.Commands = []*cli.Command{
 		{
-			Name: "upload",
+			Name: "register",
 			Flags: []cli.Flag{
 				&cli.StringFlag{
-					Name: "collector",
+					Name:  "username",
+					Usage: "register with `USERNAME`",
 				},
 				&cli.StringFlag{
-					Name: "metadata",
+					Name:  "password",
+					Usage: "register with `PASSWORD`",
+				},
+				&cli.BoolFlag{
+					Name:   "dbus",
+					Usage:  "attempt to register using D-Bus",
+					Hidden: true,
 				},
 			},
 			Action: func(c *cli.Context) error {
-				client, err := internal.NewClient(app.Name,
-					c.String("base-url"),
-					c.String("auth-mode"),
-					c.String("username"),
-					c.String("password"),
-					c.String("cert-file"),
-					c.String("key-file"),
-					c.String("ca-root"))
-				if err != nil {
-					return err
+				username := c.String("username")
+				password := c.String("password")
+				if username == "" {
+					password = ""
+					scanner := bufio.NewScanner(os.Stdin)
+					fmt.Print("Username: ")
+					scanner.Scan()
+					username = strings.TrimSpace(scanner.Text())
+				}
+				if password == "" {
+					fmt.Print("Password: ")
+					data, err := terminal.ReadPassword(int(os.Stdin.Fd()))
+					if err != nil {
+						return err
+					}
+					password = string(data)
+					fmt.Println()
 				}
 
-				_, err = upload(client, c.Args().First(), c.String("collector"), c.String("metadata"))
-				if err != nil {
-					switch err {
-					case yggdrasil.ErrInvalidContentType:
-						return fmt.Errorf("invalid collector: %v", c.String("collector"))
-					case yggdrasil.ErrPayloadTooLarge:
-						return fmt.Errorf("archive too large: %v", c.Args().First())
-					case yggdrasil.ErrUnauthorized:
-						switch c.String("auth-mode") {
-						case "basic":
-							return fmt.Errorf("authentication failed: username/password incorrect")
-						case "cert":
-							return fmt.Errorf("authentication failed: certificate incorrect")
-						default:
-							return fmt.Errorf("authentication failed: %w", err)
-						}
-					default:
+				if c.Bool("dbus") {
+					if err := register(username, password); err != nil {
+						return err
+					}
+				} else {
+					if err := registerSubprocess(username, password); err != nil {
 						return err
 					}
 				}
+
+				// TODO: activate yggd
+
 				return nil
 			},
 		},
 		{
-			Name:   "canonical-facts",
-			Hidden: true,
-			Flags: []cli.Flag{
-				&cli.StringFlag{
-					Name:  "format",
-					Value: "",
-				},
-			},
+			Name: "unregister",
 			Action: func(c *cli.Context) error {
-				facts, err := yggdrasil.GetCanonicalFacts()
+				conn, err := dbus.SystemBus()
 				if err != nil {
 					return err
 				}
+				defer conn.Close()
 
-				switch c.String("format") {
-				default:
-					data, err := json.Marshal(facts)
+				object := conn.Object("org.freedesktop.systemd1", "/org/freedesktop/systemd1")
+				var jobPath dbus.ObjectPath
+				if err := object.Call("org.freedesktop.systemd1.Manager.StopUnit", dbus.Flags(0), "rhcd.service", "replace").Store(&jobPath); err != nil {
+					return err
+				}
+				if jobPath.IsValid() {
+					state, err := conn.Object("org.freedesktop.systedm1", jobPath).GetProperty("State")
 					if err != nil {
 						return err
 					}
-					fmt.Println(string(data))
+					fmt.Println(state)
+				}
+
+				var changes interface{}
+				if err := object.Call("org.freedesktop.systemd1.Manager.DisableUnitFiles", dbus.Flags(0), []string{"rhcd.service"}, false).Store(&changes); err != nil {
+					return err
+				}
+
+				fmt.Println(changes)
+
+				if err := unregister(); err != nil {
+					return err
 				}
 
 				return nil
@@ -94,7 +111,6 @@ func main() {
 	}
 
 	if err := app.Run(os.Args); err != nil {
-		fmt.Fprintf(os.Stderr, "error: %v\n", err)
-		os.Exit(1)
+		log.Fatal(err)
 	}
 }

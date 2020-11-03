@@ -2,15 +2,11 @@ package yggdrasil
 
 import (
 	"crypto/tls"
-	"crypto/x509"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net"
 	"net/http"
 	"time"
-
-	internal "github.com/redhatinsights/yggdrasil/internal"
 )
 
 type authType string
@@ -30,11 +26,43 @@ type HTTPClient struct {
 	userAgent string
 }
 
+// NewClient creates and configures an HTTPClient for either certificate-based
+// authentication if authMode is "cert" or basic HTTP authentication if authMode
+// is "basic".
+func NewClient(name, baseURL, authMode, username, password, certFile, keyFile, caRoot string) (*HTTPClient, error) {
+	userAgent := fmt.Sprintf("%v/%v", name, Version)
+
+	var client *HTTPClient
+	var err error
+	switch authMode {
+	case "basic":
+		client, err = NewHTTPClientBasicAuth(
+			username,
+			password,
+			userAgent)
+		if err != nil {
+			return nil, err
+		}
+	case "cert":
+		client, err = NewHTTPClientCertAuth(
+			certFile,
+			keyFile,
+			userAgent)
+		if err != nil {
+			return nil, err
+		}
+	default:
+		return nil, &InvalidArgumentError{"auth-mode", authMode}
+	}
+
+	return client, nil
+}
+
 // NewHTTPClientBasicAuth creates a client configured for basic authentication with
 // the given username and password.
 func NewHTTPClientBasicAuth(username, password, userAgent string) (*HTTPClient, error) {
 	if userAgent == "" {
-		userAgent = fmt.Sprintf("%v/%v", internal.LongName, Version)
+		userAgent = fmt.Sprintf("%v/%v", LongName, Version)
 	}
 	return &HTTPClient{
 		Client:    &http.Client{},
@@ -49,7 +77,7 @@ func NewHTTPClientBasicAuth(username, password, userAgent string) (*HTTPClient, 
 // with the given CA root, and certificate key-pair.
 func NewHTTPClientCertAuth(certFile, keyFile, userAgent string) (*HTTPClient, error) {
 	if userAgent == "" {
-		userAgent = fmt.Sprintf("%v/%v", internal.LongName, Version)
+		userAgent = fmt.Sprintf("%v/%v", LongName, Version)
 	}
 	client := &HTTPClient{
 		Client:    &http.Client{},
@@ -59,21 +87,6 @@ func NewHTTPClientCertAuth(certFile, keyFile, userAgent string) (*HTTPClient, er
 
 	tlsConfig := tls.Config{
 		MaxVersion: tls.VersionTLS12, // cloud.redhat.com appears to exhibit this openssl bug https://github.com/openssl/openssl/issues/9767
-	}
-
-	if caRoot != "" {
-		caCert, err := ioutil.ReadFile(caRoot)
-		if err != nil {
-			return nil, err
-		}
-
-		caCertPool, err := x509.SystemCertPool()
-		if err != nil {
-			return nil, err
-		}
-		caCertPool.AppendCertsFromPEM(caCert)
-
-		tlsConfig.RootCAs = caCertPool
 	}
 
 	cert, err := tls.LoadX509KeyPair(certFile, keyFile)

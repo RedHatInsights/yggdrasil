@@ -24,29 +24,25 @@ DOCDIR        ?= $(PREFIX)/doc
 LOCALSTATEDIR ?= $(PREFIX)/var
 
 # Dependent package directories
-DBUS_INTERFACES_DIR      := $(shell pkg-config --variable interfaces_dir dbus-1)
-DBUS_SYSTEM_SERVICES_DIR := $(shell pkg-config --variable system_bus_services_dir dbus-1)
-DBUS_SYSCONFDIR          := $(shell pkg-config --variable sysconfdir dbus-1)
 SYSTEMD_SYSTEM_UNIT_DIR  := $(shell pkg-config --variable systemdsystemunitdir systemd)
 
 # Build flags
 LDFLAGS := 
 LDFLAGS += -X github.com/redhatinsights/yggdrasil.Version=$(VERSION)
-LDFLAGS += -X github.com/redhatinsights/yggdrasil/internal.ShortName=$(SHORTNAME)
-LDFLAGS += -X github.com/redhatinsights/yggdrasil/internal.LongName=$(LONGNAME)
-LDFLAGS += -X github.com/redhatinsights/yggdrasil/internal.Summary=$(SUMMARY)
-LDFLAGS += -X github.com/redhatinsights/yggdrasil/internal.BrokerAddr=$(BROKERADDR)
-LDFLAGS += -X github.com/redhatinsights/yggdrasil/internal.PrefixDir=$(PREFIX)
-LDFLAGS += -X github.com/redhatinsights/yggdrasil/internal.BinDir=$(BINDIR)
-LDFLAGS += -X github.com/redhatinsights/yggdrasil/internal.SbinDir=$(SBINDIR)
-LDFLAGS += -X github.com/redhatinsights/yggdrasil/internal.LibexecDir=$(LIBEXECDIR)
-LDFLAGS += -X github.com/redhatinsights/yggdrasil/internal.SysconfDir=$(SYSCONFDIR)
-LDFLAGS += -X github.com/redhatinsights/yggdrasil/internal.DataDir=$(DATADIR)
-LDFLAGS += -X github.com/redhatinsights/yggdrasil/internal.DatarootDir=$(DATAROOTDIR)
-LDFLAGS += -X github.com/redhatinsights/yggdrasil/internal.ManDir=$(MANDIR)
-LDFLAGS += -X github.com/redhatinsights/yggdrasil/internal.DocDir=$(DOCDIR)
-LDFLAGS += -X github.com/redhatinsights/yggdrasil/internal.LocalstateDir=$(LOCALSTATEDIR)
-LDFLAGS += -X github.com/redhatinsights/yggdrasil/internal.DbusInterfacesDir=$(DBUS_INTERFACES_DIR)
+LDFLAGS += -X github.com/redhatinsights/yggdrasil.ShortName=$(SHORTNAME)
+LDFLAGS += -X github.com/redhatinsights/yggdrasil.LongName=$(LONGNAME)
+LDFLAGS += -X github.com/redhatinsights/yggdrasil.Summary=$(SUMMARY)
+LDFLAGS += -X github.com/redhatinsights/yggdrasil.BrokerAddr=$(BROKERADDR)
+LDFLAGS += -X github.com/redhatinsights/yggdrasil.PrefixDir=$(PREFIX)
+LDFLAGS += -X github.com/redhatinsights/yggdrasil.BinDir=$(BINDIR)
+LDFLAGS += -X github.com/redhatinsights/yggdrasil.SbinDir=$(SBINDIR)
+LDFLAGS += -X github.com/redhatinsights/yggdrasil.LibexecDir=$(LIBEXECDIR)
+LDFLAGS += -X github.com/redhatinsights/yggdrasil.SysconfDir=$(SYSCONFDIR)
+LDFLAGS += -X github.com/redhatinsights/yggdrasil.DataDir=$(DATADIR)
+LDFLAGS += -X github.com/redhatinsights/yggdrasil.DatarootDir=$(DATAROOTDIR)
+LDFLAGS += -X github.com/redhatinsights/yggdrasil.ManDir=$(MANDIR)
+LDFLAGS += -X github.com/redhatinsights/yggdrasil.DocDir=$(DOCDIR)
+LDFLAGS += -X github.com/redhatinsights/yggdrasil.LocalstateDir=$(LOCALSTATEDIR)
 
 BUILDFLAGS :=
 ifeq ($(shell find . -name vendor), ./vendor)
@@ -72,18 +68,12 @@ install: build
 	pkg-config --modversion systemd || exit 1
 	install -D -m755 ./yggd $(DESTDIR)$(SBINDIR)/$(SHORTNAME)d
 	install -D -m755 ./ygg $(DESTDIR)$(BINDIR)/$(SHORTNAME)
-	install -D -m644 ./data/dbus/yggdrasil.conf $(DESTDIR)$(DBUS_SYSCONFDIR)/dbus-1/system.d/$(LONGNAME).conf
-	install -D -m644 ./data/dbus/com.redhat.yggdrasil.service $(DESTDIR)$(DBUS_SYSTEM_SERVICES_DIR)/com.redhat.$(LONGNAME).service
-	install -D -m644 ./data/dbus/com.redhat.yggdrasil.xml $(DESTDIR)$(DBUS_INTERFACES_DIR)/com.redhat.$(LONGNAME).xml
 	[[ -e $(DESTDIR)$(SYSCONFDIR)/$(LONGNAME)/config.toml ]] || install -D -m644 ./data/$(LONGNAME)/config.toml $(DESTDIR)$(SYSCONFDIR)/$(LONGNAME)/config.toml
 	install -D -m644 ./data/systemd/yggd.service $(DESTDIR)$(SYSTEMD_SYSTEM_UNIT_DIR)/$(SHORTNAME)d.service
 
 uninstall:
 	rm -f $(DESTDIR)$(SBINDIR)/$(SHORTNAME)d
 	rm -f $(DESTDIR)$(BINDIR)/$(SHORTNAME)
-	rm -f $(DESTDIR)$(DBUS_SYSCONFDIR)/dbus-1/system.d/$(LONGNAME).conf
-	rm -f $(DESTDIR)$(DBUS_SYSTEM_SERVICES_DIR)/com.redhat.$(LONGNAME).service
-	rm -f $(DESTDIR)$(DBUS_INTERFACES_DIR)/com.redhat.$(LONGNAME).xml
 	rm -r $(DESTDIR)$(SYSTEMD_SYSTEM_UNIT_DIR)/$(SHORTNAME)d.service
 
 dist:

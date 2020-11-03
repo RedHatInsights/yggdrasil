@@ -1,28 +1,21 @@
 package main
 
 import (
+	"fmt"
 	"os"
 	"os/signal"
-	"path/filepath"
 	"syscall"
 
 	"git.sr.ht/~spc/go-log"
-	internal "github.com/redhatinsights/yggdrasil/internal"
+	"github.com/redhatinsights/yggdrasil"
 	"github.com/urfave/cli/v2"
 )
 
 func main() {
-	app, err := internal.NewApp("yggd")
+	app, err := yggdrasil.NewApp()
 	if err != nil {
 		log.Fatal(err)
 	}
-
-	app.Flags = append(app.Flags, &cli.StringFlag{
-		Name:      "interface-file",
-		Hidden:    true,
-		TakesFile: true,
-		Value:     filepath.Join(internal.DbusInterfacesDir, "com.redhat.yggdrasil.xml"),
-	})
 
 	app.Action = func(c *cli.Context) error {
 		level, err := log.ParseLevel(c.String("log-level"))
@@ -30,29 +23,20 @@ func main() {
 			return cli.NewExitError(err, 1)
 		}
 		log.SetLevel(level)
-		log.SetPrefix("[yggd] ")
+		log.SetPrefix(fmt.Sprintf("[%v] ", app.Name))
 
-		client, err := internal.NewClient(app.Name,
-			c.String("base-url"),
-			c.String("auth-mode"),
-			c.String("username"),
-			c.String("password"),
-			c.String("cert-file"),
-			c.String("key-file"),
-			c.String("ca-root"))
+		dispatcher, err := yggdrasil.NewDispatcher()
 		if err != nil {
-			return cli.NewExitError(err, 1)
+			return err
 		}
 
-		server, err := internal.NewDBusServer(client, c.String("interface-file"))
-		if err != nil {
-			return cli.NewExitError(err, 1)
+		if err := dispatcher.PublishFacts(); err != nil {
+			return err
 		}
 
-		if err := server.Connect(); err != nil {
-			return cli.NewExitError(err, 1)
+		if err := dispatcher.ConnectAndSubscribe(); err != nil {
+			return err
 		}
-		defer server.Close()
 
 		quit := make(chan os.Signal, 1)
 		signal.Notify(quit, syscall.SIGTERM, syscall.SIGINT)

@@ -1,16 +1,14 @@
 package yggdrasil
 
 import (
-	yggdrasil "github.com/redhatinsights/yggdrasil"
 	"github.com/urfave/cli/v2"
 	"github.com/urfave/cli/v2/altsrc"
 )
 
 // NewApp creates a new cli Application with name and default flags.
-func NewApp(name string) (*cli.App, error) {
+func NewApp() (*cli.App, error) {
 	app := cli.NewApp()
-	app.Name = name
-	app.Version = yggdrasil.Version
+	app.Version = Version
 
 	defaultConfigFilePath, err := ConfigPath()
 	if err != nil {
@@ -23,27 +21,6 @@ func NewApp(name string) (*cli.App, error) {
 			Value:     defaultConfigFilePath,
 			TakesFile: true,
 		},
-		altsrc.NewStringFlag(&cli.StringFlag{
-			Name: "base-url",
-		}),
-		altsrc.NewStringFlag(&cli.StringFlag{
-			Name: "auth-mode",
-		}),
-		altsrc.NewStringFlag(&cli.StringFlag{
-			Name: "username",
-		}),
-		altsrc.NewStringFlag(&cli.StringFlag{
-			Name: "password",
-		}),
-		altsrc.NewStringFlag(&cli.StringFlag{
-			Name: "cert-file",
-		}),
-		altsrc.NewStringFlag(&cli.StringFlag{
-			Name: "key-file",
-		}),
-		altsrc.NewStringFlag(&cli.StringFlag{
-			Name: "ca-root",
-		}),
 		altsrc.NewStringFlag(&cli.StringFlag{
 			Name: "log-level",
 		}),
