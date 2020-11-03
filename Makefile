@@ -8,6 +8,9 @@ SUMMARY   := yggdrasil # Used as a long-form description. Can contain spaces and
 PKGNAME   := yggdrasil # Used as the tarball file name. Cannot contain spaces.
 VERSION   := 0.0.1
 
+# Compile-time constants
+BROKERADDR := tcp://localhost:1883
+
 # Installation directories
 PREFIX        ?= /usr/local
 BINDIR        ?= $(PREFIX)/bin
@@ -32,6 +35,7 @@ LDFLAGS += -X github.com/redhatinsights/yggdrasil.Version=$(VERSION)
 LDFLAGS += -X github.com/redhatinsights/yggdrasil/internal.ShortName=$(SHORTNAME)
 LDFLAGS += -X github.com/redhatinsights/yggdrasil/internal.LongName=$(LONGNAME)
 LDFLAGS += -X github.com/redhatinsights/yggdrasil/internal.Summary=$(SUMMARY)
+LDFLAGS += -X github.com/redhatinsights/yggdrasil/internal.BrokerAddr=$(BROKERADDR)
 LDFLAGS += -X github.com/redhatinsights/yggdrasil/internal.PrefixDir=$(PREFIX)
 LDFLAGS += -X github.com/redhatinsights/yggdrasil/internal.BinDir=$(BINDIR)
 LDFLAGS += -X github.com/redhatinsights/yggdrasil/internal.SbinDir=$(SBINDIR)
@@ -97,6 +101,7 @@ dist:
 	    -e 's,[@]SHORTNAME[@],$(SHORTNAME),g' \
 		-e 's,[@]LONGNAME[@],$(LONGNAME),g' \
 		-e 's,[@]SUMMARY[@],$(SUMMARY),g' \
+		-e 's,[@]BROKERADDR[@],$(BROKERADDR),g' \
 		-e 's,[@]VERSION[@],$(VERSION),g' \
 		-e 's,[@]PACKAGE[@],$(PACKAGE),g' \
 		-e 's,[@]PREFIX[@],$(PREFIX),g' \
