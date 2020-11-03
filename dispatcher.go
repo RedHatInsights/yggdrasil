@@ -66,7 +66,6 @@ func (d *Dispatcher) PublishFacts() error {
 		return err
 	}
 
-	log.Infof("publishing canonical facts...")
 	if token := d.mqttClient.Publish("/in", byte(0), false, data); token.Wait() && token.Error() != nil {
 		return token.Error()
 	}
@@ -76,7 +75,6 @@ func (d *Dispatcher) PublishFacts() error {
 
 func (d *Dispatcher) Subscribe() error {
 	topic := fmt.Sprintf("/out/%v", d.facts.SubscriptionManagerID)
-	log.Infof("subscribing to topic %v...", topic)
 	if token := d.mqttClient.Subscribe(topic, byte(0), d.MessageHandler); token.Wait() && token.Error() != nil {
 		return token.Error()
 	}
