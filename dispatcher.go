@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"net/url"
 	"path/filepath"
 	"time"
 
@@ -88,7 +87,7 @@ func (d *Dispatcher) Subscribe() error {
 func (d *Dispatcher) MessageHandler(client mqtt.Client, msg mqtt.Message) {
 	var message struct {
 		Kind string    `json:"kind"`
-		URL  url.URL   `json:"url"`
+		URL  string    `json:"url"`
 		Sent time.Time `json:"sent"`
 	}
 
@@ -97,7 +96,7 @@ func (d *Dispatcher) MessageHandler(client mqtt.Client, msg mqtt.Message) {
 		return
 	}
 
-	resp, err := d.httpClient.Get(message.URL.String())
+	resp, err := d.httpClient.Get(message.URL)
 	if err != nil {
 		log.Error(err)
 		return
