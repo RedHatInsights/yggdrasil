@@ -2,10 +2,15 @@
 .SUFFIXES:
 
 # Project variables
-SHORTNAME := ygg       # Used as a prefix to binary names. Cannot contain spaces.
-LONGNAME  := yggdrasil # Used as file and directory names. Cannot contain spaces.
-SUMMARY   := yggdrasil # Used as a long-form description. Can contain spaces and punctuation.
-PKGNAME   := yggdrasil # Used as the tarball file name. Cannot contain spaces.
+
+# Used as a prefix to binary names. Cannot contain spaces.
+SHORTNAME := ygg
+# Used as file and directory names. Cannot contain spaces.
+LONGNAME  := yggdrasil
+# Used as a long-form description. Can contain spaces and punctuation.
+SUMMARY   := yggdrasil
+# Used as the tarball file name. Cannot contain spaces.
+PKGNAME   := yggdrasil
 VERSION   := 0.0.1
 
 # Compile-time constants
@@ -52,7 +57,7 @@ endif
 BINS = yggd ygg
 
 TARGETS = $(BINS) \
-	data/systemd/com.redhat.yggd.service
+	data/systemd/yggd.service
 
 GOSRC := $(shell find . -name '*.go')
 GOSRC += go.mod go.sum
