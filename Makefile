@@ -52,7 +52,6 @@ endif
 BINS = yggd ygg
 
 TARGETS = $(BINS) \
-	data/dbus/com.redhat.yggdrasil.service \
 	data/systemd/com.redhat.yggd.service
 
 GOSRC := $(shell find . -name '*.go')
