@@ -31,11 +31,6 @@ func main() {
 					Name:  "password",
 					Usage: "register with `PASSWORD`",
 				},
-				&cli.BoolFlag{
-					Name:   "dbus",
-					Usage:  "attempt to register using D-Bus",
-					Hidden: true,
-				},
 			},
 			Action: func(c *cli.Context) error {
 				username := c.String("username")
@@ -57,14 +52,8 @@ func main() {
 					fmt.Println()
 				}
 
-				if c.Bool("dbus") {
-					if err := register(username, password); err != nil {
-						return err
-					}
-				} else {
-					if err := registerSubprocess(username, password); err != nil {
-						return err
-					}
+				if err := register(username, password); err != nil {
+					return err
 				}
 
 				// TODO: activate yggd

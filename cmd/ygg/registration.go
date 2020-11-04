@@ -3,19 +3,9 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"os/exec"
 
 	"github.com/godbus/dbus/v5"
-	"github.com/godbus/dbus/v5/introspect"
 )
-
-func registerSubprocess(username, password string) error {
-	cmd := exec.Command("subscription-manager", "register", "--username", username, "--password", password)
-	if err := cmd.Run(); err != nil {
-		return err
-	}
-	return nil
-}
 
 func register(username, password string) error {
 	conn, err := dbus.SystemBus()
@@ -25,6 +15,7 @@ func register(username, password string) error {
 	defer conn.Close()
 
 	object := conn.Object("com.redhat.RHSM1", "/com/redhat/RHSM1/RegisterServer")
+
 	var privateDbusSocketURI string
 	if err := object.Call("com.redhat.RHSM1.RegisterServer.Start", dbus.Flags(0), "").Store(&privateDbusSocketURI); err != nil {
 		return err
@@ -38,12 +29,12 @@ func register(username, password string) error {
 	}
 	defer privConn.Close()
 
-	registerObject := privConn.Object("com.redhat.RHSM1", "/com/redhat/RHSM1/Register")
-	node, err := introspect.Call(registerObject)
-	if err != nil {
+	if err := privConn.Auth(nil); err != nil {
 		return err
 	}
-	fmt.Println(node)
+
+	registerObject := privConn.Object("com.redhat.RHSM1", "/com/redhat/RHSM1/Register")
+
 	var responseBody string
 	call := registerObject.Call("com.redhat.RHSM1.Register.Register", dbus.Flags(0), "", username, password, map[string]string{}, map[string]string{}, "")
 	if err := call.Store(&responseBody); err != nil {
