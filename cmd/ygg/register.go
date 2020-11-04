@@ -21,7 +21,6 @@ func register(username, password string) error {
 		return err
 	}
 	defer object.Call("com.redhat.RHSM1.RegisterServer.Stop", dbus.FlagNoReplyExpected, "")
-	fmt.Println(privateDbusSocketURI)
 
 	privConn, err := dbus.Dial(privateDbusSocketURI)
 	if err != nil {
@@ -48,7 +47,7 @@ func register(username, password string) error {
 	}
 
 	// Do something with UUID like tell rhcd to sub to the topic
-	fmt.Printf("Consumer ID: %v", response.UUID)
+	fmt.Printf("Consumer ID: %v\n", response.UUID)
 
 	privConn.Close()
 
