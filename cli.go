@@ -22,7 +22,8 @@ func NewApp() (*cli.App, error) {
 			TakesFile: true,
 		},
 		altsrc.NewStringFlag(&cli.StringFlag{
-			Name: "log-level",
+			Name:  "log-level",
+			Value: "info",
 		}),
 	}
 
