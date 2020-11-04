@@ -7,7 +7,6 @@ import (
 	"os"
 	"strings"
 
-	"github.com/godbus/dbus/v5"
 	"github.com/redhatinsights/yggdrasil"
 	"github.com/urfave/cli/v2"
 	"golang.org/x/crypto/ssh/terminal"
@@ -56,7 +55,9 @@ func main() {
 					return err
 				}
 
-				// TODO: activate yggd
+				if err := activate(); err != nil {
+					return err
+				}
 
 				return nil
 			},
@@ -64,31 +65,9 @@ func main() {
 		{
 			Name: "unregister",
 			Action: func(c *cli.Context) error {
-				conn, err := dbus.SystemBus()
-				if err != nil {
+				if err := deactivate(); err != nil {
 					return err
 				}
-				defer conn.Close()
-
-				object := conn.Object("org.freedesktop.systemd1", "/org/freedesktop/systemd1")
-				var jobPath dbus.ObjectPath
-				if err := object.Call("org.freedesktop.systemd1.Manager.StopUnit", dbus.Flags(0), "rhcd.service", "replace").Store(&jobPath); err != nil {
-					return err
-				}
-				if jobPath.IsValid() {
-					state, err := conn.Object("org.freedesktop.systedm1", jobPath).GetProperty("State")
-					if err != nil {
-						return err
-					}
-					fmt.Println(state)
-				}
-
-				var changes interface{}
-				if err := object.Call("org.freedesktop.systemd1.Manager.DisableUnitFiles", dbus.Flags(0), []string{"rhcd.service"}, false).Store(&changes); err != nil {
-					return err
-				}
-
-				fmt.Println(changes)
 
 				if err := unregister(); err != nil {
 					return err
