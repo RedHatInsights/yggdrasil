@@ -3,20 +3,17 @@ package main
 import (
 	"bufio"
 	"fmt"
-	"log"
 	"os"
 	"strings"
 
-	"github.com/redhatinsights/yggdrasil"
+	"git.sr.ht/~spc/go-log"
+
 	"github.com/urfave/cli/v2"
 	"golang.org/x/crypto/ssh/terminal"
 )
 
 func main() {
-	app, err := yggdrasil.NewApp()
-	if err != nil {
-		log.Fatal(err)
-	}
+	app := cli.NewApp()
 
 	app.Commands = []*cli.Command{
 		{
@@ -79,6 +76,6 @@ func main() {
 	}
 
 	if err := app.Run(os.Args); err != nil {
-		log.Fatal(err)
+		log.Error(err)
 	}
 }
