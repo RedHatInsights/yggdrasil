@@ -17,12 +17,6 @@ func main() {
 		log.Fatal(err)
 	}
 
-	app.Flags = append(app.Flags, &cli.StringFlag{
-		Name:        "broker-addr",
-		Hidden:      true,
-		Destination: &yggdrasil.BrokerAddr,
-	})
-
 	app.Action = func(c *cli.Context) error {
 		level, err := log.ParseLevel(c.String("log-level"))
 		if err != nil {
