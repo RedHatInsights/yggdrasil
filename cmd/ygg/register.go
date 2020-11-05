@@ -1,9 +1,6 @@
 package main
 
 import (
-	"encoding/json"
-	"fmt"
-
 	"github.com/godbus/dbus/v5"
 )
 
@@ -34,20 +31,9 @@ func register(username, password string) error {
 
 	registerObject := privConn.Object("com.redhat.RHSM1", "/com/redhat/RHSM1/Register")
 
-	var responseBody string
-	call := registerObject.Call("com.redhat.RHSM1.Register.Register", dbus.Flags(0), "", username, password, map[string]string{}, map[string]string{}, "")
-	if err := call.Store(&responseBody); err != nil {
+	if err := registerObject.Call("com.redhat.RHSM1.Register.Register", dbus.Flags(0), "", username, password, map[string]string{}, map[string]string{}, "").Err; err != nil {
 		return err
 	}
-	var response struct {
-		UUID string `json:"uuid"`
-	}
-	if err := json.Unmarshal([]byte(responseBody), &response); err != nil {
-		return err
-	}
-
-	// Do something with UUID like tell rhcd to sub to the topic
-	fmt.Printf("Consumer ID: %v\n", response.UUID)
 
 	privConn.Close()
 
@@ -62,7 +48,7 @@ func unregister() error {
 	defer conn.Close()
 
 	object := conn.Object("com.redhat.RHSM1", "/com/redhat/RHSM1/Unregister")
-	if err := object.Call("com.redhat.RHSM1.Unregister.Unregister", dbus.FlagNoReplyExpected, "").Err; err != nil {
+	if err := object.Call("com.redhat.RHSM1.Unregister.Unregister", dbus.Flags(0), map[string]string{}, "").Err; err != nil {
 		return err
 	}
 
