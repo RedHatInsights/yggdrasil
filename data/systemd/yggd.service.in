@@ -3,8 +3,7 @@ Description=@SUMMARY@
 Documentation=https://github.com/redhatinsights/yggdrasil
 
 [Service]
-Type=dbus
-BusName=com.redhat.@LONGNAME@1
+Type=simple
 ExecStart=@SBINDIR@/@SHORTNAME@d
 
 [Install]
