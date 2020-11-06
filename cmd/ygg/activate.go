@@ -1,6 +1,8 @@
 package main
 
 import (
+	"fmt"
+
 	systemd "github.com/coreos/go-systemd/v22/dbus"
 	"github.com/redhatinsights/yggdrasil"
 )
@@ -23,6 +25,14 @@ func activate() error {
 		return err
 	}
 	<-done
+	properties, err := conn.GetUnitProperties(unitName)
+	if err != nil {
+		return err
+	}
+	activeState := properties["ActiveState"]
+	if activeState.(string) != "active" {
+		return fmt.Errorf("error: The unit %v failed to start. Run 'systemctl status %v' for more information", unitName, unitName)
+	}
 
 	return nil
 }
