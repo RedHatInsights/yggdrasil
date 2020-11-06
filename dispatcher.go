@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"git.sr.ht/~spc/go-log"
@@ -113,13 +114,26 @@ func (d *Dispatcher) MessageHandler(client mqtt.Client, msg mqtt.Message) {
 		executor = EchoMessageExecutor{
 			Text: string(body),
 		}
+	case "python":
+		executor = PythonMessageExecutor{
+			Code: string(body),
+		}
 	default:
 		log.Error("unknown message kind: %v", message.Kind)
 		return
 	}
 
-	if err := executor.Run(); err != nil {
+	output, err := executor.Run()
+	if err != nil {
 		log.Error(err)
 		return
+	}
+
+	{
+		_, err := d.httpClient.Post(message.URL, strings.NewReader(output))
+		if err != nil {
+			log.Error(err)
+			return
+		}
 	}
 }
