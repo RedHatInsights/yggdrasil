@@ -52,11 +52,11 @@ func main() {
 				}
 
 				if err := register(username, password); err != nil {
-					return err
+					log.Error(err)
 				}
 
 				if err := activate(); err != nil {
-					return err
+					log.Error(err)
 				}
 
 				return nil
@@ -66,11 +66,11 @@ func main() {
 			Name: "unregister",
 			Action: func(c *cli.Context) error {
 				if err := deactivate(); err != nil {
-					return err
+					log.Error(err)
 				}
 
 				if err := unregister(); err != nil {
-					return err
+					log.Error(err)
 				}
 
 				return nil
