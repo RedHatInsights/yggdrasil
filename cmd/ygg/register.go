@@ -17,7 +17,7 @@ func register(username, password string) error {
 		return err
 	}
 	if uuid != "" {
-		log.Error("Warning: This system is already registered")
+		log.Error("warning: This system is already registered")
 		return nil
 	}
 
