@@ -1,7 +1,8 @@
 package main
 
 import (
-	"git.sr.ht/~spc/go-log"
+	"fmt"
+
 	"github.com/godbus/dbus/v5"
 )
 
@@ -17,8 +18,7 @@ func register(username, password string) error {
 		return err
 	}
 	if uuid != "" {
-		log.Error("warning: This system is already registered")
-		return nil
+		return fmt.Errorf("warning: the system is already registered")
 	}
 
 	registerServer := conn.Object("com.redhat.RHSM1", "/com/redhat/RHSM1/RegisterServer")
