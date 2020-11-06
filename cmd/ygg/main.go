@@ -76,6 +76,20 @@ func main() {
 				return nil
 			},
 		},
+		{
+			Name:  "facts",
+			Usage: "prints canonical facts about the system",
+			Action: func(c *cli.Context) error {
+				return fmt.Errorf("not implemented")
+			},
+		},
+		{
+			Name:  "status",
+			Usage: "reports status of connection and activation",
+			Action: func(c *cli.Context) error {
+				return fmt.Errorf("not implemented")
+			},
+		},
 	}
 
 	if err := app.Run(os.Args); err != nil {
