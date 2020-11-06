@@ -1,6 +1,7 @@
 package main
 
 import (
+	"git.sr.ht/~spc/go-log"
 	"github.com/godbus/dbus/v5"
 )
 
@@ -11,13 +12,22 @@ func register(username, password string) error {
 	}
 	defer conn.Close()
 
-	object := conn.Object("com.redhat.RHSM1", "/com/redhat/RHSM1/RegisterServer")
-
-	var privateDbusSocketURI string
-	if err := object.Call("com.redhat.RHSM1.RegisterServer.Start", dbus.Flags(0), "").Store(&privateDbusSocketURI); err != nil {
+	var uuid string
+	if err := conn.Object("com.redhat.RHSM1", "/com/redhat/RHSM1/Consumer").Call("com.redhat.RHSM1.Consumer.GetUuid", dbus.Flags(0), "").Store(&uuid); err != nil {
 		return err
 	}
-	defer object.Call("com.redhat.RHSM1.RegisterServer.Stop", dbus.FlagNoReplyExpected, "")
+	if uuid != "" {
+		log.Error("Warning: This system is already registered")
+		return nil
+	}
+
+	registerServer := conn.Object("com.redhat.RHSM1", "/com/redhat/RHSM1/RegisterServer")
+
+	var privateDbusSocketURI string
+	if err := registerServer.Call("com.redhat.RHSM1.RegisterServer.Start", dbus.Flags(0), "").Store(&privateDbusSocketURI); err != nil {
+		return err
+	}
+	defer registerServer.Call("com.redhat.RHSM1.RegisterServer.Stop", dbus.FlagNoReplyExpected, "")
 
 	privConn, err := dbus.Dial(privateDbusSocketURI)
 	if err != nil {
@@ -29,13 +39,9 @@ func register(username, password string) error {
 		return err
 	}
 
-	registerObject := privConn.Object("com.redhat.RHSM1", "/com/redhat/RHSM1/Register")
-
-	if err := registerObject.Call("com.redhat.RHSM1.Register.Register", dbus.Flags(0), "", username, password, map[string]string{}, map[string]string{}, "").Err; err != nil {
+	if err := privConn.Object("com.redhat.RHSM1", "/com/redhat/RHSM1/Register").Call("com.redhat.RHSM1.Register.Register", dbus.Flags(0), "", username, password, map[string]string{}, map[string]string{}, "").Err; err != nil {
 		return err
 	}
-
-	privConn.Close()
 
 	return nil
 }
@@ -47,8 +53,7 @@ func unregister() error {
 	}
 	defer conn.Close()
 
-	object := conn.Object("com.redhat.RHSM1", "/com/redhat/RHSM1/Unregister")
-	if err := object.Call("com.redhat.RHSM1.Unregister.Unregister", dbus.Flags(0), map[string]string{}, "").Err; err != nil {
+	if err := conn.Object("com.redhat.RHSM1", "/com/redhat/RHSM1/Unregister").Call("com.redhat.RHSM1.Unregister.Unregister", dbus.Flags(0), map[string]string{}, "").Err; err != nil {
 		return err
 	}
 
