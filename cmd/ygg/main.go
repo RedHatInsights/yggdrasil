@@ -15,6 +15,9 @@ import (
 func main() {
 	app := cli.NewApp()
 
+	log.SetFlags(0)
+	log.SetPrefix("")
+
 	app.Commands = []*cli.Command{
 		{
 			Name: "register",
