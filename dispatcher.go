@@ -118,6 +118,19 @@ func (d *Dispatcher) MessageHandler(client mqtt.Client, msg mqtt.Message) {
 		executor = PythonMessageExecutor{
 			Code: string(body),
 		}
+	case "ansible":
+		var job struct {
+			Hostname string `json:"hostname"`
+			Module   string `json:"module"`
+		}
+		if err := json.Unmarshal(body, &job); err != nil {
+			log.Error(err)
+			return
+		}
+		executor = AnsibleMessageExecutor{
+			Hostname: job.Hostname,
+			Module:   job.Module,
+		}
 	default:
 		log.Error("unknown message kind: %v", message.Kind)
 		return

@@ -90,3 +90,35 @@ func (e PythonMessageExecutor) Run() (string, error) {
 	}
 	return string(data), err
 }
+
+// AnsibleMessageExecutor runs ansible with the given hostname and module and
+// pipes the stdout back.
+type AnsibleMessageExecutor struct {
+	Module   string
+	Hostname string
+}
+
+func (e AnsibleMessageExecutor) Run() (string, error) {
+	cmd := exec.Command("ansible", e.Hostname, "-m", e.Module)
+
+	stdout, err := cmd.StdoutPipe()
+	if err != nil {
+		return "", err
+	}
+
+	cmd.Stderr = os.Stderr
+
+	if err := cmd.Start(); err != nil {
+		return "", err
+	}
+
+	data, err := ioutil.ReadAll(stdout)
+	if err != nil {
+		return "", err
+	}
+
+	if err := cmd.Wait(); err != nil {
+		return "", err
+	}
+	return string(data), err
+}
