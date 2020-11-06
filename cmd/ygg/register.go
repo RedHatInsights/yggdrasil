@@ -53,6 +53,14 @@ func unregister() error {
 	}
 	defer conn.Close()
 
+	var uuid string
+	if err := conn.Object("com.redhat.RHSM1", "/com/redhat/RHSM1/Consumer").Call("com.redhat.RHSM1.Consumer.GetUuid", dbus.Flags(0), "").Store(&uuid); err != nil {
+		return err
+	}
+	if uuid == "" {
+		return fmt.Errorf("warning: the system is already unregistered")
+	}
+
 	if err := conn.Object("com.redhat.RHSM1", "/com/redhat/RHSM1/Unregister").Call("com.redhat.RHSM1.Unregister.Unregister", dbus.Flags(0), map[string]string{}, "").Err; err != nil {
 		return err
 	}
