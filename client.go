@@ -144,3 +144,30 @@ func (c *HTTPClient) Post(url string, body io.Reader) (*http.Response, error) {
 	}
 	return c.Do(req)
 }
+
+// Put issues a PUT to the specified URL.
+func (c *HTTPClient) Put(url string, body io.Reader) (*http.Response, error) {
+	req, err := http.NewRequest(http.MethodPut, url, body)
+	if err != nil {
+		return nil, err
+	}
+	return c.Do(req)
+}
+
+// Patch issues a PATCH to the specified URL.
+func (c *HTTPClient) Patch(url string, body io.Reader) (*http.Response, error) {
+	req, err := http.NewRequest(http.MethodPatch, url, body)
+	if err != nil {
+		return nil, err
+	}
+	return c.Do(req)
+}
+
+// Delete issues a DELETE to the specified URL.
+func (c *HTTPClient) Delete(url string, body io.Reader) (*http.Response, error) {
+	req, err := http.NewRequest(http.MethodDelete, url, body)
+	if err != nil {
+		return nil, err
+	}
+	return c.Do(req)
+}
