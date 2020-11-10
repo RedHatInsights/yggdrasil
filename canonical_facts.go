@@ -102,7 +102,9 @@ func GetCanonicalFacts() (*CanonicalFacts, error) {
 
 	facts.InsightsID, err = readFile("/etc/insights-client/machine-id")
 	if err != nil {
-		return nil, err
+		if !os.IsNotExist(err) {
+			return nil, err
+		}
 	}
 
 	facts.MachineID, err = readFile("/etc/machine-id")
