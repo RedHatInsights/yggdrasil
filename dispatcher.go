@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"path/filepath"
-	"strings"
 	"time"
 
 	"git.sr.ht/~spc/go-log"
@@ -108,45 +107,19 @@ func (d *Dispatcher) MessageHandler(client mqtt.Client, msg mqtt.Message) {
 	}
 	defer resp.Body.Close()
 
-	var executor MessageExecutor
-	switch message.Kind {
-	case "echo":
-		executor = EchoMessageExecutor{
-			Text: string(body),
-		}
-	case "python":
-		executor = PythonMessageExecutor{
-			Code: string(body),
-		}
-	case "ansible":
-		var job struct {
-			Hostname string `json:"hostname"`
-			Module   string `json:"module"`
-		}
-		if err := json.Unmarshal(body, &job); err != nil {
-			log.Error(err)
-			return
-		}
-		executor = AnsibleMessageExecutor{
-			Hostname: job.Hostname,
-			Module:   job.Module,
-		}
-	default:
-		log.Error("unknown message kind: %v", message.Kind)
+	var job Job
+	if err := json.Unmarshal(body, &job); err != nil {
+		log.Error(err)
+		log.Debug(string(body))
 		return
 	}
-
-	output, err := executor.Run()
-	if err != nil {
+	controller := JobController{
+		job:    job,
+		client: &d.httpClient,
+		url:    message.URL,
+	}
+	if err := controller.Start(); err != nil {
 		log.Error(err)
 		return
-	}
-
-	{
-		_, err := d.httpClient.Post(message.URL, strings.NewReader(output))
-		if err != nil {
-			log.Error(err)
-			return
-		}
 	}
 }
