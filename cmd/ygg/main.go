@@ -2,12 +2,14 @@ package main
 
 import (
 	"bufio"
+	"encoding/json"
 	"fmt"
 	"os"
 	"strings"
 
 	"git.sr.ht/~spc/go-log"
 
+	"github.com/redhatinsights/yggdrasil"
 	"github.com/urfave/cli/v2"
 	"golang.org/x/crypto/ssh/terminal"
 )
@@ -80,7 +82,16 @@ func main() {
 			Name:  "facts",
 			Usage: "prints canonical facts about the system",
 			Action: func(c *cli.Context) error {
-				return fmt.Errorf("not implemented")
+				facts, err := yggdrasil.GetCanonicalFacts()
+				if err != nil {
+					return err
+				}
+				data, err := json.Marshal(facts)
+				if err != nil {
+					return err
+				}
+				fmt.Print(string(data))
+				return nil
 			},
 		},
 		{
