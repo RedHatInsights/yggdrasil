@@ -23,17 +23,19 @@ a receiving queue for instructions to be sent to the system via a broker.
 %prep
 {{{ git_dir_setup_macro }}}
 
-%global FLAGS PREFIX=%{_prefix} \
-SYSCONFDIR=%{_sysconfdir} \
-LOCALSTATEDIR=%{_localstatedir} \
-BROKERADDR=tcp://192.168.122.1:1883
 
 %build
-make %{FLAGS}
+make PREFIX=%{_prefix} \
+     SYSCONFDIR=%{_sysconfdir} \
+     LOCALSTATEDIR=%{_localstatedir} \
+     BROKERADDR=tcp://192.168.122.1:1883
 
 
 %install
-make %{FLAGS} \
+make PREFIX=%{_prefix} \
+     SYSCONFDIR=%{_sysconfdir} \
+     LOCALSTATEDIR=%{_localstatedir} \
+     BROKERADDR=tcp://192.168.122.1:1883 \
      DESTDIR=%{buildroot} \
      install
 
