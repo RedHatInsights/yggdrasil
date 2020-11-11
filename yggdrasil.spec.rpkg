@@ -1,0 +1,49 @@
+%define debug_package %{nil}
+
+Name:    {{{ git_dir_name }}}
+Version: {{{ git_dir_version }}}
+Release: 1%{?dist}
+Summary: Message dispatch agent for cloud-connected systems
+License: GPLv3
+URL: https://github.com/redhatinsights/yggdrasil
+
+VCS: {{{ git_dir_vcs }}}
+Source: {{{ git_dir_pack }}}
+
+BuildRequires: golang
+BuildRequires: dbus-devel
+BuildRequires: systemd-devel
+
+
+%description
+yggdrasil is pair of utilities that register systems with RHSM and establishes
+a receiving queue for instructions to be sent to the system via a broker.
+
+%prep
+{{{ git_dir_setup_macro }}}
+
+%global FLAGS PREFIX=%{_prefix} \
+SYSCONFDIR=%{_sysconfdir} \
+LOCALSTATEDIR=%{_localstatedir} \
+BROKERADDR=tcp://192.168.122.1:1883
+
+%build
+make %{FLAGS}
+
+
+%install
+make %{FLAGS} \
+     DESTDIR=%{buildroot} \
+     install
+
+
+%files
+%doc README.md
+%{_bindir}/ygg
+%{_sbindir}/yggd
+%{_sysconfdir}/%{name}/config.toml
+%{_unitdir}/yggd.service
+
+
+%changelog
+{{{ git_dir_changelog }}}
