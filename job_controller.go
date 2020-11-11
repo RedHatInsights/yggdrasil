@@ -38,16 +38,21 @@ func (j *JobController) Start() error {
 		name := f.Name()
 		f.Close()
 		os.Remove(name)
+		j.Finish()
 	}()
 
 	cmd := exec.Command("ansible-playbook", "--ssh-common-args=-oStrictHostKeyChecking=no", f.Name())
 	cmd.Stderr = os.Stderr
 	output, err := cmd.StdoutPipe()
 	if err != nil {
+		j.job.Status = "failed"
+		j.job.Stdout = err.Error()
 		return err
 	}
 
 	if err := cmd.Start(); err != nil {
+		j.job.Status = "failed"
+		j.job.Stdout = err.Error()
 		return err
 	}
 
@@ -57,6 +62,8 @@ func (j *JobController) Start() error {
 		j.job.Stdout += reader.Text() + "\n"
 
 		if err := j.Update("running", reader.Text()); err != nil {
+			j.job.Status = "failed"
+			j.job.Status = err.Error()
 			return err
 		}
 	}
@@ -65,9 +72,7 @@ func (j *JobController) Start() error {
 		return err
 	}
 
-	if err := j.Finish(); err != nil {
-		return err
-	}
+	j.job.Status = "succeeded"
 
 	return nil
 }
@@ -109,7 +114,6 @@ func (j *JobController) Update(status, stdout string) error {
 
 // Finish completes the job by sending a "complete" status to the job service.
 func (j *JobController) Finish() error {
-	j.job.Status = "complete"
 	data, err := json.Marshal(j.job)
 	if err != nil {
 		return err
