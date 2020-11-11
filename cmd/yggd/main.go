@@ -9,12 +9,41 @@ import (
 	"git.sr.ht/~spc/go-log"
 	"github.com/redhatinsights/yggdrasil"
 	"github.com/urfave/cli/v2"
+	"github.com/urfave/cli/v2/altsrc"
 )
 
 func main() {
-	app, err := yggdrasil.NewApp()
+	app := cli.NewApp()
+	app.Version = yggdrasil.Version
+
+	defaultConfigFilePath, err := yggdrasil.ConfigPath()
 	if err != nil {
 		log.Fatal(err)
+	}
+
+	app.Flags = []cli.Flag{
+		&cli.StringFlag{
+			Name:      "config",
+			Value:     defaultConfigFilePath,
+			TakesFile: true,
+		},
+		altsrc.NewStringFlag(&cli.StringFlag{
+			Name:  "log-level",
+			Value: "info",
+		}),
+	}
+
+	// This BeforeFunc will load flag values from a config file only if the
+	// "config" flag value is non-zero.
+	app.Before = func(c *cli.Context) error {
+		if c.String("config") != "" {
+			inputSource, err := altsrc.NewTomlSourceFromFlagFunc("config")(c)
+			if err != nil {
+				return err
+			}
+			return altsrc.ApplyInputSourceValues(c, inputSource, app.Flags)
+		}
+		return nil
 	}
 
 	app.Action = func(c *cli.Context) error {
