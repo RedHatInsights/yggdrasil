@@ -40,7 +40,7 @@ func (j *JobController) Start() error {
 		os.Remove(name)
 	}()
 
-	cmd := exec.Command("ansible-playbook", "-i", "localhost", "--ssh-common-args=-oStrictHostKeyChecking=no", f.Name())
+	cmd := exec.Command("ansible-playbook", "--ssh-common-args=-oStrictHostKeyChecking=no", f.Name())
 	cmd.Stderr = os.Stderr
 	output, err := cmd.StdoutPipe()
 	if err != nil {
