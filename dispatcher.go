@@ -12,12 +12,16 @@ import (
 	"github.com/godbus/dbus/v5"
 )
 
+// A Dispatcher routes messages received over an MQTT topic to job controllers,
+// depending on the message type.
 type Dispatcher struct {
 	facts      CanonicalFacts
 	httpClient HTTPClient
 	mqttClient mqtt.Client
 }
 
+// NewDispatcher cretes a new dispatcher, configured with an appropriate HTTP
+// client for reporting results.
 func NewDispatcher() (*Dispatcher, error) {
 	facts, err := GetCanonicalFacts()
 	if err != nil {
@@ -52,6 +56,7 @@ func NewDispatcher() (*Dispatcher, error) {
 	}, nil
 }
 
+// Connect connects to the MQTT broker.
 func (d *Dispatcher) Connect() error {
 	if token := d.mqttClient.Connect(); token.Wait() && token.Error() != nil {
 		return token.Error()
@@ -73,16 +78,17 @@ func (d *Dispatcher) PublishFacts() error {
 	return nil
 }
 
+// Subscribe adds a message handler to a host-specific topic.
 func (d *Dispatcher) Subscribe() error {
 	topic := fmt.Sprintf("/out/%v", d.facts.SubscriptionManagerID)
-	if token := d.mqttClient.Subscribe(topic, byte(0), d.MessageHandler); token.Wait() && token.Error() != nil {
+	if token := d.mqttClient.Subscribe(topic, byte(0), d.messageHandler); token.Wait() && token.Error() != nil {
 		return token.Error()
 	}
 
 	return nil
 }
 
-func (d *Dispatcher) MessageHandler(client mqtt.Client, msg mqtt.Message) {
+func (d *Dispatcher) messageHandler(client mqtt.Client, msg mqtt.Message) {
 	var message struct {
 		Kind string    `json:"kind"`
 		URL  string    `json:"url"`
