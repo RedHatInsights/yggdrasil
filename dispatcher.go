@@ -107,19 +107,24 @@ func (d *Dispatcher) MessageHandler(client mqtt.Client, msg mqtt.Message) {
 	}
 	defer resp.Body.Close()
 
-	var job Job
-	if err := json.Unmarshal(body, &job); err != nil {
-		log.Error(err)
-		log.Debug(string(body))
-		return
-	}
-	controller := JobController{
-		job:    job,
-		client: &d.httpClient,
-		url:    message.URL,
-	}
-	if err := controller.Start(); err != nil {
-		log.Error(err)
-		return
+	switch message.Kind {
+	case "playbook":
+		var job Job
+		if err := json.Unmarshal(body, &job); err != nil {
+			log.Error(err)
+			log.Debug(string(body))
+			return
+		}
+		controller := JobController{
+			job:    job,
+			client: &d.httpClient,
+			url:    message.URL,
+		}
+		if err := controller.Start(); err != nil {
+			log.Error(err)
+			return
+		}
+	default:
+		log.Errorf("unsupported message: %+v", message)
 	}
 }
