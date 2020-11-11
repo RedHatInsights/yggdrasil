@@ -9,6 +9,8 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/google/uuid"
 )
 
 // CanonicalFacts contain several identification strings that collectively
@@ -100,11 +102,15 @@ func GetCanonicalFacts() (*CanonicalFacts, error) {
 	var facts CanonicalFacts
 	var err error
 
-	facts.InsightsID, err = readFile("/etc/insights-client/machine-id")
-	if err != nil {
-		if !os.IsNotExist(err) {
+	if _, err := os.Stat("/etc/insights-client/machine-id"); os.IsNotExist(err) {
+		UUID := uuid.New()
+		if err := ioutil.WriteFile("/etc/insights-client/machine-id", []byte(UUID.String()), 0644); err != nil {
 			return nil, err
 		}
+	}
+	facts.InsightsID, err = readFile("/etc/insights-client/machine-id")
+	if err != nil {
+		return nil, err
 	}
 
 	facts.MachineID, err = readFile("/etc/machine-id")
