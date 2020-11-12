@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"encoding/json"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -56,23 +57,37 @@ func (j *JobController) Start() error {
 		return err
 	}
 
-	reader := bufio.NewScanner(output)
-	for reader.Scan() {
-		j.job.Status = "running"
-		j.job.Stdout += reader.Text() + "\n"
-
-		if err := j.Update("running", reader.Text()); err != nil {
+	reader := bufio.NewReader(output)
+	for {
+		buf := make([]byte, 4096)
+		n, err := reader.Read(buf)
+		if err != nil {
+			if err == io.EOF {
+				break
+			}
 			j.job.Status = "failed"
-			j.job.Status = err.Error()
+			j.job.Stdout += err.Error()
+			break
+		}
+		j.job.Status = "running"
+		j.job.Stdout += string(buf[:n-1])
+
+		if err := j.Update("running", string(buf[:n-1])); err != nil {
+			j.job.Status = "failed"
+			j.job.Stdout = err.Error()
 			return err
 		}
 	}
 
 	if err := cmd.Wait(); err != nil {
+		j.job.Status = "failed"
+		j.job.Stdout = err.Error()
 		return err
 	}
 
-	j.job.Status = "succeeded"
+	if j.job.Status != "" {
+		j.job.Status = "succeeded"
+	}
 
 	return nil
 }
