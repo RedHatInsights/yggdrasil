@@ -22,7 +22,7 @@ type Dispatcher struct {
 
 // NewDispatcher cretes a new dispatcher, configured with an appropriate HTTP
 // client for reporting results.
-func NewDispatcher() (*Dispatcher, error) {
+func NewDispatcher(brokerAddr string) (*Dispatcher, error) {
 	facts, err := GetCanonicalFacts()
 	if err != nil {
 		return nil, err
@@ -46,7 +46,7 @@ func NewDispatcher() (*Dispatcher, error) {
 	}
 
 	opts := mqtt.NewClientOptions()
-	opts.AddBroker(BrokerAddr)
+	opts.AddBroker(brokerAddr)
 	mqttClient := mqtt.NewClient(opts)
 
 	return &Dispatcher{

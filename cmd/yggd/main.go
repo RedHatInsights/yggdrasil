@@ -31,6 +31,11 @@ func main() {
 			Name:  "log-level",
 			Value: "info",
 		}),
+		altsrc.NewStringFlag(&cli.StringFlag{
+			Name:   "broker-addr",
+			Hidden: true,
+			Value:  yggdrasil.BrokerAddr,
+		}),
 	}
 
 	// This BeforeFunc will load flag values from a config file only if the
@@ -54,7 +59,7 @@ func main() {
 		log.SetLevel(level)
 		log.SetPrefix(fmt.Sprintf("[%v] ", app.Name))
 
-		dispatcher, err := yggdrasil.NewDispatcher()
+		dispatcher, err := yggdrasil.NewDispatcher(c.String("broker-addr"))
 		if err != nil {
 			return err
 		}
