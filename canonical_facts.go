@@ -196,14 +196,21 @@ func collectIPAddresses() ([]string, error) {
 		return nil, err
 	}
 	for _, iface := range ifaces {
+		if iface.Flags&net.FlagLoopback == net.FlagLoopback {
+			continue
+		}
 		addrs, err := iface.Addrs()
 		if err != nil {
 			return nil, err
 		}
 		for _, addr := range addrs {
-			ip := net.ParseIP(addr.String())
-			if !ip.IsLinkLocalUnicast() {
-				addresses = append(addresses, addr.String())
+			switch addr.(type) {
+			case *net.IPNet:
+				netAddr := addr.(*net.IPNet)
+				if netAddr.IP.To4() == nil {
+					continue
+				}
+				addresses = append(addresses, netAddr.IP.String())
 			}
 		}
 	}
