@@ -70,9 +70,9 @@ func (j *JobController) Start() error {
 			break
 		}
 		j.job.Status = "running"
-		j.job.Stdout += string(buf[:n-1])
+		j.job.Stdout += string(buf[:n])
 
-		if err := j.Update("running", string(buf[:n-1])); err != nil {
+		if err := j.Update("running", string(buf[:n])); err != nil {
 			j.job.Status = "failed"
 			j.job.Stdout = err.Error()
 			return err
