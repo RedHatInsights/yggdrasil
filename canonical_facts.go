@@ -8,6 +8,7 @@ import (
 	"net"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 
 	"github.com/google/uuid"
@@ -21,8 +22,8 @@ type CanonicalFacts struct {
 	BIOSUUID              string   `json:"bios_uuid"`
 	SubscriptionManagerID string   `json:"subscription_manager_id"`
 	IPAddresses           []string `json:"ip_addresses"`
-	FQDN                  string   `json:"fqdn"`
 	MACAddresses          []string `json:"mac_addresses"`
+	FQDN                  string   `json:"fqdn"`
 }
 
 // CanonicalFactsFromMap creates a CanonicalFacts struct from the key-value
@@ -113,7 +114,11 @@ func GetCanonicalFacts() (*CanonicalFacts, error) {
 		return nil, err
 	}
 
-	facts.MachineID, err = readFile("/etc/machine-id")
+	machineID, err := readFile("/etc/machine-id")
+	if err != nil {
+		return nil, err
+	}
+	facts.MachineID, err = toUUIDv4(machineID)
 	if err != nil {
 		return nil, err
 	}
@@ -226,11 +231,24 @@ func collectMACAddresses() ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
+	sort.Slice(ifaces, func(i, j int) bool {
+		return ifaces[i].Name < ifaces[j].Name
+	})
 	for _, iface := range ifaces {
 		addr := iface.HardwareAddr.String()
-		if len(addr) > 0 {
-			addresses = append(addresses, addr)
+		if addr == "" {
+			addr = "00:00:00:00:00:00"
 		}
+		addresses = append(addresses, addr)
 	}
 	return addresses, nil
+}
+
+// toUUIDv4 parses id as a UUID and returns the "dashed" notation string format.
+func toUUIDv4(id string) (string, error) {
+	UUID, err := uuid.Parse(id)
+	if err != nil {
+		return "", err
+	}
+	return UUID.String(), nil
 }
