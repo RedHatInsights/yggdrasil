@@ -75,7 +75,7 @@ func (j *JobController) Start() error {
 		if err := j.Update("running", string(buf[:n])); err != nil {
 			j.job.Status = "failed"
 			j.job.Stdout = err.Error()
-			return err
+			break
 		}
 	}
 
