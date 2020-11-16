@@ -19,15 +19,15 @@ type Job struct {
 	Stdout   string `json:"stdout"`
 }
 
-// JobController manages the execution and collects the output of a Job.
-type JobController struct {
+// PlaybookJobController implements JobController for an Ansible playbook.
+type PlaybookJobController struct {
 	job    Job
 	client *HTTPClient
 	url    string
 }
 
 // Start begins execution of the job.
-func (j *JobController) Start() error {
+func (j *PlaybookJobController) Start() error {
 	f, err := ioutil.TempFile("", "")
 	if err != nil {
 		return err
@@ -94,7 +94,7 @@ func (j *JobController) Start() error {
 
 // Update sends a "running" status update, along with a slice of stdout to the
 // job service.
-func (j *JobController) Update(status, stdout string) error {
+func (j *PlaybookJobController) Update(status, stdout string) error {
 	update := struct {
 		Status string `json:"status"`
 		Stdout string `json:"stdout"`
@@ -128,7 +128,7 @@ func (j *JobController) Update(status, stdout string) error {
 }
 
 // Finish completes the job by sending a "complete" status to the job service.
-func (j *JobController) Finish() error {
+func (j *PlaybookJobController) Finish() error {
 	data, err := json.Marshal(j.job)
 	if err != nil {
 		return err

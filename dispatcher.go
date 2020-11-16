@@ -149,7 +149,7 @@ func (d *Dispatcher) messageHandler(client mqtt.Client, msg mqtt.Message) {
 			log.Debug(string(body))
 			return
 		}
-		controller := JobController{
+		controller := PlaybookJobController{
 			job:    job,
 			client: &d.httpClient,
 			url:    message.URL,
