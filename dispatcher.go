@@ -1,6 +1,7 @@
 package yggdrasil
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -10,6 +11,7 @@ import (
 	"git.sr.ht/~spc/go-log"
 	mqtt "github.com/eclipse/paho.mqtt.golang"
 	"github.com/godbus/dbus/v5"
+	"golang.org/x/crypto/openpgp"
 )
 
 // A Dispatcher routes messages received over an MQTT topic to job controllers,
@@ -18,11 +20,12 @@ type Dispatcher struct {
 	facts      CanonicalFacts
 	httpClient HTTPClient
 	mqttClient mqtt.Client
+	keyring    openpgp.KeyRing
 }
 
 // NewDispatcher cretes a new dispatcher, configured with an appropriate HTTP
 // client for reporting results.
-func NewDispatcher(brokerAddr string) (*Dispatcher, error) {
+func NewDispatcher(brokerAddr string, armoredPublicKeyData []byte) (*Dispatcher, error) {
 	facts, err := GetCanonicalFacts()
 	if err != nil {
 		return nil, err
@@ -49,10 +52,20 @@ func NewDispatcher(brokerAddr string) (*Dispatcher, error) {
 	opts.AddBroker(brokerAddr)
 	mqttClient := mqtt.NewClient(opts)
 
+	var entityList openpgp.KeyRing
+	if len(armoredPublicKeyData) > 0 {
+		reader := bytes.NewReader(armoredPublicKeyData)
+		entityList, err = openpgp.ReadArmoredKeyRing(reader)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	return &Dispatcher{
 		facts:      *facts,
 		httpClient: *httpClient,
 		mqttClient: mqttClient,
+		keyring:    entityList,
 	}, nil
 }
 
@@ -112,6 +125,21 @@ func (d *Dispatcher) messageHandler(client mqtt.Client, msg mqtt.Message) {
 		return
 	}
 	defer resp.Body.Close()
+
+	if d.keyring != nil {
+		resp, err := d.httpClient.Get(message.URL + "/asc")
+		if err != nil {
+			log.Error(err)
+			return
+		}
+
+		signedBytes := bytes.NewReader(body)
+		_, err = openpgp.CheckArmoredDetachedSignature(d.keyring, signedBytes, resp.Body)
+		if err != nil {
+			log.Error(err)
+			return
+		}
+	}
 
 	switch message.Kind {
 	case "playbook":

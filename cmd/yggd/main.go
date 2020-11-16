@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"io/ioutil"
 	"os"
 	"os/signal"
 	"syscall"
@@ -36,6 +37,9 @@ func main() {
 			Hidden: true,
 			Value:  yggdrasil.BrokerAddr,
 		}),
+		altsrc.NewStringFlag(&cli.StringFlag{
+			Name: "public-key",
+		}),
 	}
 
 	// This BeforeFunc will load flag values from a config file only if the
@@ -59,7 +63,15 @@ func main() {
 		log.SetLevel(level)
 		log.SetPrefix(fmt.Sprintf("[%v] ", app.Name))
 
-		dispatcher, err := yggdrasil.NewDispatcher(c.String("broker-addr"))
+		var data []byte
+		if c.String("public-key") != "" {
+			data, err = ioutil.ReadFile(c.String("public-key"))
+			if err != nil {
+				return cli.NewExitError(err, 1)
+			}
+		}
+
+		dispatcher, err := yggdrasil.NewDispatcher(c.String("broker-addr"), data)
 		if err != nil {
 			return err
 		}
