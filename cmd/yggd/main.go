@@ -32,10 +32,9 @@ func main() {
 			Name:  "log-level",
 			Value: "info",
 		}),
-		altsrc.NewStringFlag(&cli.StringFlag{
-			Name:   "broker-addr",
-			Hidden: true,
-			Value:  yggdrasil.BrokerAddr,
+		altsrc.NewStringSliceFlag(&cli.StringSliceFlag{
+			Name:  "broker",
+			Value: cli.NewStringSlice(yggdrasil.BrokerAddr),
 		}),
 		altsrc.NewStringFlag(&cli.StringFlag{
 			Name: "public-key",
@@ -71,7 +70,7 @@ func main() {
 			}
 		}
 
-		dispatcher, err := yggdrasil.NewDispatcher(c.String("broker-addr"), data)
+		dispatcher, err := yggdrasil.NewDispatcher(c.StringSlice("broker"), data)
 		if err != nil {
 			return err
 		}

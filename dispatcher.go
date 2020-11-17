@@ -25,7 +25,7 @@ type Dispatcher struct {
 
 // NewDispatcher cretes a new dispatcher, configured with an appropriate HTTP
 // client for reporting results.
-func NewDispatcher(brokerAddr string, armoredPublicKeyData []byte) (*Dispatcher, error) {
+func NewDispatcher(brokers []string, armoredPublicKeyData []byte) (*Dispatcher, error) {
 	facts, err := GetCanonicalFacts()
 	if err != nil {
 		return nil, err
@@ -49,7 +49,9 @@ func NewDispatcher(brokerAddr string, armoredPublicKeyData []byte) (*Dispatcher,
 	}
 
 	opts := mqtt.NewClientOptions()
-	opts.AddBroker(brokerAddr)
+	for _, broker := range brokers {
+		opts.AddBroker(broker)
+	}
 	mqttClient := mqtt.NewClient(opts)
 
 	var entityList openpgp.KeyRing
