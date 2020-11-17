@@ -13,9 +13,6 @@ SUMMARY   := yggdrasil
 PKGNAME   := yggdrasil
 VERSION   := 0.0.1
 
-# Compile-time constants
-BROKERADDR := tcp://localhost:1883
-
 # Installation directories
 PREFIX        ?= /usr/local
 BINDIR        ?= $(PREFIX)/bin
@@ -37,7 +34,6 @@ LDFLAGS += -X github.com/redhatinsights/yggdrasil.Version=$(VERSION)
 LDFLAGS += -X github.com/redhatinsights/yggdrasil.ShortName=$(SHORTNAME)
 LDFLAGS += -X github.com/redhatinsights/yggdrasil.LongName=$(LONGNAME)
 LDFLAGS += -X github.com/redhatinsights/yggdrasil.Summary=$(SUMMARY)
-LDFLAGS += -X github.com/redhatinsights/yggdrasil.BrokerAddr=$(BROKERADDR)
 LDFLAGS += -X github.com/redhatinsights/yggdrasil.PrefixDir=$(PREFIX)
 LDFLAGS += -X github.com/redhatinsights/yggdrasil.BinDir=$(BINDIR)
 LDFLAGS += -X github.com/redhatinsights/yggdrasil.SbinDir=$(SBINDIR)
@@ -95,7 +91,6 @@ dist:
 	    -e 's,[@]SHORTNAME[@],$(SHORTNAME),g' \
 		-e 's,[@]LONGNAME[@],$(LONGNAME),g' \
 		-e 's,[@]SUMMARY[@],$(SUMMARY),g' \
-		-e 's,[@]BROKERADDR[@],$(BROKERADDR),g' \
 		-e 's,[@]VERSION[@],$(VERSION),g' \
 		-e 's,[@]PACKAGE[@],$(PACKAGE),g' \
 		-e 's,[@]PREFIX[@],$(PREFIX),g' \

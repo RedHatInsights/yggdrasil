@@ -33,8 +33,7 @@ func main() {
 			Value: "info",
 		}),
 		altsrc.NewStringSliceFlag(&cli.StringSliceFlag{
-			Name:  "broker",
-			Value: cli.NewStringSlice(yggdrasil.BrokerAddr),
+			Name: "broker",
 		}),
 		altsrc.NewStringFlag(&cli.StringFlag{
 			Name: "public-key",

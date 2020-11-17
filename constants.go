@@ -14,9 +14,6 @@ var (
 
 	// Summary is a long-form description.
 	Summary string
-
-	// BrokerAddr is the MQTT broker address clients connect to.
-	BrokerAddr string
 )
 
 // Installation directory prefix and paths. Values are specified by compile-time
@@ -79,8 +76,5 @@ func init() {
 	}
 	if Summary == "" {
 		Summary = "yggdrasil"
-	}
-	if BrokerAddr == "" {
-		BrokerAddr = "tcp://localhost:1883"
 	}
 }
