@@ -105,6 +105,9 @@ func GetCanonicalFacts() (*CanonicalFacts, error) {
 
 	if _, err := os.Stat("/etc/insights-client/machine-id"); os.IsNotExist(err) {
 		UUID := uuid.New()
+		if err := os.MkdirAll("/etc/insights-client", 0755); err != nil {
+			return nil, err
+		}
 		if err := ioutil.WriteFile("/etc/insights-client/machine-id", []byte(UUID.String()), 0644); err != nil {
 			return nil, err
 		}
