@@ -43,8 +43,9 @@ func main() {
 	// This BeforeFunc will load flag values from a config file only if the
 	// "config" flag value is non-zero.
 	app.Before = func(c *cli.Context) error {
-		if c.String("config") != "" {
-			inputSource, err := altsrc.NewTomlSourceFromFlagFunc("config")(c)
+		filePath := c.String("config")
+		if filePath != "" {
+			inputSource, err := altsrc.NewTomlSourceFromFile(filePath)
 			if err != nil {
 				return err
 			}
