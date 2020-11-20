@@ -75,21 +75,37 @@ func main() {
 			return err
 		}
 
-		if err := dispatcher.Connect(); err != nil {
-			return err
-		}
+		go func() {
+			if localErr := dispatcher.ListenAndServe(); err != nil {
+				err = localErr
+				return
+			}
+		}()
 
-		if err := dispatcher.PublishFacts(); err != nil {
-			return err
-		}
+		go func() {
+			if localError := dispatcher.Connect(); localError != nil {
+				err = localError
+				return
+			}
 
-		if err := dispatcher.Subscribe(); err != nil {
-			return err
-		}
+			if localErr := dispatcher.PublishFacts(); err != nil {
+				err = localErr
+				return
+			}
+
+			if localErr := dispatcher.Subscribe(); localErr != nil {
+				err = localErr
+				return
+			}
+		}()
 
 		quit := make(chan os.Signal, 1)
 		signal.Notify(quit, syscall.SIGTERM, syscall.SIGINT)
 		<-quit
+
+		if err != nil {
+			return cli.NewExitError(err, 1)
+		}
 
 		return nil
 	}
