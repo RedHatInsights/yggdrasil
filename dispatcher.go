@@ -200,7 +200,7 @@ func (d *Dispatcher) messageHandler2(_ mqtt.Client, msg mqtt.Message) {
 		return
 	}
 	if !r.GetAccepted() {
-		log.Errorf("work %v rejected by worker %v", work, workerSocketAddr)
+		log.Errorf("work %v rejected by worker %v", work.String(), workerSocketAddr)
 		return
 	}
 
