@@ -17,7 +17,7 @@ func main() {
 	// socket address.
 	var socketAddr string
 	{
-		conn, err := grpc.Dial(yggdDispatcherSocketAddr)
+		conn, err := grpc.Dial(yggdDispatcherSocketAddr, grpc.WithInsecure())
 		if err != nil {
 			log.Fatal(err)
 		}
