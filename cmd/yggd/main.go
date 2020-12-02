@@ -76,7 +76,7 @@ func main() {
 		}
 
 		go func() {
-			if localErr := dispatcher.ListenAndServe(); err != nil {
+			if localErr := dispatcher.ListenAndServe(); localErr != nil {
 				err = localErr
 				return
 			}
