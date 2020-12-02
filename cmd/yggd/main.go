@@ -4,7 +4,10 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"os/exec"
 	"os/signal"
+	"path/filepath"
+	"strings"
 	"syscall"
 
 	"git.sr.ht/~spc/go-log"
@@ -79,6 +82,23 @@ func main() {
 			if localErr := dispatcher.ListenAndServe(); localErr != nil {
 				err = localErr
 				return
+			}
+
+			p := filepath.Join(yggdrasil.LibexecDir, yggdrasil.LongName)
+			i, localErr := ioutil.ReadDir(p)
+			if localErr != nil {
+				err = localErr
+				return
+			}
+
+			for _, info := range i {
+				if strings.HasSuffix(info.Name(), "worker") {
+					cmd := exec.Command(filepath.Join(p, info.Name()))
+					if localErr := cmd.Start(); localErr != nil {
+						err = localErr
+						return
+					}
+				}
 			}
 		}()
 
