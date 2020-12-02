@@ -23,7 +23,7 @@ messages to an appropriate handler.
 Configuration of `yggd` and `ygg` can be done by specifying values in a
 configuration file or via command-line arguments. Command-line arguments take
 precendence over configuration file values. The configuration file is
-[TOML|https:/toml.io].
+[TOML](https:/toml.io).
 
 The system-wide configuration file is located at `/etc/yggdrasil/config.toml`.
 The location of the file may be overridden by passing the `--config` command-
