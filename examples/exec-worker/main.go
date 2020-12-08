@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"net"
+	"os"
 	"time"
 
 	"git.sr.ht/~spc/go-log"
@@ -27,7 +28,7 @@ func main() {
 		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 		defer cancel()
 
-		r, err := c.Register(ctx, &pb.RegisterRequest{Handler: "exec"})
+		r, err := c.Register(ctx, &pb.RegisterRequest{Handler: "exec", Pid: int64(os.Getpid())})
 		if err != nil {
 			log.Fatal(err)
 		}
