@@ -32,21 +32,26 @@ type Dispatcher struct {
 	pb.UnimplementedDispatcherServer
 	in                 chan Assignment
 	out                chan Assignment
+	workerDied         <-chan int64
 	logger             *log.Logger
 	pendingAssignments map[string]*Assignment
 	assignmentsLock    sync.RWMutex
 	registeredWorkers  map[string]string
 	workersLock        sync.RWMutex
+	workerPIDs         map[int64]string
+	pidLock            sync.RWMutex
 }
 
 // NewDispatcher cretes a new dispatcher, configured with an appropriate HTTP
 // client for reporting results.
-func NewDispatcher(in, out chan Assignment) *Dispatcher {
+func NewDispatcher(in, out chan Assignment, workerDied <-chan int64) *Dispatcher {
 	return &Dispatcher{
 		in:                 in,
 		out:                out,
+		workerDied:         workerDied,
 		pendingAssignments: make(map[string]*Assignment),
 		registeredWorkers:  make(map[string]string),
+		workerPIDs:         make(map[int64]string),
 		logger:             log.New(log.Writer(), fmt.Sprintf("%v[dispatcher] ", log.Prefix()), log.Flags(), log.CurrentLevel()),
 	}
 }
@@ -54,6 +59,26 @@ func NewDispatcher(in, out chan Assignment) *Dispatcher {
 // ListenAndServe opens a UNIX domain socket, registers a Dispatcher service with
 // grpc and accepts incoming connections on the domain socket.
 func (d *Dispatcher) ListenAndServe() error {
+	go func() {
+		for {
+			pid := <-d.workerDied
+			d.logger.Tracef("worker died: %v", pid)
+			d.pidLock.Lock()
+			handler := d.workerPIDs[pid]
+			delete(d.workerPIDs, pid)
+			d.pidLock.Unlock()
+			d.logger.Tracef("delete worker with pid: %v", pid)
+
+			d.workersLock.Lock()
+			socketAddr := d.registeredWorkers[handler]
+			delete(d.registeredWorkers, handler)
+			d.workersLock.Unlock()
+			if socketAddr != "" {
+				d.logger.Debugf("unregister worker for handler: %v, socket: %v", handler, socketAddr)
+			}
+		}
+	}()
+
 	go func() {
 		for {
 			assignment := <-d.in
@@ -128,6 +153,11 @@ func (d *Dispatcher) Register(ctx context.Context, r *pb.RegisterRequest) (*pb.R
 	d.registeredWorkers[r.GetHandler()] = socketAddr
 	d.workersLock.Unlock()
 	d.logger.Debugf("worker register accepted: %v", socketAddr)
+
+	d.pidLock.Lock()
+	d.workerPIDs[r.GetPid()] = r.GetHandler()
+	d.pidLock.Unlock()
+
 	return &pb.RegisterResponse{
 		Registered: true,
 		Address:    socketAddr,

@@ -16,13 +16,13 @@ type ProcessManager struct {
 	lock         sync.RWMutex
 	logger       *log.Logger
 	workerDied   chan int
-	workerReaped chan<- int
+	workerReaped chan<- int64
 }
 
 // NewProcessManager creates a new ProcessManager. If provided, the reaped
 // channel will receive PIDs of worker processes that have been reaped from the
 // manager's process map.
-func NewProcessManager(reaped chan<- int) *ProcessManager {
+func NewProcessManager(reaped chan<- int64) *ProcessManager {
 	var m ProcessManager
 	m.workers = make(map[int]string)
 	m.logger = log.New(log.Writer(), fmt.Sprintf("%v[process_manager] ", log.Prefix()), log.Flags(), log.CurrentLevel())
@@ -80,7 +80,7 @@ func (m *ProcessManager) ReapWorkers() {
 		m.lock.Unlock()
 
 		if m.workerReaped != nil {
-			m.workerReaped <- pid
+			m.workerReaped <- int64(pid)
 		}
 
 		go m.StartWorker(worker)

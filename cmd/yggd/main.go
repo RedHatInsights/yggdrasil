@@ -74,10 +74,11 @@ func main() {
 
 		in := make(chan yggdrasil.Assignment)
 		out := make(chan yggdrasil.Assignment)
+		died := make(chan int64)
 
 		// ProcessManager goroutine
 		go func() {
-			m := yggdrasil.NewProcessManager(nil)
+			m := yggdrasil.NewProcessManager(died)
 
 			logger := log.New(os.Stderr, fmt.Sprintf("%v[manager_routine] ", log.Prefix()), log.Flags(), log.CurrentLevel())
 			logger.Trace("init")
@@ -105,7 +106,7 @@ func main() {
 
 		// Dispatcher goroutine
 		go func() {
-			d := yggdrasil.NewDispatcher(in, out)
+			d := yggdrasil.NewDispatcher(in, out, died)
 
 			logger := log.New(os.Stderr, fmt.Sprintf("%v[dispatcher_routine] ", log.Prefix()), log.Flags(), log.CurrentLevel())
 			logger.Trace("init")
