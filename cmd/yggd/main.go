@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -139,7 +140,12 @@ func main() {
 				err = localErr
 				return
 			}
-			if localErr := r.Publish(facts); err != nil {
+			data, localErr := json.Marshal(facts)
+			if localErr != nil {
+				err = localErr
+				return
+			}
+			if localErr := r.Publish(data); localErr != nil {
 				err = localErr
 				return
 			}

@@ -126,6 +126,7 @@ func (d *Dispatcher) ListenAndServe() error {
 	if err != nil {
 		return err
 	}
+	d.logger.Tracef("listening on %v", socketAddr)
 
 	s := grpc.NewServer()
 	pb.RegisterDispatcherServer(s, d)
@@ -137,16 +138,16 @@ func (d *Dispatcher) ListenAndServe() error {
 
 // Register implements the "Register" RPC method of the Manager service.
 func (d *Dispatcher) Register(ctx context.Context, r *pb.RegisterRequest) (*pb.RegisterResponse, error) {
-	d.workersLock.Lock()
-	defer d.workersLock.Unlock()
-
+	d.workersLock.RLock()
 	if _, ok := d.registeredWorkers[r.GetHandler()]; ok {
+		d.workersLock.Unlock()
 		d.logger.Debugf("worker register rejected: %v", r.GetHandler())
 		return &pb.RegisterResponse{
 			Registered: false,
 			Reason:     "already registered",
 		}, nil
 	}
+	d.workersLock.RUnlock()
 
 	socketAddr := fmt.Sprintf("@ygg-%v-%v", r.GetHandler(), randomString(6))
 	d.workersLock.Lock()

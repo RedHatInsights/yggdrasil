@@ -93,15 +93,17 @@ func (r *SignalRouter) Connect() error {
 	if token := r.mqttClient.Connect(); token.Wait() && token.Error() != nil {
 		return token.Error()
 	}
+	r.logger.Trace("connected to broker")
 	return nil
 }
 
 // Publish sends a message consisting of bytes to the inbound topic.
-func (r *SignalRouter) Publish(d interface{}) error {
+func (r *SignalRouter) Publish(d []byte) error {
 	topic := fmt.Sprintf("redhat/insights/in/%v", r.consumerID)
 	if token := r.mqttClient.Publish(topic, byte(0), false, d); token.Wait() && token.Error() != nil {
 		return token.Error()
 	}
+	r.logger.Tracef("published %#v to %v", d, topic)
 	return nil
 }
 
@@ -115,6 +117,7 @@ func (r *SignalRouter) Subscribe() error {
 	go func() {
 		for {
 			assignment := <-r.in
+			r.logger.Trace("received completed assignment: %#v", assignment)
 
 			r.lock.RLock()
 			work := r.work[assignment.id]
@@ -125,6 +128,7 @@ func (r *SignalRouter) Subscribe() error {
 				r.logger.Error(err)
 				continue
 			}
+			r.logger.Tracef("sent %#v to %v", assignment.payload, work.ReturnURL)
 
 			body, err := ioutil.ReadAll(resp.Body)
 			if err != nil {
@@ -142,16 +146,20 @@ func (r *SignalRouter) Subscribe() error {
 			r.lock.Lock()
 			delete(r.work, assignment.id)
 			r.lock.Unlock()
+			r.logger.Tracef("remove assignment: %v", assignment.id)
 		}
 	}()
 
 	topic := fmt.Sprintf("redhat/insights/out/%v", r.consumerID)
+	r.logger.Tracef("subscribing to topic: %v", topic)
 	if token := r.mqttClient.Subscribe(topic, byte(0), func(_ mqtt.Client, msg mqtt.Message) {
 		var s Signal
 		if err := json.Unmarshal(msg.Payload(), &s); err != nil {
 			r.logger.Error(err)
 			return
 		}
+		r.logger.Tracef("received signal: %#v", s)
+
 		data, err := json.Marshal(s.Payload)
 		if err != nil {
 			r.logger.Error(err)
@@ -165,12 +173,14 @@ func (r *SignalRouter) Subscribe() error {
 				r.logger.Error(err)
 				return
 			}
+			r.logger.Tracef("found work signal: %#v", w)
 
 			resp, err := r.httpClient.Get(w.PayloadURL)
 			if err != nil {
 				log.Error(err)
 				return
 			}
+			r.logger.Tracef("got payload from: %v", w.PayloadURL)
 
 			body, err := ioutil.ReadAll(resp.Body)
 			if err != nil {
@@ -200,10 +210,12 @@ func (r *SignalRouter) Subscribe() error {
 			}
 
 			r.out <- assignment
+			r.logger.Tracef("routed assignment: %v", assignment.id)
 
 			r.lock.Lock()
 			r.work[s.MessageID] = &w
 			r.lock.Unlock()
+			r.logger.Tracef("stored work: %#v", w)
 		}
 
 	}); token.Wait() && token.Error() != nil {
