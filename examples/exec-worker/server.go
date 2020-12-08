@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"os/exec"
@@ -45,18 +44,9 @@ func (s *execServer) Start(ctx context.Context, r *pb.Work) (*pb.StartResponse, 
 	// Work.
 	var err error
 	go func() {
-		// Read the payload bytes from the work message.
-		var data bytes.Buffer
-		for _, d := range r.GetData() {
-			if _, localErr := data.Write(d); localErr != nil {
-				err = localErr
-				return
-			}
-		}
-
 		// Unmarshal the data into a message.
 		var m message
-		if localErr := json.Unmarshal(data.Bytes(), &m); localErr != nil {
+		if localErr := json.Unmarshal(r.GetData(), &m); localErr != nil {
 			err = localErr
 			return
 		}
@@ -77,13 +67,13 @@ func (s *execServer) Start(ctx context.Context, r *pb.Work) (*pb.StartResponse, 
 		}
 		defer conn.Close()
 
-		c := pb.NewManagerClient(conn)
+		c := pb.NewDispatcherClient(conn)
 		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 		defer cancel()
 
 		var work pb.Work
 		work.Id = s.id
-		work.Data = append(work.Data, output)
+		work.Data = output
 
 		if _, localErr := c.Finish(ctx, &work); localErr != nil {
 			err = localErr

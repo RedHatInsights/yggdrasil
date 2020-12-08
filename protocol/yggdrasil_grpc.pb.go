@@ -13,125 +13,128 @@ import (
 // is compatible with the grpc package it is being compiled against.
 const _ = grpc.SupportPackageIsVersion7
 
-// ManagerClient is the client API for Manager service.
+// DispatcherClient is the client API for Dispatcher service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
-type ManagerClient interface {
+type DispatcherClient interface {
 	// Register is called by a worker to indicate it is ready and capable of
 	// handling the specified type of work.
-	Register(ctx context.Context, in *WorkRegistration, opts ...grpc.CallOption) (*RegisterResponse, error)
+	Register(ctx context.Context, in *RegisterRequest, opts ...grpc.CallOption) (*RegisterResponse, error)
 	// Finish is called by a worker when it has completed its assigned work.
 	Finish(ctx context.Context, in *Work, opts ...grpc.CallOption) (*Empty, error)
 }
 
-type managerClient struct {
+type dispatcherClient struct {
 	cc grpc.ClientConnInterface
 }
 
-func NewManagerClient(cc grpc.ClientConnInterface) ManagerClient {
-	return &managerClient{cc}
+func NewDispatcherClient(cc grpc.ClientConnInterface) DispatcherClient {
+	return &dispatcherClient{cc}
 }
 
-func (c *managerClient) Register(ctx context.Context, in *WorkRegistration, opts ...grpc.CallOption) (*RegisterResponse, error) {
+func (c *dispatcherClient) Register(ctx context.Context, in *RegisterRequest, opts ...grpc.CallOption) (*RegisterResponse, error) {
 	out := new(RegisterResponse)
-	err := c.cc.Invoke(ctx, "/yggdrasil.Manager/Register", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/yggdrasil.Dispatcher/Register", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *managerClient) Finish(ctx context.Context, in *Work, opts ...grpc.CallOption) (*Empty, error) {
+func (c *dispatcherClient) Finish(ctx context.Context, in *Work, opts ...grpc.CallOption) (*Empty, error) {
 	out := new(Empty)
-	err := c.cc.Invoke(ctx, "/yggdrasil.Manager/Finish", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/yggdrasil.Dispatcher/Finish", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-// ManagerServer is the server API for Manager service.
-// All implementations must embed UnimplementedManagerServer
+// DispatcherServer is the server API for Dispatcher service.
+// All implementations must embed UnimplementedDispatcherServer
 // for forward compatibility
-type ManagerServer interface {
+type DispatcherServer interface {
 	// Register is called by a worker to indicate it is ready and capable of
 	// handling the specified type of work.
-	Register(context.Context, *WorkRegistration) (*RegisterResponse, error)
+	Register(context.Context, *RegisterRequest) (*RegisterResponse, error)
 	// Finish is called by a worker when it has completed its assigned work.
 	Finish(context.Context, *Work) (*Empty, error)
-	mustEmbedUnimplementedManagerServer()
+	mustEmbedUnimplementedDispatcherServer()
 }
 
-// UnimplementedManagerServer must be embedded to have forward compatible implementations.
-type UnimplementedManagerServer struct {
+// UnimplementedDispatcherServer must be embedded to have forward compatible implementations.
+type UnimplementedDispatcherServer struct {
 }
 
-func (UnimplementedManagerServer) Register(context.Context, *WorkRegistration) (*RegisterResponse, error) {
+func (UnimplementedDispatcherServer) Register(context.Context, *RegisterRequest) (*RegisterResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Register not implemented")
 }
-func (UnimplementedManagerServer) Finish(context.Context, *Work) (*Empty, error) {
+func (UnimplementedDispatcherServer) Finish(context.Context, *Work) (*Empty, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Finish not implemented")
 }
-func (UnimplementedManagerServer) mustEmbedUnimplementedManagerServer() {}
+func (UnimplementedDispatcherServer) mustEmbedUnimplementedDispatcherServer() {}
 
-// UnsafeManagerServer may be embedded to opt out of forward compatibility for this service.
-// Use of this interface is not recommended, as added methods to ManagerServer will
+// UnsafeDispatcherServer may be embedded to opt out of forward compatibility for this service.
+// Use of this interface is not recommended, as added methods to DispatcherServer will
 // result in compilation errors.
-type UnsafeManagerServer interface {
-	mustEmbedUnimplementedManagerServer()
+type UnsafeDispatcherServer interface {
+	mustEmbedUnimplementedDispatcherServer()
 }
 
-func RegisterManagerServer(s grpc.ServiceRegistrar, srv ManagerServer) {
-	s.RegisterService(&_Manager_serviceDesc, srv)
+func RegisterDispatcherServer(s grpc.ServiceRegistrar, srv DispatcherServer) {
+	s.RegisterService(&Dispatcher_ServiceDesc, srv)
 }
 
-func _Manager_Register_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(WorkRegistration)
+func _Dispatcher_Register_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RegisterRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(ManagerServer).Register(ctx, in)
+		return srv.(DispatcherServer).Register(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/yggdrasil.Manager/Register",
+		FullMethod: "/yggdrasil.Dispatcher/Register",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ManagerServer).Register(ctx, req.(*WorkRegistration))
+		return srv.(DispatcherServer).Register(ctx, req.(*RegisterRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Manager_Finish_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _Dispatcher_Finish_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(Work)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(ManagerServer).Finish(ctx, in)
+		return srv.(DispatcherServer).Finish(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/yggdrasil.Manager/Finish",
+		FullMethod: "/yggdrasil.Dispatcher/Finish",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ManagerServer).Finish(ctx, req.(*Work))
+		return srv.(DispatcherServer).Finish(ctx, req.(*Work))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-var _Manager_serviceDesc = grpc.ServiceDesc{
-	ServiceName: "yggdrasil.Manager",
-	HandlerType: (*ManagerServer)(nil),
+// Dispatcher_ServiceDesc is the grpc.ServiceDesc for Dispatcher service.
+// It's only intended for direct use with grpc.RegisterService,
+// and not to be introspected or modified (even as a copy)
+var Dispatcher_ServiceDesc = grpc.ServiceDesc{
+	ServiceName: "yggdrasil.Dispatcher",
+	HandlerType: (*DispatcherServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
 			MethodName: "Register",
-			Handler:    _Manager_Register_Handler,
+			Handler:    _Dispatcher_Register_Handler,
 		},
 		{
 			MethodName: "Finish",
-			Handler:    _Manager_Finish_Handler,
+			Handler:    _Dispatcher_Finish_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
@@ -205,7 +208,7 @@ type UnsafeWorkerServer interface {
 }
 
 func RegisterWorkerServer(s grpc.ServiceRegistrar, srv WorkerServer) {
-	s.RegisterService(&_Worker_serviceDesc, srv)
+	s.RegisterService(&Worker_ServiceDesc, srv)
 }
 
 func _Worker_Start_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
@@ -244,7 +247,10 @@ func _Worker_Status_Handler(srv interface{}, ctx context.Context, dec func(inter
 	return interceptor(ctx, in, info, handler)
 }
 
-var _Worker_serviceDesc = grpc.ServiceDesc{
+// Worker_ServiceDesc is the grpc.ServiceDesc for Worker service.
+// It's only intended for direct use with grpc.RegisterService,
+// and not to be introspected or modified (even as a copy)
+var Worker_ServiceDesc = grpc.ServiceDesc{
 	ServiceName: "yggdrasil.Worker",
 	HandlerType: (*WorkerServer)(nil),
 	Methods: []grpc.MethodDesc{

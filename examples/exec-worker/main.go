@@ -23,11 +23,11 @@ func main() {
 		}
 		defer conn.Close()
 
-		c := pb.NewManagerClient(conn)
+		c := pb.NewDispatcherClient(conn)
 		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 		defer cancel()
 
-		r, err := c.Register(ctx, &pb.WorkRegistration{Type: "exec"})
+		r, err := c.Register(ctx, &pb.RegisterRequest{Handler: "exec"})
 		if err != nil {
 			log.Fatal(err)
 		}

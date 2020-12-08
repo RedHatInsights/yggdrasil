@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
-	"os/exec"
 	"os/signal"
 	"path/filepath"
 	"strings"
@@ -73,47 +72,78 @@ func main() {
 			}
 		}
 
-		dispatcher, err := yggdrasil.NewDispatcher(c.StringSlice("broker"), data)
-		if err != nil {
-			return err
-		}
+		in := make(chan yggdrasil.Assignment)
+		out := make(chan yggdrasil.Assignment)
 
+		// ProcessManager goroutine
 		go func() {
-			if localErr := dispatcher.ListenAndServe(); localErr != nil {
-				err = localErr
-				return
-			}
+			m := yggdrasil.NewProcessManager(nil)
+
+			logger := log.New(os.Stderr, fmt.Sprintf("%v[manager_routine] ", log.Prefix()), log.Flags(), log.CurrentLevel())
+			logger.Trace("init")
 
 			p := filepath.Join(yggdrasil.LibexecDir, yggdrasil.LongName)
-			i, localErr := ioutil.ReadDir(p)
+			fileInfos, localErr := ioutil.ReadDir(p)
 			if localErr != nil {
 				err = localErr
 				return
 			}
 
-			for _, info := range i {
+			for _, info := range fileInfos {
 				if strings.HasSuffix(info.Name(), "worker") {
-					cmd := exec.Command(filepath.Join(p, info.Name()))
-					if localErr := cmd.Start(); localErr != nil {
+					logger.Tracef("found worker: %v", info.Name())
+					_, localErr := m.StartWorker(filepath.Join(p, info.Name()))
+					if localErr != nil {
+						logger.Tracef("worker failed to start: %v", localErr)
 						err = localErr
 						return
 					}
 				}
 			}
+			go m.ReapWorkers()
 		}()
 
+		// Dispatcher goroutine
 		go func() {
-			if localError := dispatcher.Connect(); localError != nil {
-				err = localError
+			d := yggdrasil.NewDispatcher(in, out)
+
+			logger := log.New(os.Stderr, fmt.Sprintf("%v[dispatcher_routine] ", log.Prefix()), log.Flags(), log.CurrentLevel())
+			logger.Trace("init")
+
+			if localErr := d.ListenAndServe(); localErr != nil {
+				logger.Trace(localErr)
+				err = localErr
 				return
 			}
+		}()
 
-			if localErr := dispatcher.PublishFacts(); err != nil {
+		// SignalRouter goroutine
+		go func() {
+			r, localErr := yggdrasil.NewSignalRouter(c.StringSlice("broker"), data, out, in)
+			if localErr != nil {
 				err = localErr
 				return
 			}
 
-			if localErr := dispatcher.Subscribe(); localErr != nil {
+			logger := log.New(os.Stderr, fmt.Sprintf("%v[mqtt_routine] ", log.Prefix()), log.Flags(), log.CurrentLevel())
+			logger.Trace("init")
+
+			if localError := r.Connect(); localError != nil {
+				err = localError
+				return
+			}
+
+			facts, localErr := yggdrasil.GetCanonicalFacts()
+			if localErr != nil {
+				err = localErr
+				return
+			}
+			if localErr := r.Publish(facts); err != nil {
+				err = localErr
+				return
+			}
+
+			if localErr := r.Subscribe(); localErr != nil {
 				err = localErr
 				return
 			}
@@ -134,3 +164,11 @@ func main() {
 		log.Fatal(err)
 	}
 }
+
+// TODO
+// Manager, manages the lifecycle of worker processes. Spawns them. Monitors for
+// when they crash. Tells Dispatcher when they crash (or removes them from a
+// WorkerProcessRegister)
+
+// Dispatcher receives messages from MQTT broker and routes them to workers,
+// if they are work signals, or handles them if they are error or control signals.
