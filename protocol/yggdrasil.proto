@@ -29,6 +29,9 @@ message Empty {}
 message RegisterRequest {
     // The type of work the worker is capable of handling.
     string handler = 1;
+
+    // The PID of the worker.
+    int64 pid = 2;
 }
 
 // A RegisterResponse message contains the result of a registration request.
