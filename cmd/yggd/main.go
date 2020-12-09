@@ -77,6 +77,9 @@ func main() {
 		out := make(chan yggdrasil.Assignment)
 		died := make(chan int64)
 
+		quit := make(chan os.Signal, 1)
+		signal.Notify(quit, syscall.SIGTERM, syscall.SIGINT)
+
 		// ProcessManager goroutine
 		go func() {
 			m := yggdrasil.NewProcessManager(died)
@@ -88,7 +91,7 @@ func main() {
 			fileInfos, localErr := ioutil.ReadDir(p)
 			if localErr != nil {
 				err = localErr
-				return
+				quit <- syscall.SIGTERM
 			}
 
 			for _, info := range fileInfos {
@@ -98,7 +101,7 @@ func main() {
 					if localErr != nil {
 						logger.Tracef("worker failed to start: %v", localErr)
 						err = localErr
-						return
+						quit <- syscall.SIGTERM
 					}
 				}
 			}
@@ -107,7 +110,11 @@ func main() {
 
 		// Dispatcher goroutine
 		go func() {
-			d := yggdrasil.NewDispatcher(in, out, died)
+			d, localErr := yggdrasil.NewDispatcher(in, out, died)
+			if localErr != nil {
+				err = localErr
+				quit <- syscall.SIGTERM
+			}
 
 			logger := log.New(os.Stderr, fmt.Sprintf("%v[dispatcher_routine] ", log.Prefix()), log.Flags(), log.CurrentLevel())
 			logger.Trace("init")
@@ -115,7 +122,7 @@ func main() {
 			if localErr := d.ListenAndServe(); localErr != nil {
 				logger.Trace(localErr)
 				err = localErr
-				return
+				quit <- syscall.SIGTERM
 			}
 		}()
 
@@ -124,7 +131,7 @@ func main() {
 			r, localErr := yggdrasil.NewSignalRouter(c.StringSlice("broker"), data, out, in)
 			if localErr != nil {
 				err = localErr
-				return
+				quit <- syscall.SIGTERM
 			}
 
 			logger := log.New(os.Stderr, fmt.Sprintf("%v[mqtt_routine] ", log.Prefix()), log.Flags(), log.CurrentLevel())
@@ -132,32 +139,30 @@ func main() {
 
 			if localError := r.Connect(); localError != nil {
 				err = localError
-				return
+				quit <- syscall.SIGTERM
 			}
 
 			facts, localErr := yggdrasil.GetCanonicalFacts()
 			if localErr != nil {
 				err = localErr
-				return
+				quit <- syscall.SIGTERM
 			}
 			data, localErr := json.Marshal(facts)
 			if localErr != nil {
 				err = localErr
-				return
+				quit <- syscall.SIGTERM
 			}
 			if localErr := r.Publish(data); localErr != nil {
 				err = localErr
-				return
+				quit <- syscall.SIGTERM
 			}
 
 			if localErr := r.Subscribe(); localErr != nil {
 				err = localErr
-				return
+				quit <- syscall.SIGTERM
 			}
 		}()
 
-		quit := make(chan os.Signal, 1)
-		signal.Notify(quit, syscall.SIGTERM, syscall.SIGINT)
 		<-quit
 
 		if err != nil {
