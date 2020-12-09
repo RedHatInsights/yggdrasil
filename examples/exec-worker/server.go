@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"log"
 	"os/exec"
 	"time"
 
@@ -42,28 +43,24 @@ func (s *execServer) Start(ctx context.Context, r *pb.Work) (*pb.StartResponse, 
 	s.id = r.GetId()
 
 	// Work.
-	var err error
 	go func() {
 		// Unmarshal the data into a message.
 		var m message
-		if localErr := json.Unmarshal(r.GetData(), &m); localErr != nil {
-			err = localErr
-			return
+		if err := json.Unmarshal(r.GetData(), &m); err != nil {
+			log.Fatal(err)
 		}
 
 		// Create and execute the command.
 		cmd := exec.Command(m.Cmd, m.Args...)
-		output, localErr := cmd.Output()
-		if localErr != nil {
-			err = localErr
-			return
+		output, err := cmd.Output()
+		if err != nil {
+			log.Fatal(err)
 		}
 
 		// Dial the Manager and call "Finish"
-		conn, localErr := grpc.Dial(yggdDispatcherSocketAddr, grpc.WithInsecure())
-		if localErr != nil {
-			err = localErr
-			return
+		conn, err := grpc.Dial(yggdDispatcherSocketAddr, grpc.WithInsecure())
+		if err != nil {
+			log.Fatal(err)
 		}
 		defer conn.Close()
 
@@ -75,18 +72,14 @@ func (s *execServer) Start(ctx context.Context, r *pb.Work) (*pb.StartResponse, 
 		work.Id = s.id
 		work.Data = output
 
-		if _, localErr := c.Finish(ctx, &work); localErr != nil {
-			err = localErr
-			return
+		if _, err := c.Finish(ctx, &work); err != nil {
+			log.Fatal(err)
 		}
 
 		// Free up for more work.
 		s.busy = false
 		s.id = ""
 	}()
-	if err != nil {
-		return nil, err
-	}
 
 	// Respond to the start request that work was accepted.
 	return &pb.StartResponse{
