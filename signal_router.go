@@ -103,7 +103,7 @@ func (r *SignalRouter) Publish(d []byte) error {
 	if token := r.mqttClient.Publish(topic, byte(0), false, d); token.Wait() && token.Error() != nil {
 		return token.Error()
 	}
-	r.logger.Tracef("published %#v to %v", d, topic)
+	r.logger.Tracef("published %#v to %v", string(d), topic)
 	return nil
 }
 
