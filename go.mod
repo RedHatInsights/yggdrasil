@@ -10,6 +10,7 @@ require (
 	github.com/godbus/dbus/v5 v5.0.3
 	github.com/google/go-cmp v0.5.2
 	github.com/google/uuid v1.1.2
+	github.com/hashicorp/go-memdb v1.3.0
 	github.com/urfave/cli/v2 v2.3.0
 	golang.org/x/crypto v0.0.0-20200622213623-75b288015ac9
 	golang.org/x/net v0.0.0-20201031054903-ff519b6c9102 // indirect

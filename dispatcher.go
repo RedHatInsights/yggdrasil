@@ -5,12 +5,12 @@ import (
 	"fmt"
 	"math/rand"
 	"net"
-	"sync"
 	"time"
 
 	"git.sr.ht/~spc/go-log"
 	"google.golang.org/grpc"
 
+	"github.com/hashicorp/go-memdb"
 	pb "github.com/redhatinsights/yggdrasil/protocol"
 )
 
@@ -26,99 +26,80 @@ type Assignment struct {
 	payload []byte
 }
 
+// A Worker is a worker that has registered with the dispatcher.
+type Worker struct {
+	pid        int64
+	handler    string
+	socketAddr string
+}
+
 // A Dispatcher routes messages received over an MQTT topic to job controllers,
 // depending on the message type.
 type Dispatcher struct {
 	pb.UnimplementedDispatcherServer
-	in                 chan Assignment
-	out                chan Assignment
-	workerDied         <-chan int64
-	logger             *log.Logger
-	pendingAssignments map[string]*Assignment
-	assignmentsLock    sync.RWMutex
-	registeredWorkers  map[string]string
-	workersLock        sync.RWMutex
-	workerPIDs         map[int64]string
-	pidLock            sync.RWMutex
+	in         chan Assignment
+	out        chan Assignment
+	workerDied <-chan int64
+	logger     *log.Logger
+	db         *memdb.MemDB
 }
 
 // NewDispatcher cretes a new dispatcher, configured with an appropriate HTTP
 // client for reporting results.
-func NewDispatcher(in, out chan Assignment, workerDied <-chan int64) *Dispatcher {
-	return &Dispatcher{
-		in:                 in,
-		out:                out,
-		workerDied:         workerDied,
-		pendingAssignments: make(map[string]*Assignment),
-		registeredWorkers:  make(map[string]string),
-		workerPIDs:         make(map[int64]string),
-		logger:             log.New(log.Writer(), fmt.Sprintf("%v[dispatcher] ", log.Prefix()), log.Flags(), log.CurrentLevel()),
+func NewDispatcher(in, out chan Assignment, workerDied <-chan int64) (*Dispatcher, error) {
+	schema := &memdb.DBSchema{
+		Tables: map[string]*memdb.TableSchema{
+			"worker": {
+				Name: "worker",
+				Indexes: map[string]*memdb.IndexSchema{
+					"id": {
+						Name:    "id",
+						Unique:  true,
+						Indexer: &memdb.IntFieldIndex{Field: "pid"},
+					},
+					"handler": {
+						Name:    "handler",
+						Unique:  true,
+						Indexer: &memdb.StringFieldIndex{Field: "handler"},
+					},
+				},
+			},
+			"assignment": {
+				Name: "assignment",
+				Indexes: map[string]*memdb.IndexSchema{
+					"id": {
+						Name:    "id",
+						Unique:  true,
+						Indexer: &memdb.StringFieldIndex{Field: "id"},
+					},
+					"handler": {
+						Name:    "handler",
+						Unique:  true,
+						Indexer: &memdb.StringFieldIndex{Field: "handler"},
+					},
+				},
+			},
+		},
 	}
+	db, err := memdb.NewMemDB(schema)
+	if err != nil {
+		return nil, err
+	}
+
+	return &Dispatcher{
+		in:         in,
+		out:        out,
+		workerDied: workerDied,
+		logger:     log.New(log.Writer(), fmt.Sprintf("%v[dispatcher] ", log.Prefix()), log.Flags(), log.CurrentLevel()),
+		db:         db,
+	}, nil
 }
 
 // ListenAndServe opens a UNIX domain socket, registers a Dispatcher service with
 // grpc and accepts incoming connections on the domain socket.
 func (d *Dispatcher) ListenAndServe() error {
-	go func() {
-		for {
-			pid := <-d.workerDied
-			d.logger.Tracef("worker died: %v", pid)
-			d.pidLock.Lock()
-			handler := d.workerPIDs[pid]
-			delete(d.workerPIDs, pid)
-			d.pidLock.Unlock()
-			d.logger.Tracef("delete worker with pid: %v", pid)
-
-			d.workersLock.Lock()
-			socketAddr := d.registeredWorkers[handler]
-			delete(d.registeredWorkers, handler)
-			d.workersLock.Unlock()
-			if socketAddr != "" {
-				d.logger.Debugf("unregister worker for handler: %v, socket: %v", handler, socketAddr)
-			}
-		}
-	}()
-
-	go func() {
-		for {
-			assignment := <-d.in
-			d.logger.Trace("assignment received")
-			d.workersLock.RLock()
-			workerSocketAddr := d.registeredWorkers[assignment.handler]
-			d.workersLock.RUnlock()
-
-			work := pb.Work{
-				Id:   assignment.id,
-				Data: assignment.payload,
-			}
-
-			d.logger.Tracef("dialing worker %v", assignment.handler)
-			conn, err := grpc.Dial("unix:"+workerSocketAddr, grpc.WithInsecure())
-			if err != nil {
-				d.logger.Error(err)
-				return
-			}
-			defer conn.Close()
-
-			c := pb.NewWorkerClient(conn)
-			ctx, cancel := context.WithTimeout(context.Background(), time.Second)
-			defer cancel()
-
-			d.logger.Trace("dispatching work")
-			r, err := c.Start(ctx, &work)
-			if err != nil {
-				d.logger.Error(err)
-				return
-			}
-			if !r.GetAccepted() {
-				d.logger.Errorf("work %v rejected by worker %v", work.String(), workerSocketAddr)
-				return
-			}
-			d.assignmentsLock.Lock()
-			d.pendingAssignments[assignment.id] = &assignment
-			d.assignmentsLock.Unlock()
-		}
-	}()
+	go d.reapWorkers()
+	go d.receiveAssignments()
 
 	socketAddr := "@yggd-dispatcher"
 
@@ -138,53 +119,142 @@ func (d *Dispatcher) ListenAndServe() error {
 
 // Register implements the "Register" RPC method of the Manager service.
 func (d *Dispatcher) Register(ctx context.Context, r *pb.RegisterRequest) (*pb.RegisterResponse, error) {
-	d.workersLock.RLock()
-	if _, ok := d.registeredWorkers[r.GetHandler()]; ok {
-		d.workersLock.Unlock()
-		d.logger.Debugf("worker register rejected: %v", r.GetHandler())
+	tx := d.db.Txn(true)
+	defer tx.Abort()
+
+	if _, err := tx.First("worker", "id", r.GetPid()); err != nil {
 		return &pb.RegisterResponse{
 			Registered: false,
-			Reason:     "already registered",
+			Reason:     fmt.Sprintf("already registered: %v: %v", r.GetPid(), err),
 		}, nil
 	}
-	d.workersLock.RUnlock()
+	if _, err := tx.First("worker", "handler", r.GetHandler()); err != nil {
+		return &pb.RegisterResponse{
+			Registered: false,
+			Reason:     fmt.Sprintf("already registered: %v: %v", r.GetHandler(), err),
+		}, nil
+	}
 
-	socketAddr := fmt.Sprintf("@ygg-%v-%v", r.GetHandler(), randomString(6))
-	d.workersLock.Lock()
-	d.registeredWorkers[r.GetHandler()] = socketAddr
-	d.workersLock.Unlock()
-	d.logger.Debugf("worker register accepted: %v", socketAddr)
+	w := Worker{
+		pid:        r.GetPid(),
+		handler:    r.GetHandler(),
+		socketAddr: fmt.Sprintf("@ygg-%v-%v", r.GetHandler(), randomString(6)),
+	}
 
-	d.pidLock.Lock()
-	d.workerPIDs[r.GetPid()] = r.GetHandler()
-	d.pidLock.Unlock()
+	if err := tx.Insert("worker", w); err != nil {
+		return nil, err
+	}
+	d.logger.Debugf("worker registered %#v", w)
+
+	tx.Commit()
 
 	return &pb.RegisterResponse{
 		Registered: true,
-		Address:    socketAddr,
+		Address:    w.socketAddr,
 	}, nil
 }
 
 // Finish implements the "Finish" RPC method of the Manager service.
 func (d *Dispatcher) Finish(ctx context.Context, r *pb.Work) (*pb.Empty, error) {
-	d.assignmentsLock.RLock()
-	assignment, prs := d.pendingAssignments[r.GetId()]
-	d.assignmentsLock.Unlock()
-	if !prs {
-		return nil, fmt.Errorf("missing assignment %v", r.GetId())
-	}
+	tx := d.db.Txn(true)
+	defer tx.Abort()
 
-	d.out <- Assignment{
-		id:      assignment.id,
-		handler: assignment.handler,
-		payload: r.GetData(),
+	obj, err := tx.First("assignment", "id", r.GetId())
+	if err != nil {
+		return nil, err
 	}
+	assignment := obj.(Assignment)
 
-	d.assignmentsLock.Lock()
-	delete(d.pendingAssignments, r.GetId())
-	d.assignmentsLock.Unlock()
+	assignment.payload = r.GetData()
+
+	d.out <- assignment
+
+	if err := tx.Delete("assignment", obj); err != nil {
+		return nil, err
+	}
 
 	return &pb.Empty{}, nil
+}
+
+func (d *Dispatcher) reapWorkers() {
+	reapHandlerFunc := func(pid int64) error {
+		d.logger.Tracef("worker died: %v", pid)
+		tx := d.db.Txn(true)
+		defer tx.Abort()
+
+		w, err := tx.First("worker", "id", pid)
+		if err != nil {
+			return err
+		}
+		if err := tx.Delete("worker", w); err != nil {
+			return err
+		}
+		d.logger.Tracef("delete worker %#v", w)
+
+		tx.Commit()
+
+		return nil
+	}
+	for {
+		pid := <-d.workerDied
+		if err := reapHandlerFunc(pid); err != nil {
+			d.logger.Error(err)
+		}
+	}
+}
+
+func (d *Dispatcher) receiveAssignments() {
+	receiveAssignmentsFunc := func(assignment Assignment) error {
+		d.logger.Trace("assignment received")
+
+		tx := d.db.Txn(true)
+		defer tx.Abort()
+
+		obj, err := tx.First("worker", "handler", assignment.handler)
+		if err != nil {
+			return err
+		}
+		worker := obj.(Worker)
+
+		work := pb.Work{
+			Id:   assignment.id,
+			Data: assignment.payload,
+		}
+
+		d.logger.Tracef("dialing worker %v", assignment.handler)
+		conn, err := grpc.Dial("unix:"+worker.socketAddr, grpc.WithInsecure())
+		if err != nil {
+			return err
+		}
+		defer conn.Close()
+
+		c := pb.NewWorkerClient(conn)
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+		defer cancel()
+
+		r, err := c.Start(ctx, &work)
+		if err != nil {
+			return err
+		}
+		d.logger.Tracef("dispatched work: %v", work.Id)
+		if !r.GetAccepted() {
+			return fmt.Errorf("work %v rejected by worker %v", work.String(), worker.socketAddr)
+		}
+
+		if err := tx.Insert("assignment", assignment); err != nil {
+			return err
+		}
+
+		tx.Commit()
+
+		return nil
+	}
+	for {
+		assignment := <-d.in
+		if err := receiveAssignmentsFunc(assignment); err != nil {
+			d.logger.Error(err)
+		}
+	}
 }
 
 func randomString(n int) string {
