@@ -34,11 +34,17 @@ type SignalRouter struct {
 func NewSignalRouter(brokers []string, armoredPublicKeyData []byte, in, out chan Assignment) (*SignalRouter, error) {
 	logger := log.New(log.Writer(), fmt.Sprintf("%v[router] ", log.Prefix()), log.Flags(), log.CurrentLevel())
 
-	conn, err := dbus.SystemBus()
+	conn, err := dbus.SystemBusPrivate()
 	if err != nil {
 		return nil, err
 	}
 	defer conn.Close()
+	if err := conn.Auth(nil); err != nil {
+		return nil, err
+	}
+	if err := conn.Hello(); err != nil {
+		return nil, err
+	}
 
 	var consumerID string
 	{

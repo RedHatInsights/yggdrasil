@@ -163,11 +163,17 @@ func readFile(filename string) (string, error) {
 
 // getConsumerUUID queries the RHSM D-Bus interface for the consumer UUID.
 func getConsumerUUID() (string, error) {
-	conn, err := dbus.SystemBus()
+	conn, err := dbus.SystemBusPrivate()
 	if err != nil {
 		return "", err
 	}
 	defer conn.Close()
+	if err := conn.Auth(nil); err != nil {
+		return "", err
+	}
+	if err := conn.Hello(); err != nil {
+		return "", err
+	}
 
 	var uuid string
 	if err := conn.Object("com.redhat.RHSM1", "/com/redhat/RHSM1/Consumer").Call("com.redhat.RHSM1.Consumer.GetUuid", dbus.Flags(0), "").Store(&uuid); err != nil {
