@@ -150,11 +150,33 @@ func (d *Dispatcher) Register(ctx context.Context, r *pb.RegisterRequest) (*pb.R
 	}, nil
 }
 
+// Update implements the "Update" RPC method of the Dispatcher service.
+func (d *Dispatcher) Update(ctx context.Context, r *pb.Assignment) (*pb.Empty, error) {
+	tx := d.db.Txn(false)
+	defer tx.Abort()
+
+	d.logger.Tracef("update assignment %v", r.GetId())
+	_, err := tx.First("assignment", "id", r.GetId())
+	if err != nil {
+		return nil, err
+	}
+
+	d.out <- &Assignment{
+		ID:       r.GetId(),
+		Data:     r.GetData(),
+		Handler:  r.GetHandler(),
+		Complete: r.GetComplete(),
+	}
+
+	return &pb.Empty{}, nil
+}
+
 // Finish implements the "Finish" RPC method of the Dispatcher service.
 func (d *Dispatcher) Finish(ctx context.Context, r *pb.Assignment) (*pb.Empty, error) {
 	tx := d.db.Txn(true)
 	defer tx.Abort()
 
+	d.logger.Tracef("finish assignment %v", r.GetId())
 	obj, err := tx.First("assignment", "id", r.GetId())
 	if err != nil {
 		return nil, err

@@ -149,7 +149,7 @@ func (r *SignalRouter) Subscribe() error {
 	go func() {
 		for {
 			assignment := <-r.in
-			r.logger.Trace("received completed assignment: %#v", assignment)
+			r.logger.Trace("received assignment: %#v", assignment)
 
 			r.lock.RLock()
 			work := r.work[assignment.ID]
@@ -175,10 +175,12 @@ func (r *SignalRouter) Subscribe() error {
 				continue
 			}
 
-			r.lock.Lock()
-			delete(r.work, assignment.ID)
-			r.lock.Unlock()
-			r.logger.Tracef("remove assignment: %v", assignment.ID)
+			if assignment.Complete {
+				r.lock.Lock()
+				delete(r.work, assignment.ID)
+				r.lock.Unlock()
+				r.logger.Tracef("remove assignment: %v", assignment.ID)
+			}
 		}
 	}()
 

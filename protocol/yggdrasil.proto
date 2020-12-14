@@ -9,6 +9,10 @@ service Dispatcher {
     // handling the specified type of work.
     rpc Register (RegisterRequest) returns (RegisterResponse) {}
 
+    // Update can be called by a worker if it wants to submit some output,
+    // but has not completed the assigned work.
+    rpc Update (Assignment) returns (Empty) {}
+
     // Finish is called by a worker when it has completed its assigned work.
     rpc Finish (Assignment) returns (Empty) {}
 }

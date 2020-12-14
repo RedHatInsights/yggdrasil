@@ -20,6 +20,9 @@ type DispatcherClient interface {
 	// Register is called by a worker to indicate it is ready and capable of
 	// handling the specified type of work.
 	Register(ctx context.Context, in *RegisterRequest, opts ...grpc.CallOption) (*RegisterResponse, error)
+	// Update can be called by a worker if it wants to submit some output,
+	// but has not completed the assigned work.
+	Update(ctx context.Context, in *Assignment, opts ...grpc.CallOption) (*Empty, error)
 	// Finish is called by a worker when it has completed its assigned work.
 	Finish(ctx context.Context, in *Assignment, opts ...grpc.CallOption) (*Empty, error)
 }
@@ -35,6 +38,15 @@ func NewDispatcherClient(cc grpc.ClientConnInterface) DispatcherClient {
 func (c *dispatcherClient) Register(ctx context.Context, in *RegisterRequest, opts ...grpc.CallOption) (*RegisterResponse, error) {
 	out := new(RegisterResponse)
 	err := c.cc.Invoke(ctx, "/yggdrasil.Dispatcher/Register", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *dispatcherClient) Update(ctx context.Context, in *Assignment, opts ...grpc.CallOption) (*Empty, error) {
+	out := new(Empty)
+	err := c.cc.Invoke(ctx, "/yggdrasil.Dispatcher/Update", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -57,6 +69,9 @@ type DispatcherServer interface {
 	// Register is called by a worker to indicate it is ready and capable of
 	// handling the specified type of work.
 	Register(context.Context, *RegisterRequest) (*RegisterResponse, error)
+	// Update can be called by a worker if it wants to submit some output,
+	// but has not completed the assigned work.
+	Update(context.Context, *Assignment) (*Empty, error)
 	// Finish is called by a worker when it has completed its assigned work.
 	Finish(context.Context, *Assignment) (*Empty, error)
 	mustEmbedUnimplementedDispatcherServer()
@@ -68,6 +83,9 @@ type UnimplementedDispatcherServer struct {
 
 func (UnimplementedDispatcherServer) Register(context.Context, *RegisterRequest) (*RegisterResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Register not implemented")
+}
+func (UnimplementedDispatcherServer) Update(context.Context, *Assignment) (*Empty, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Update not implemented")
 }
 func (UnimplementedDispatcherServer) Finish(context.Context, *Assignment) (*Empty, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Finish not implemented")
@@ -103,6 +121,24 @@ func _Dispatcher_Register_Handler(srv interface{}, ctx context.Context, dec func
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Dispatcher_Update_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(Assignment)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DispatcherServer).Update(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/yggdrasil.Dispatcher/Update",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DispatcherServer).Update(ctx, req.(*Assignment))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _Dispatcher_Finish_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(Assignment)
 	if err := dec(in); err != nil {
@@ -131,6 +167,10 @@ var Dispatcher_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Register",
 			Handler:    _Dispatcher_Register_Handler,
+		},
+		{
+			MethodName: "Update",
+			Handler:    _Dispatcher_Update_Handler,
 		},
 		{
 			MethodName: "Finish",
