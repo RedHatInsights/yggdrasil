@@ -167,6 +167,8 @@ func (d *Dispatcher) Finish(ctx context.Context, r *pb.Assignment) (*pb.Empty, e
 		return nil, err
 	}
 
+	tx.Commit()
+
 	return &pb.Empty{}, nil
 }
 
