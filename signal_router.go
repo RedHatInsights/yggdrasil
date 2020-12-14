@@ -7,12 +7,45 @@ import (
 	"io/ioutil"
 	"path/filepath"
 	"sync"
+	"time"
 
 	"git.sr.ht/~spc/go-log"
 	mqtt "github.com/eclipse/paho.mqtt.golang"
 	"github.com/godbus/dbus/v5"
 	"golang.org/x/crypto/openpgp"
 )
+
+// Signal is a message sent and received over MQTT.
+type Signal struct {
+	Type       string          `json:"type"`
+	MessageID  string          `json:"message_id"`
+	ClientUUID string          `json:"client_uuid"`
+	Version    uint            `json:"version"`
+	Sent       time.Time       `json:"sent"`
+	Payload    json.RawMessage `json:"payload"`
+}
+
+// PayloadHandshake is a specified type of payload included in signals where the
+// "Type" field is "handshake".
+type PayloadHandshake struct {
+	Type  string         `json:"type"`
+	Facts CanonicalFacts `json:"facts"`
+}
+
+// PayloadResponse is a specified type of payload included in signals where the
+// "Type" field is "response".
+type PayloadResponse struct {
+	Result        string `json:"result"`
+	ResultDetails string `json:"result_details"`
+}
+
+// PayloadWork is a specific type of payload included in signals where the
+// "Type" field is "work".
+type PayloadWork struct {
+	Handler    string `json:"handler"`
+	PayloadURL string `json:"payload_url"`
+	ReturnURL  string `json:"return_url"`
+}
 
 // A SignalRouter receives messages over an MQTT topic and routes them to a dispatcher
 // for execution. It receives completed messages and sends them back via an
@@ -23,15 +56,15 @@ type SignalRouter struct {
 	mqttClient mqtt.Client
 	keyring    openpgp.KeyRing
 	logger     *log.Logger
-	out        chan Assignment
-	in         chan Assignment
-	work       map[string]*Work
+	out        chan *Assignment
+	in         chan *Assignment
+	work       map[string]*PayloadWork
 	lock       sync.RWMutex
 }
 
 // NewSignalRouter creates a new router, configured with an appropriate HTTP client
 // and MQTT client for communcation with remote services.
-func NewSignalRouter(brokers []string, armoredPublicKeyData []byte, in, out chan Assignment) (*SignalRouter, error) {
+func NewSignalRouter(brokers []string, armoredPublicKeyData []byte, in, out chan *Assignment) (*SignalRouter, error) {
 	logger := log.New(log.Writer(), fmt.Sprintf("%v[router] ", log.Prefix()), log.Flags(), log.CurrentLevel())
 
 	conn, err := dbus.SystemBusPrivate()
@@ -90,7 +123,7 @@ func NewSignalRouter(brokers []string, armoredPublicKeyData []byte, in, out chan
 		logger:     logger,
 		out:        out,
 		in:         in,
-		work:       make(map[string]*Work),
+		work:       make(map[string]*PayloadWork),
 	}, nil
 }
 
@@ -126,15 +159,15 @@ func (r *SignalRouter) Subscribe() error {
 			r.logger.Trace("received completed assignment: %#v", assignment)
 
 			r.lock.RLock()
-			work := r.work[assignment.id]
+			work := r.work[assignment.ID]
 			r.lock.RUnlock()
 
-			resp, err := r.httpClient.Post(work.ReturnURL, bytes.NewReader(assignment.payload))
+			resp, err := r.httpClient.Post(work.ReturnURL, bytes.NewReader(assignment.Data))
 			if err != nil {
 				r.logger.Error(err)
 				continue
 			}
-			r.logger.Tracef("sent %#v to %v", assignment.payload, work.ReturnURL)
+			r.logger.Tracef("sent %#v to %v", assignment.Data, work.ReturnURL)
 
 			body, err := ioutil.ReadAll(resp.Body)
 			if err != nil {
@@ -150,9 +183,9 @@ func (r *SignalRouter) Subscribe() error {
 			}
 
 			r.lock.Lock()
-			delete(r.work, assignment.id)
+			delete(r.work, assignment.ID)
 			r.lock.Unlock()
-			r.logger.Tracef("remove assignment: %v", assignment.id)
+			r.logger.Tracef("remove assignment: %v", assignment.ID)
 		}
 	}()
 
@@ -166,20 +199,14 @@ func (r *SignalRouter) Subscribe() error {
 		}
 		r.logger.Tracef("received signal: %#v", s)
 
-		data, err := json.Marshal(s.Payload)
-		if err != nil {
-			r.logger.Error(err)
-			return
-		}
-
 		switch s.Type {
 		case "work":
-			var w Work
-			if err := json.Unmarshal(data, &w); err != nil {
+			var w PayloadWork
+			if err := json.Unmarshal([]byte(s.Payload), &w); err != nil {
 				r.logger.Error(err)
 				return
 			}
-			r.logger.Tracef("found work signal: %#v", w)
+			r.logger.Tracef("received work signal: %#v", w)
 
 			resp, err := r.httpClient.Get(w.PayloadURL)
 			if err != nil {
@@ -209,14 +236,14 @@ func (r *SignalRouter) Subscribe() error {
 				}
 			}
 
-			assignment := Assignment{
-				id:      s.MessageID,
-				handler: w.Handler,
-				payload: body,
+			assignment := &Assignment{
+				ID:      s.MessageID,
+				Handler: w.Handler,
+				Data:    body,
 			}
 
 			r.out <- assignment
-			r.logger.Tracef("routed assignment: %v", assignment.id)
+			r.logger.Tracef("routed assignment: %v", assignment.ID)
 
 			r.lock.Lock()
 			r.work[s.MessageID] = &w

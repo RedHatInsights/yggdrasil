@@ -10,12 +10,12 @@ service Dispatcher {
     rpc Register (RegisterRequest) returns (RegisterResponse) {}
 
     // Finish is called by a worker when it has completed its assigned work.
-    rpc Finish (Work) returns (Empty) {}
+    rpc Finish (Assignment) returns (Empty) {}
 }
 
 service Worker {
     // Start is called by the manager to assign work to a worker.
-    rpc Start (Work) returns (StartResponse) {}
+    rpc Start (Assignment) returns (StartResponse) {}
 
     // Status is called by the manager to check whether or not a worker is busy.
     rpc Status (Empty) returns (WorkerStatus) {}
@@ -46,13 +46,21 @@ message RegisterResponse {
     string reason = 3;
 }
 
-// A Work message contains information about a work assignment.
-message Work {
-    // The work assignment identifier.
+// An Assignment message contains information about a work assignment. It's
+// an envelope to tranport the data to the worker along with an ID for tracking
+// responses.
+message Assignment {
+    // The assignment identifier.
     string id = 1;
 
-    // The work assignment payload.
+    // The assignment payload.
     bytes data = 2;
+
+    // Whether an assignment is completed or not.
+    bool complete = 3;
+
+    // The handler to which this assignment should get routed.
+    string handler = 4;
 }
 
 // A StartResponse message contains the result of a work assignment request.

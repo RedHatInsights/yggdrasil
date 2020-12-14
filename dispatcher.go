@@ -18,12 +18,13 @@ func init() {
 	rand.Seed(time.Now().UnixNano())
 }
 
-// An Assignment contains data required for a specific job to dispatch to an
-// available worker.
+// Assignment is a basic data structure that holds data necessary to create
+// an Assignment protobuf message.
 type Assignment struct {
-	id      string
-	handler string
-	payload []byte
+	ID       string
+	Data     []byte
+	Complete bool
+	Handler  string
 }
 
 // A Worker is a worker that has registered with the dispatcher.
@@ -37,8 +38,8 @@ type Worker struct {
 // depending on the message type.
 type Dispatcher struct {
 	pb.UnimplementedDispatcherServer
-	in         chan Assignment
-	out        chan Assignment
+	in         chan *Assignment
+	out        chan *Assignment
 	workerDied <-chan int64
 	logger     *log.Logger
 	db         *memdb.MemDB
@@ -46,7 +47,7 @@ type Dispatcher struct {
 
 // NewDispatcher cretes a new dispatcher, configured with an appropriate HTTP
 // client for reporting results.
-func NewDispatcher(in, out chan Assignment, workerDied <-chan int64) (*Dispatcher, error) {
+func NewDispatcher(in, out chan *Assignment, workerDied <-chan int64) (*Dispatcher, error) {
 	schema := &memdb.DBSchema{
 		Tables: map[string]*memdb.TableSchema{
 			"worker": {
@@ -70,12 +71,7 @@ func NewDispatcher(in, out chan Assignment, workerDied <-chan int64) (*Dispatche
 					"id": {
 						Name:    "id",
 						Unique:  true,
-						Indexer: &memdb.StringFieldIndex{Field: "id"},
-					},
-					"handler": {
-						Name:    "handler",
-						Unique:  true,
-						Indexer: &memdb.StringFieldIndex{Field: "handler"},
+						Indexer: &memdb.StringFieldIndex{Field: "ID"},
 					},
 				},
 			},
@@ -117,7 +113,7 @@ func (d *Dispatcher) ListenAndServe() error {
 	return nil
 }
 
-// Register implements the "Register" RPC method of the Manager service.
+// Register implements the "Register" RPC method of the Dispatcher service.
 func (d *Dispatcher) Register(ctx context.Context, r *pb.RegisterRequest) (*pb.RegisterResponse, error) {
 	tx := d.db.Txn(true)
 	defer tx.Abort()
@@ -154,8 +150,8 @@ func (d *Dispatcher) Register(ctx context.Context, r *pb.RegisterRequest) (*pb.R
 	}, nil
 }
 
-// Finish implements the "Finish" RPC method of the Manager service.
-func (d *Dispatcher) Finish(ctx context.Context, r *pb.Work) (*pb.Empty, error) {
+// Finish implements the "Finish" RPC method of the Dispatcher service.
+func (d *Dispatcher) Finish(ctx context.Context, r *pb.Assignment) (*pb.Empty, error) {
 	tx := d.db.Txn(true)
 	defer tx.Abort()
 
@@ -163,9 +159,7 @@ func (d *Dispatcher) Finish(ctx context.Context, r *pb.Work) (*pb.Empty, error) 
 	if err != nil {
 		return nil, err
 	}
-	assignment := obj.(Assignment)
-
-	assignment.payload = r.GetData()
+	assignment := obj.(*Assignment)
 
 	d.out <- assignment
 
@@ -176,6 +170,8 @@ func (d *Dispatcher) Finish(ctx context.Context, r *pb.Work) (*pb.Empty, error) 
 	return &pb.Empty{}, nil
 }
 
+// reapWorkers receives PIDs on the "workerDied" channel and deletes them from
+// the dispatcher worker registry.
 func (d *Dispatcher) reapWorkers() {
 	reapHandlerFunc := func(pid int64) error {
 		d.logger.Tracef("worker died: %v", pid)
@@ -203,25 +199,22 @@ func (d *Dispatcher) reapWorkers() {
 	}
 }
 
+// receiveAssignments retrieves assignments off the "in" channel and dispatches
+// them to a worker.
 func (d *Dispatcher) receiveAssignments() {
-	receiveAssignmentsFunc := func(assignment Assignment) error {
+	receiveAssignmentsFunc := func(assignment *Assignment) error {
 		d.logger.Trace("assignment received")
 
 		tx := d.db.Txn(true)
 		defer tx.Abort()
 
-		obj, err := tx.First("worker", "handler", assignment.handler)
+		obj, err := tx.First("worker", "handler", assignment.Handler)
 		if err != nil {
 			return err
 		}
 		worker := obj.(Worker)
 
-		work := pb.Work{
-			Id:   assignment.id,
-			Data: assignment.payload,
-		}
-
-		d.logger.Tracef("dialing worker %v", assignment.handler)
+		d.logger.Tracef("dialing worker %v", assignment.Handler)
 		conn, err := grpc.Dial("unix:"+worker.socketAddr, grpc.WithInsecure())
 		if err != nil {
 			return err
@@ -232,13 +225,19 @@ func (d *Dispatcher) receiveAssignments() {
 		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 		defer cancel()
 
-		r, err := c.Start(ctx, &work)
+		msg := &pb.Assignment{
+			Id:       assignment.ID,
+			Data:     assignment.Data,
+			Complete: assignment.Complete,
+			Handler:  assignment.Handler,
+		}
+		r, err := c.Start(ctx, msg)
 		if err != nil {
 			return err
 		}
-		d.logger.Tracef("dispatched work: %v", work.Id)
+		d.logger.Tracef("dispatched work: %v", assignment.ID)
 		if !r.GetAccepted() {
-			return fmt.Errorf("work %v rejected by worker %v", work.String(), worker.socketAddr)
+			return fmt.Errorf("work %v rejected by worker %v", assignment.ID, worker.socketAddr)
 		}
 
 		if err := tx.Insert("assignment", assignment); err != nil {

@@ -73,8 +73,8 @@ func main() {
 			}
 		}
 
-		in := make(chan yggdrasil.Assignment)
-		out := make(chan yggdrasil.Assignment)
+		in := make(chan *yggdrasil.Assignment)
+		out := make(chan *yggdrasil.Assignment)
 		died := make(chan int64)
 
 		quit := make(chan os.Signal, 1)
@@ -88,6 +88,7 @@ func main() {
 			logger.Trace("init")
 
 			p := filepath.Join(yggdrasil.LibexecDir, yggdrasil.LongName)
+			os.MkdirAll(p, 0755)
 			fileInfos, localErr := ioutil.ReadDir(p)
 			if localErr != nil {
 				err = localErr
