@@ -163,15 +163,8 @@ func readFile(filename string) (string, error) {
 
 // getConsumerUUID queries the RHSM D-Bus interface for the consumer UUID.
 func getConsumerUUID() (string, error) {
-	conn, err := dbus.SystemBusPrivate()
+	conn, err := dbus.SystemBus()
 	if err != nil {
-		return "", err
-	}
-	defer conn.Close()
-	if err := conn.Auth(nil); err != nil {
-		return "", err
-	}
-	if err := conn.Hello(); err != nil {
 		return "", err
 	}
 
