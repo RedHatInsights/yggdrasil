@@ -6,15 +6,27 @@ import (
 	"github.com/godbus/dbus/v5"
 )
 
+func getConsumerUUID() (string, error) {
+	conn, err := dbus.SystemBus()
+	if err != nil {
+		return "", err
+	}
+
+	var uuid string
+	if err := conn.Object("com.redhat.RHSM1", "/com/redhat/RHSM1/Consumer").Call("com.redhat.RHSM1.Consumer.GetUuid", dbus.Flags(0), "").Store(&uuid); err != nil {
+		return "", err
+	}
+	return uuid, nil
+}
+
 func register(username, password string) error {
 	conn, err := dbus.SystemBus()
 	if err != nil {
 		return err
 	}
-	defer conn.Close()
 
-	var uuid string
-	if err := conn.Object("com.redhat.RHSM1", "/com/redhat/RHSM1/Consumer").Call("com.redhat.RHSM1.Consumer.GetUuid", dbus.Flags(0), "").Store(&uuid); err != nil {
+	uuid, err := getConsumerUUID()
+	if err != nil {
 		return err
 	}
 	if uuid != "" {
@@ -51,10 +63,9 @@ func unregister() error {
 	if err != nil {
 		return err
 	}
-	defer conn.Close()
 
-	var uuid string
-	if err := conn.Object("com.redhat.RHSM1", "/com/redhat/RHSM1/Consumer").Call("com.redhat.RHSM1.Consumer.GetUuid", dbus.Flags(0), "").Store(&uuid); err != nil {
+	uuid, err := getConsumerUUID()
+	if err != nil {
 		return err
 	}
 	if uuid == "" {

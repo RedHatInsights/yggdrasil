@@ -34,27 +34,33 @@ func main() {
 				},
 			},
 			Action: func(c *cli.Context) error {
-				username := c.String("username")
-				password := c.String("password")
-				if username == "" {
-					password = ""
-					scanner := bufio.NewScanner(os.Stdin)
-					fmt.Print("Username: ")
-					scanner.Scan()
-					username = strings.TrimSpace(scanner.Text())
+				uuid, err := getConsumerUUID()
+				if err != nil {
+					return err
 				}
-				if password == "" {
-					fmt.Print("Password: ")
-					data, err := terminal.ReadPassword(int(os.Stdin.Fd()))
-					if err != nil {
-						return err
+				if uuid == "" {
+					username := c.String("username")
+					password := c.String("password")
+					if username == "" {
+						password = ""
+						scanner := bufio.NewScanner(os.Stdin)
+						fmt.Print("Username: ")
+						scanner.Scan()
+						username = strings.TrimSpace(scanner.Text())
 					}
-					password = string(data)
-					fmt.Println()
-				}
+					if password == "" {
+						fmt.Print("Password: ")
+						data, err := terminal.ReadPassword(int(os.Stdin.Fd()))
+						if err != nil {
+							return err
+						}
+						password = string(data)
+						fmt.Println()
+					}
 
-				if err := register(username, password); err != nil {
-					log.Error(err)
+					if err := register(username, password); err != nil {
+						log.Error(err)
+					}
 				}
 
 				if err := activate(); err != nil {
