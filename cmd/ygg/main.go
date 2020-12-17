@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"sort"
 	"strings"
 	"text/tabwriter"
 
@@ -123,9 +124,14 @@ func main() {
 					}
 					fmt.Print(string(data))
 				case "table":
+					keys := make([]string, 0, len(facts))
+					for k := range facts {
+						keys = append(keys, k)
+					}
+					sort.Strings(keys)
 					w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
-					for k, v := range facts {
-						fmt.Fprintf(w, "%v\t%v\n", k, v)
+					for _, k := range keys {
+						fmt.Fprintf(w, "%v\t%v\n", k, facts[k])
 					}
 					w.Flush()
 				default:
