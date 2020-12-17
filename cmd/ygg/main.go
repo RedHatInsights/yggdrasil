@@ -22,7 +22,7 @@ func main() {
 
 	app.Commands = []*cli.Command{
 		{
-			Name: "register",
+			Name: "connect",
 			Flags: []cli.Flag{
 				&cli.StringFlag{
 					Name:  "username",
@@ -71,7 +71,7 @@ func main() {
 			},
 		},
 		{
-			Name: "unregister",
+			Name: "disconnect",
 			Action: func(c *cli.Context) error {
 				if err := deactivate(); err != nil {
 					log.Error(err)
