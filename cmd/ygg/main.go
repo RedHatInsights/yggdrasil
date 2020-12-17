@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"text/tabwriter"
 
 	"git.sr.ht/~spc/go-log"
 
@@ -97,6 +98,39 @@ func main() {
 					return err
 				}
 				fmt.Print(string(data))
+				return nil
+			},
+		},
+		{
+			Name:  "facts",
+			Usage: "prints information about the system like architecture",
+			Flags: []cli.Flag{
+				&cli.StringFlag{
+					Name:  "format",
+					Value: "table",
+				},
+			},
+			Action: func(c *cli.Context) error {
+				facts, err := yggdrasil.GetFacts()
+				if err != nil {
+					return err
+				}
+				switch c.String("format") {
+				case "json":
+					data, err := json.Marshal(facts)
+					if err != nil {
+						return err
+					}
+					fmt.Print(string(data))
+				case "table":
+					w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
+					for k, v := range facts {
+						fmt.Fprintf(w, "%v\t%v\n", k, v)
+					}
+					w.Flush()
+				default:
+					return fmt.Errorf("unsupported value for '--format': %v", c.String("format"))
+				}
 				return nil
 			},
 		},
