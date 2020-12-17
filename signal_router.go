@@ -12,7 +12,6 @@ import (
 	"git.sr.ht/~spc/go-log"
 	mqtt "github.com/eclipse/paho.mqtt.golang"
 	"github.com/godbus/dbus/v5"
-	"golang.org/x/crypto/openpgp"
 )
 
 // Signal is a message sent and received over MQTT.
@@ -54,7 +53,6 @@ type SignalRouter struct {
 	consumerID string
 	httpClient *HTTPClient
 	mqttClient mqtt.Client
-	keyring    openpgp.KeyRing
 	logger     *log.Logger
 	out        chan *Assignment
 	in         chan *Assignment
@@ -99,20 +97,10 @@ func NewSignalRouter(brokers []string, armoredPublicKeyData []byte, in, out chan
 	}
 	mqttClient := mqtt.NewClient(opts)
 
-	var entityList openpgp.KeyRing
-	if len(armoredPublicKeyData) > 0 {
-		reader := bytes.NewReader(armoredPublicKeyData)
-		entityList, err = openpgp.ReadArmoredKeyRing(reader)
-		if err != nil {
-			return nil, err
-		}
-	}
-
 	return &SignalRouter{
 		consumerID: consumerID,
 		httpClient: httpClient,
 		mqttClient: mqttClient,
-		keyring:    entityList,
 		logger:     logger,
 		out:        out,
 		in:         in,
@@ -214,21 +202,6 @@ func (r *SignalRouter) Subscribe() error {
 			if err != nil {
 				log.Error(err)
 				return
-			}
-
-			if r.keyring != nil {
-				resp, err := r.httpClient.Get(w.PayloadURL + "/asc")
-				if err != nil {
-					log.Error(err)
-					return
-				}
-
-				signedBytes := bytes.NewReader(body)
-				_, err = openpgp.CheckArmoredDetachedSignature(r.keyring, signedBytes, resp.Body)
-				if err != nil {
-					log.Error(err)
-					return
-				}
 			}
 
 			assignment := &Assignment{

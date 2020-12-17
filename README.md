@@ -52,12 +52,8 @@ message WorkAssignment {
 }
 ```
 
-It then opens an HTTP request to the URL specified in `payload_url`. If `yggd`
-was started with the `--keyring` option, it attempts to perform GPG signature
-verification by downloading a detached ASCII-armored signature file from the
-URL `payload_url` + ".asc".
-
-It unmarshals the HTTP response body into a `Work` message.
+It then opens an HTTP request to the URL specified in `payload_url`. It
+unmarshals the HTTP response body into a `Work` message.
 
 ```protobuf
 // A Work message contains information about a work assignment.
