@@ -40,6 +40,8 @@ func (s *echoServer) Start(ctx context.Context, a *pb.Assignment) (*pb.StartResp
 			Id:       a.GetId(),
 			Data:     a.GetData(),
 			Complete: !a.GetComplete(),
+			Handler:  a.GetHandler(),
+			Headers:  map[string]string{"x-ygg-echo-worker": string(a.GetData())},
 		}
 
 		// Call "Finish"

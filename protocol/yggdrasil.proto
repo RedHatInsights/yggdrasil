@@ -65,6 +65,9 @@ message Assignment {
 
     // The handler to which this assignment should get routed.
     string handler = 4;
+
+    // Any headers to include in the return_url HTTP request.
+    map<string, string> headers = 5;
 }
 
 // A StartResponse message contains the result of a work assignment request.

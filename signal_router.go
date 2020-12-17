@@ -5,7 +5,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"net/http"
 	"path/filepath"
+	"strings"
 	"sync"
 	"time"
 
@@ -143,7 +145,15 @@ func (r *SignalRouter) Subscribe() error {
 			work := r.work[assignment.ID]
 			r.lock.RUnlock()
 
-			resp, err := r.httpClient.Post(work.ReturnURL, bytes.NewReader(assignment.Data))
+			req, err := http.NewRequest(http.MethodPost, work.ReturnURL, bytes.NewReader(assignment.Data))
+			if err != nil {
+				r.logger.Error(err)
+				continue
+			}
+			for k, v := range assignment.Headers {
+				req.Header.Add(k, strings.TrimSpace(v))
+			}
+			resp, err := r.httpClient.Do(req)
 			if err != nil {
 				r.logger.Error(err)
 				continue

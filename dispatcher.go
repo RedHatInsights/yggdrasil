@@ -25,6 +25,28 @@ type Assignment struct {
 	Data     []byte
 	Complete bool
 	Handler  string
+	Headers  map[string]string
+}
+
+// ToProtobuf converts the assignment into a protobuf Assignment message.
+func (a *Assignment) ToProtobuf() *pb.Assignment {
+	return &pb.Assignment{
+		Id:       a.ID,
+		Data:     a.Data,
+		Complete: a.Complete,
+		Handler:  a.Handler,
+		Headers:  a.Headers,
+	}
+}
+
+// FromProtobuf fills the assignment with values from the given Assignment
+// message.
+func (a *Assignment) FromProtobuf(p *pb.Assignment) {
+	a.ID = p.GetId()
+	a.Data = p.GetData()
+	a.Complete = p.GetComplete()
+	a.Handler = p.GetHandler()
+	a.Headers = p.GetHeaders()
 }
 
 // A Worker is a worker that has registered with the dispatcher.
@@ -161,12 +183,9 @@ func (d *Dispatcher) Update(ctx context.Context, r *pb.Assignment) (*pb.Empty, e
 		return nil, err
 	}
 
-	d.out <- &Assignment{
-		ID:       r.GetId(),
-		Data:     r.GetData(),
-		Handler:  r.GetHandler(),
-		Complete: r.GetComplete(),
-	}
+	var a Assignment
+	a.FromProtobuf(r)
+	d.out <- &a
 
 	return &pb.Empty{}, nil
 }
@@ -181,9 +200,10 @@ func (d *Dispatcher) Finish(ctx context.Context, r *pb.Assignment) (*pb.Empty, e
 	if err != nil {
 		return nil, err
 	}
-	assignment := obj.(*Assignment)
 
-	d.out <- assignment
+	var a Assignment
+	a.FromProtobuf(r)
+	d.out <- &a
 
 	if err := tx.Delete("assignment", obj); err != nil {
 		return nil, err
@@ -249,12 +269,7 @@ func (d *Dispatcher) receiveAssignments() {
 		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 		defer cancel()
 
-		msg := &pb.Assignment{
-			Id:       assignment.ID,
-			Data:     assignment.Data,
-			Complete: assignment.Complete,
-			Handler:  assignment.Handler,
-		}
+		msg := assignment.ToProtobuf()
 		r, err := c.Start(ctx, msg)
 		if err != nil {
 			return err
