@@ -85,7 +85,7 @@ func main() {
 			},
 		},
 		{
-			Name:  "facts",
+			Name:  "canonical-facts",
 			Usage: "prints canonical facts about the system",
 			Action: func(c *cli.Context) error {
 				facts, err := yggdrasil.GetCanonicalFacts()
