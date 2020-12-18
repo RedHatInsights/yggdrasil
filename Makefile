@@ -1,3 +1,9 @@
+SHELL := bash
+.ONESHELL:
+.SHELLFLAGS := -eu -o pipefail -c
+.DELETE_ON_ERROR:
+MAKEFLAGS += --warn-undefined-variables
+MAKEFLAGS += --no-builtin-rules
 .POSIX:
 .SUFFIXES:
 
@@ -51,40 +57,40 @@ BUILDFLAGS += -mod=vendor
 endif
 
 BINS = yggd ygg
-
-TARGETS = $(BINS) \
-	data/systemd/yggd.service
+DATA = ygg.bash \
+	   ygg.1.gz \
+	   yggd.bash \
+	   yggd.1.gz \
+	   ygg-USAGE.md \
+	   yggd-USAGE.md \
+	   data/systemd/yggd.service
 
 GOSRC := $(shell find . -name '*.go')
 GOSRC += go.mod go.sum
 
-build: $(TARGETS)
+.PHONY: all
+all: $(BINS) $(DATA)
+
+.PHONY: bin
+bin: $(BINS)
 
 $(BINS): $(GOSRC)
 	go build $(BUILDFLAGS) -ldflags "$(LDFLAGS)" ./cmd/$@
 
-install: build
-	pkg-config --modversion dbus-1 || exit 1
-	pkg-config --modversion systemd || exit 1
-	install -D -m755 ./yggd $(DESTDIR)$(SBINDIR)/$(SHORTNAME)d
-	install -D -m755 ./ygg $(DESTDIR)$(BINDIR)/$(SHORTNAME)
-	[[ -e $(DESTDIR)$(SYSCONFDIR)/$(LONGNAME)/config.toml ]] || install -D -m644 ./data/$(LONGNAME)/config.toml $(DESTDIR)$(SYSCONFDIR)/$(LONGNAME)/config.toml
-	install -D -m644 ./data/systemd/yggd.service $(DESTDIR)$(SYSTEMD_SYSTEM_UNIT_DIR)/$(SHORTNAME)d.service
+.PHONY: data
+data: $(DATA)
 
-uninstall:
-	rm -f $(DESTDIR)$(SBINDIR)/$(SHORTNAME)d
-	rm -f $(DESTDIR)$(BINDIR)/$(SHORTNAME)
-	rm -r $(DESTDIR)$(SYSTEMD_SYSTEM_UNIT_DIR)/$(SHORTNAME)d.service
+%.bash: $(GOSRC)
+	go run $(BUILDFLAGS) -ldflags "$(LDFLAGS)" ./cmd/$(patsubst %.bash,%,$@) --generate-bash-completion > $@
 
-dist:
-	go mod vendor
-	tar --create \
-		--gzip \
-		--file /tmp/$(PKGNAME)-$(VERSION).tar.gz \
-		--exclude=.git \
-		--exclude=.vscode \
-		. && mv /tmp/$(PKGNAME)-$(VERSION).tar.gz .
-	rm -rf ./vendor
+%.1: $(GOSRC)
+	go run $(BUILDFLAGS) -ldflags "$(LDFLAGS)" ./cmd/$(patsubst %.1,%,$@) --generate-man-page > $@
+
+%.1.gz: %.1
+	gzip -k $^
+
+%-USAGE.md: $(GOSRC)
+	go run $(BUILDFLAGS) -ldflags "$(LDFLAGS)" ./cmd/$(patsubst %-USAGE.md,%,$@) --generate-markdown > $@
 
 %: %.in Makefile
 	sed \
@@ -104,8 +110,42 @@ dist:
 		-e 's,[@]DOCDIR[@],$(DOCDIR),g' \
 		$< > $@.tmp && mv $@.tmp $@
 
+.PHONY: install
+install: $(BINS) $(DATA)
+	pkg-config --modversion dbus-1 || exit 1
+	pkg-config --modversion systemd || exit 1
+	install -D -m755 ./yggd $(DESTDIR)$(SBINDIR)/$(SHORTNAME)d
+	install -D -m755 ./ygg $(DESTDIR)$(BINDIR)/$(SHORTNAME)
+	[[ -e $(DESTDIR)$(SYSCONFDIR)/$(LONGNAME)/config.toml ]] || install -D -m644 ./data/$(LONGNAME)/config.toml $(DESTDIR)$(SYSCONFDIR)/$(LONGNAME)/config.toml
+	install -D -m644 ./data/systemd/yggd.service $(DESTDIR)$(SYSTEMD_SYSTEM_UNIT_DIR)/$(SHORTNAME)d.service
+	install -D -m644 ./ygg.1.gz $(DESTDIR)$(MANDIR)/man1/$(SHORTNAME).1.gz
+	install -D -m644 ./yggd.1.gz $(DESTDIR)$(MANDIR)/man1/$(SHORTNAME)d.1.gz
+	install -D -m644 ./ygg.bash $(DESTDIR)$(DATADIR)/bash-completion/completions/$(SHORTNAME)
+	install -D -m644 ./yggd.bash $(DESTDIR)$(DATADIR)/bash-completion/completions/$(SHORTNAME)d
+
+.PHONY: uninstall
+uninstall:
+	rm -f $(DESTDIR)$(SBINDIR)/$(SHORTNAME)d
+	rm -f $(DESTDIR)$(BINDIR)/$(SHORTNAME)
+	rm -r $(DESTDIR)$(SYSTEMD_SYSTEM_UNIT_DIR)/$(SHORTNAME)d.service
+	rm -f $(DESTDIR)$(MANDIR)/man1/$(SHORTNAME).1.gz
+	rm -f $(DESTDIR)$(MANDIR)/man1/$(SHORTNAME)d.1.gz
+	rm -f $(DESTDIR)$(DATADIR)/bash-completion/completions/$(SHORTNAME)
+	rm -f $(DESTDIR)$(DATADIR)/bash-completion/completions/$(SHORTNAME)d
+
+.PHONY: dist
+dist:
+	go mod vendor
+	tar --create \
+		--gzip \
+		--file /tmp/$(PKGNAME)-$(VERSION).tar.gz \
+		--exclude=.git \
+		--exclude=.vscode \
+		. && mv /tmp/$(PKGNAME)-$(VERSION).tar.gz .
+	rm -rf ./vendor
+
+.PHONY: clean
 clean:
 	go mod tidy
-	rm $(TARGETS)
-	
-.PHONY: build clean install uninstall
+	rm $(BINS)
+	rm $(DATA)
