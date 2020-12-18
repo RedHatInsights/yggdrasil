@@ -12,6 +12,7 @@ import (
 	"git.sr.ht/~spc/go-log"
 
 	"github.com/redhatinsights/yggdrasil"
+	internal "github.com/redhatinsights/yggdrasil/internal"
 	"github.com/urfave/cli/v2"
 	"golang.org/x/crypto/ssh/terminal"
 )
@@ -22,6 +23,16 @@ func main() {
 	log.SetFlags(0)
 	log.SetPrefix("")
 
+	app.Flags = []cli.Flag{
+		&cli.BoolFlag{
+			Name:   "generate-man-page",
+			Hidden: true,
+		},
+		&cli.BoolFlag{
+			Name:   "generate-markdown",
+			Hidden: true,
+		},
+	}
 	app.Commands = []*cli.Command{
 		{
 			Name: "connect",
@@ -147,6 +158,25 @@ func main() {
 				return fmt.Errorf("not implemented")
 			},
 		},
+	}
+	app.EnableBashCompletion = true
+	app.BashComplete = internal.BashComplete
+	app.Action = func(c *cli.Context) error {
+		type GenerationFunc func() (string, error)
+		var generationFunc GenerationFunc
+		if c.Bool("generate-man-page") {
+			generationFunc = c.App.ToMan
+		} else if c.Bool("generate-markdown") {
+			generationFunc = c.App.ToMarkdown
+		} else {
+			cli.ShowAppHelpAndExit(c, 0)
+		}
+		data, err := generationFunc()
+		if err != nil {
+			return err
+		}
+		fmt.Println(data)
+		return nil
 	}
 
 	if err := app.Run(os.Args); err != nil {
