@@ -12,6 +12,7 @@ import (
 
 	"git.sr.ht/~spc/go-log"
 	"github.com/redhatinsights/yggdrasil"
+	internal "github.com/redhatinsights/yggdrasil/internal"
 	"github.com/urfave/cli/v2"
 	"github.com/urfave/cli/v2/altsrc"
 )
@@ -41,6 +42,14 @@ func main() {
 		altsrc.NewStringFlag(&cli.StringFlag{
 			Name: "public-key",
 		}),
+		&cli.BoolFlag{
+			Name:   "generate-man-page",
+			Hidden: true,
+		},
+		&cli.BoolFlag{
+			Name:   "generate-markdown",
+			Hidden: true,
+		},
 	}
 
 	// This BeforeFunc will load flag values from a config file only if the
@@ -58,6 +67,21 @@ func main() {
 	}
 
 	app.Action = func(c *cli.Context) error {
+		if c.Bool("generate-man-page") || c.Bool("generate-markdown") {
+			type GenerationFunc func() (string, error)
+			var generationFunc GenerationFunc
+			if c.Bool("generate-man-page") {
+				generationFunc = c.App.ToMan
+			} else if c.Bool("generate-markdown") {
+				generationFunc = c.App.ToMarkdown
+			}
+			data, err := generationFunc()
+			if err != nil {
+				return err
+			}
+			fmt.Println(data)
+			return nil
+		}
 		level, err := log.ParseLevel(c.String("log-level"))
 		if err != nil {
 			return cli.NewExitError(err, 1)
@@ -172,16 +196,10 @@ func main() {
 
 		return nil
 	}
+	app.EnableBashCompletion = true
+	app.BashComplete = internal.BashComplete
 
 	if err := app.Run(os.Args); err != nil {
 		log.Fatal(err)
 	}
 }
-
-// TODO
-// Manager, manages the lifecycle of worker processes. Spawns them. Monitors for
-// when they crash. Tells Dispatcher when they crash (or removes them from a
-// WorkerProcessRegister)
-
-// Dispatcher receives messages from MQTT broker and routes them to workers,
-// if they are work signals, or handles them if they are error or control signals.
