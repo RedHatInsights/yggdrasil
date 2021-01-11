@@ -39,9 +39,6 @@ func main() {
 		altsrc.NewStringSliceFlag(&cli.StringSliceFlag{
 			Name: "broker",
 		}),
-		altsrc.NewStringFlag(&cli.StringFlag{
-			Name: "public-key",
-		}),
 		&cli.BoolFlag{
 			Name:   "generate-man-page",
 			Hidden: true,
@@ -89,26 +86,53 @@ func main() {
 		log.SetLevel(level)
 		log.SetPrefix(fmt.Sprintf("[%v] ", app.Name))
 
-		var data []byte
-		if c.String("public-key") != "" {
-			data, err = ioutil.ReadFile(c.String("public-key"))
-			if err != nil {
-				return cli.NewExitError(err, 1)
-			}
+		quit := make(chan os.Signal, 1)
+		signal.Notify(quit, syscall.SIGTERM, syscall.SIGINT, syscall.SIGKILL)
+
+		processManager, err := yggdrasil.NewProcessManager()
+		if err != nil {
+			return cli.NewExitError(err, 1)
 		}
 
-		in := make(chan *yggdrasil.Assignment)
-		out := make(chan *yggdrasil.Assignment)
-		died := make(chan int64)
+		dispatcher, err := yggdrasil.NewDispatcher()
+		if err != nil {
+			return cli.NewExitError(err, 1)
+		}
 
-		quit := make(chan os.Signal, 1)
-		signal.Notify(quit, syscall.SIGTERM, syscall.SIGINT)
+		messageRouter, err := yggdrasil.NewMessageRouter(c.StringSlice("broker"))
+		if err != nil {
+			return cli.NewExitError(err, 1)
+		}
+
+		payloadProcessor, err := yggdrasil.NewPayloadProcessor()
+		if err != nil {
+			return cli.NewExitError(err, 1)
+		}
+
+		// Connect dispatcher to the processManager's "process-die" signal
+		sigProcessDie := processManager.Connect(yggdrasil.SignalProcessDie)
+		go dispatcher.HandleProcessDieSignal(sigProcessDie)
+
+		// Connect payloadProcessor to the messageRouter's "message-recv" signal
+		sigMessageRecv := messageRouter.Connect(yggdrasil.SignalMessageRecv)
+		go payloadProcessor.HandleMessageRecvSignal(sigMessageRecv)
+
+		// Connect dispatcher to the payloadProcessor's "assignment-create" signal
+		sigAssignmentCreate := payloadProcessor.Connect(yggdrasil.SignalAssignmentCreate)
+		go dispatcher.HandleAssignmentCreateSignal(sigAssignmentCreate)
+
+		// Connect payloadProcessor to the dispatcher's "work-complete" signal
+		sigWorkComplete := dispatcher.Connect(yggdrasil.SignalWorkComplete)
+		go payloadProcessor.HandleWorkCompleteSignal(sigWorkComplete)
+
+		// Connect dispatcher to the payloadProcessor's "assignment-return" signal
+		sigAssignmentReturn := payloadProcessor.Connect(yggdrasil.SignalAssignmentReturn)
+		go dispatcher.HandleAssignmentReturnSignal(sigAssignmentReturn)
 
 		// ProcessManager goroutine
-		go func() {
-			m := yggdrasil.NewProcessManager(died)
-
-			logger := log.New(os.Stderr, fmt.Sprintf("%v[manager_routine] ", log.Prefix()), log.Flags(), log.CurrentLevel())
+		sigDispatcherListen := dispatcher.Connect(yggdrasil.SignalDispatcherListen)
+		go func(c <-chan interface{}) {
+			logger := log.New(os.Stderr, fmt.Sprintf("%v[process_manager_routine] ", log.Prefix()), log.Flags(), log.CurrentLevel())
 			logger.Trace("init")
 
 			p := filepath.Join(yggdrasil.LibexecDir, yggdrasil.LongName)
@@ -119,50 +143,33 @@ func main() {
 				quit <- syscall.SIGTERM
 			}
 
+			<-c
 			for _, info := range fileInfos {
 				if strings.HasSuffix(info.Name(), "worker") {
-					logger.Tracef("found worker: %v", info.Name())
-					_, localErr := m.StartWorker(filepath.Join(p, info.Name()))
-					if localErr != nil {
-						logger.Tracef("worker failed to start: %v", localErr)
-						err = localErr
-						quit <- syscall.SIGTERM
-					}
+					logger.Debugf("found worker: %v", info.Name())
+					processManager.StartProcess(filepath.Join(p, info.Name()))
 				}
 			}
-			go m.ReapWorkers()
-		}()
+		}(sigDispatcherListen)
 
 		// Dispatcher goroutine
 		go func() {
-			d, localErr := yggdrasil.NewDispatcher(in, out, died)
-			if localErr != nil {
-				err = localErr
-				quit <- syscall.SIGTERM
-			}
-
 			logger := log.New(os.Stderr, fmt.Sprintf("%v[dispatcher_routine] ", log.Prefix()), log.Flags(), log.CurrentLevel())
 			logger.Trace("init")
 
-			if localErr := d.ListenAndServe(); localErr != nil {
+			if localErr := dispatcher.ListenAndServe(); localErr != nil {
 				logger.Trace(localErr)
 				err = localErr
 				quit <- syscall.SIGTERM
 			}
 		}()
 
-		// SignalRouter goroutine
+		// MessageRouter goroutine
 		go func() {
-			r, localErr := yggdrasil.NewSignalRouter(c.StringSlice("broker"), data, out, in)
-			if localErr != nil {
-				err = localErr
-				quit <- syscall.SIGTERM
-			}
-
-			logger := log.New(os.Stderr, fmt.Sprintf("%v[mqtt_routine] ", log.Prefix()), log.Flags(), log.CurrentLevel())
+			logger := log.New(os.Stderr, fmt.Sprintf("%v[message_router_routine] ", log.Prefix()), log.Flags(), log.CurrentLevel())
 			logger.Trace("init")
 
-			if localError := r.Connect(); localError != nil {
+			if localError := messageRouter.ConnectClient(); localError != nil {
 				err = localError
 				quit <- syscall.SIGTERM
 			}
@@ -177,18 +184,22 @@ func main() {
 				err = localErr
 				quit <- syscall.SIGTERM
 			}
-			if localErr := r.Publish(data); localErr != nil {
+			if localErr := messageRouter.Publish("handshake", data); localErr != nil {
 				err = localErr
 				quit <- syscall.SIGTERM
 			}
 
-			if localErr := r.Subscribe(); localErr != nil {
+			if localErr := messageRouter.Subscribe(); localErr != nil {
 				err = localErr
 				quit <- syscall.SIGTERM
 			}
 		}()
 
 		<-quit
+
+		if err := processManager.KillAllWorkers(); err != nil {
+			return cli.NewExitError(err, 1)
+		}
 
 		if err != nil {
 			return cli.NewExitError(err, 1)
