@@ -4,85 +4,153 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
-	"sync"
 
 	"git.sr.ht/~spc/go-log"
+	"github.com/hashicorp/go-memdb"
 )
 
-// ProcessManager spawns workers and monitors the processes. If a worker dies,
-// a new one is spawned.
+const (
+	// SignalProcessSpawn is emitted when a process is spawned. The value
+	// emitted on the channel is a yggdrasil.Process.
+	SignalProcessSpawn = "process-spawn"
+
+	// SignalProcessDie is emitted when a process dies. The value emitted on the
+	// channel is a yggdrasil.Process.
+	SignalProcessDie = "process-die"
+)
+
+// Process encapsulates the information about a process monitored by
+// ProcessManager.
+type Process struct {
+	pid  int
+	file string
+}
+
+// ProcessManager spawns processes and monitors them for unexpected exits.
+// If a managed process unexpectedly exits, it is spawned again.
 type ProcessManager struct {
-	workers      map[int]string
-	lock         sync.RWMutex
-	logger       *log.Logger
-	workerDied   chan int
-	workerReaped chan<- int64
+	logger *log.Logger
+	sig    signalEmitter
+	db     *memdb.MemDB
 }
 
-// NewProcessManager creates a new ProcessManager. If provided, the reaped
-// channel will receive PIDs of worker processes that have been reaped from the
-// manager's process map.
-func NewProcessManager(reaped chan<- int64) *ProcessManager {
-	var m ProcessManager
-	m.workers = make(map[int]string)
-	m.logger = log.New(log.Writer(), fmt.Sprintf("%v[process_manager] ", log.Prefix()), log.Flags(), log.CurrentLevel())
-	m.workerDied = make(chan int, 3)
-	m.workerReaped = reaped
+// NewProcessManager creates a new ProcessManager.
+func NewProcessManager() (*ProcessManager, error) {
+	p := new(ProcessManager)
+	p.logger = log.New(log.Writer(), fmt.Sprintf("%v[%T] ", log.Prefix(), p), log.Flags(), log.CurrentLevel())
 
-	return &m
+	schema := &memdb.DBSchema{
+		Tables: map[string]*memdb.TableSchema{
+			"process": {
+				Name: "process",
+				Indexes: map[string]*memdb.IndexSchema{
+					"id": {
+						Name:    "id",
+						Unique:  true,
+						Indexer: &memdb.IntFieldIndex{Field: "pid"},
+					},
+				},
+			},
+		},
+	}
+
+	db, err := memdb.NewMemDB(schema)
+	if err != nil {
+		return nil, err
+	}
+	p.db = db
+
+	return p, nil
 }
 
-// StartWorker executes file and asynchronously waits for the process to die.
-func (m *ProcessManager) StartWorker(file string) (int, error) {
-	m.logger.Debugf("starting worker: %v", file)
+// Connect assigns a channel in the signal table under name for the caller to
+// receive event updates.
+func (p *ProcessManager) Connect(name string) <-chan interface{} {
+	return p.sig.connect(name, 1)
+}
+
+// StartProcess executes file and asynchronously waits for the process to die.
+func (p *ProcessManager) StartProcess(file string) {
+	p.logger.Debugf("StartProcess(%v)", file)
 	cmd := exec.Command(file)
 	if err := cmd.Start(); err != nil {
-		return -1, err
+		p.logger.Error(err)
 	}
-	m.logger.Tracef("worker started with pid: %v", cmd.Process.Pid)
 
-	m.lock.Lock()
-	m.workers[cmd.Process.Pid] = file
-	m.lock.Unlock()
+	process := Process{
+		pid:  cmd.Process.Pid,
+		file: file,
+	}
 
-	go m.WatchWorker(cmd.Process.Pid)
+	p.sig.emit(SignalProcessSpawn, process)
+	p.logger.Debugf("emitted signal \"%v\"", SignalProcessSpawn)
+	p.logger.Tracef("emitted value: %#v", process)
 
-	return cmd.Process.Pid, nil
+	tx := p.db.Txn(true)
+	tx.Insert("process", &process)
+	tx.Commit()
+
+	go p.WaitProcess(process)
 }
 
-// WatchWorker waits for the process with pid to exit.
-func (m *ProcessManager) WatchWorker(pid int) {
-	m.logger.Tracef("watching worker with pid: %v", pid)
-	process, err := os.FindProcess(pid)
+// WaitProcess waits for the process with pid to exit.
+func (p *ProcessManager) WaitProcess(process Process) {
+	p.logger.Debugf("WaitProcess(%v)", process)
+	proc, err := os.FindProcess(process.pid)
 	if err != nil {
-		m.logger.Debug(err)
+		p.logger.Error(err)
 	}
-	state, err := process.Wait()
+	_, err = proc.Wait()
 	if err != nil {
-		m.logger.Debug(err)
+		p.logger.Error(err)
 	}
-	m.logger.Tracef("worker died: %v", pid)
-	m.workerDied <- state.Pid()
+
+	p.sig.emit(SignalProcessDie, process)
+	p.logger.Debugf("emitted signal \"%v\"", SignalProcessDie)
+	p.logger.Tracef("emitted value: %#v", process)
+
+	tx := p.db.Txn(true)
+	obj, err := tx.First("process", "id", process.pid)
+	if err != nil {
+		p.logger.Error(err)
+		return
+	}
+	tx.Delete("process", obj)
+	tx.Commit()
+
+	go p.StartProcess(process.file)
 }
 
-// ReapWorkers waits for pids to be reported as dead, and reaps them from the
-// worker map.
-func (m *ProcessManager) ReapWorkers() {
-	for {
-		pid := <-m.workerDied
-		m.logger.Tracef("reaping worker with pid: %v", pid)
-		m.lock.RLock()
-		worker := m.workers[pid]
-		m.lock.RUnlock()
+// KillAllWorkers gets all actively managed worker processes and kills them.
+func (p *ProcessManager) KillAllWorkers() error {
+	p.logger.Debug("KillAllWorkers")
 
-		m.lock.Lock()
-		delete(m.workers, pid)
-		m.lock.Unlock()
+	tx := p.db.Txn(true)
+	defer tx.Abort()
 
-		if m.workerReaped != nil {
-			m.workerReaped <- int64(pid)
+	all, err := tx.Get("process", "id")
+	if err != nil {
+		return err
+	}
+	for obj := all.Next(); obj != nil; obj = all.Next() {
+		process := obj.(*Process)
+		proc, err := os.FindProcess(process.pid)
+		if err != nil {
+			return err
 		}
-
-		go m.StartWorker(worker)
+		if err := proc.Kill(); err != nil {
+			return err
+		}
+		p.sig.emit(SignalProcessDie, *process)
+		p.logger.Debugf("emitted signal \"%v\"", SignalProcessDie)
+		p.logger.Tracef("emitted value: %#v", *process)
 	}
+
+	if _, err := tx.DeleteAll("process", "id"); err != nil {
+		return err
+	}
+
+	tx.Commit()
+
+	return nil
 }
