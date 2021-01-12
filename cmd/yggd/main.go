@@ -156,9 +156,12 @@ func main() {
 		}()
 
 		// MessageRouter goroutine
-		go func() {
+		sigProcessBootstrap := processManager.Connect(yggdrasil.SignalProcessBootstrap)
+		go func(c <-chan interface{}) {
 			logger := log.New(os.Stderr, fmt.Sprintf("%v[message_router_routine] ", log.Prefix()), log.Flags(), log.CurrentLevel())
 			logger.Trace("init")
+
+			<-c
 
 			if localError := messageRouter.ConnectClient(); localError != nil {
 				err = localError
@@ -184,7 +187,7 @@ func main() {
 				err = localErr
 				quit <- syscall.SIGTERM
 			}
-		}()
+		}(sigProcessBootstrap)
 
 		<-quit
 
