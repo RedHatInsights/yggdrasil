@@ -2,8 +2,11 @@ package yggdrasil
 
 import (
 	"fmt"
+	"io/ioutil"
 	"os"
 	"os/exec"
+	"path/filepath"
+	"strings"
 
 	"git.sr.ht/~spc/go-log"
 	"github.com/hashicorp/go-memdb"
@@ -17,6 +20,10 @@ const (
 	// SignalProcessDie is emitted when a process dies. The value emitted on the
 	// channel is a yggdrasil.Process.
 	SignalProcessDie = "process-die"
+
+	// SignalProcessBootstrap is emitted when all workers detected at startup
+	// have been spawned. The value emitted on the channel is a bool.
+	SignalProcessBootstrap = "process-bootstrap"
 )
 
 // Process encapsulates the information about a process monitored by
@@ -119,6 +126,27 @@ func (p *ProcessManager) WaitProcess(process Process) {
 	tx.Commit()
 
 	go p.StartProcess(process.file)
+}
+
+// BootstrapWorkers identifies any worker programs in dir and spawns them.
+func (p *ProcessManager) BootstrapWorkers(dir string) error {
+	fileInfos, err := ioutil.ReadDir(dir)
+	if err != nil {
+		return err
+	}
+
+	for _, info := range fileInfos {
+		if strings.HasSuffix(info.Name(), "worker") {
+			p.logger.Debugf("found worker: %v", info.Name())
+			p.StartProcess(filepath.Join(dir, info.Name()))
+		}
+	}
+
+	p.sig.emit(SignalProcessBootstrap, true)
+	p.logger.Debugf("emitted signal \"%v\"", SignalProcessBootstrap)
+	p.logger.Tracef("emitted value: %#v", true)
+
+	return err
 }
 
 // KillAllWorkers gets all actively managed worker processes and kills them.

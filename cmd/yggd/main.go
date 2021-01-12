@@ -3,11 +3,9 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"os/signal"
 	"path/filepath"
-	"strings"
 	"syscall"
 
 	"git.sr.ht/~spc/go-log"
@@ -135,20 +133,13 @@ func main() {
 			logger := log.New(os.Stderr, fmt.Sprintf("%v[process_manager_routine] ", log.Prefix()), log.Flags(), log.CurrentLevel())
 			logger.Trace("init")
 
+			<-c
+
 			p := filepath.Join(yggdrasil.LibexecDir, yggdrasil.LongName)
 			os.MkdirAll(p, 0755)
-			fileInfos, localErr := ioutil.ReadDir(p)
-			if localErr != nil {
+			if localErr := processManager.BootstrapWorkers(p); localErr != nil {
 				err = localErr
 				quit <- syscall.SIGTERM
-			}
-
-			<-c
-			for _, info := range fileInfos {
-				if strings.HasSuffix(info.Name(), "worker") {
-					logger.Debugf("found worker: %v", info.Name())
-					processManager.StartProcess(filepath.Join(p, info.Name()))
-				}
 			}
 		}(sigDispatcherListen)
 
