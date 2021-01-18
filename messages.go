@@ -104,11 +104,12 @@ type Event struct {
 // "data" topic. The client consumes Data messages and routes them to an
 // appropriate worker based on the "Directive" field.
 type Data struct {
-	Type       MessageType     `json:"type"`
-	MessageID  string          `json:"message_id"`
-	ResponseTo string          `json:"response_to"`
-	Version    int             `json:"version"`
-	Sent       time.Time       `json:"sent"`
-	Directive  string          `json:"directive"`
-	Content    json.RawMessage `json:"content"`
+	Type       MessageType       `json:"type"`
+	MessageID  string            `json:"message_id"`
+	ResponseTo string            `json:"response_to"`
+	Version    int               `json:"version"`
+	Sent       time.Time         `json:"sent"`
+	Directive  string            `json:"directive"`
+	Metadata   map[string]string `json:"metadata"`
+	Content    json.RawMessage   `json:"content"`
 }
