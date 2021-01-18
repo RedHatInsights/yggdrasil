@@ -28,7 +28,7 @@ func main() {
 	defer cancel()
 
 	// Register as a handler of the "echo" type.
-	r, err := c.Register(ctx, &pb.RegisterRequest{Handler: "echo", Pid: int64(os.Getpid())})
+	r, err := c.Register(ctx, &pb.RegistrationRequest{Handler: "echo", Pid: int64(os.Getpid())})
 	if err != nil {
 		log.Fatal(err)
 	}

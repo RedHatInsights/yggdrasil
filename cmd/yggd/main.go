@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"os"
 	"os/signal"
@@ -87,22 +86,27 @@ func main() {
 		quit := make(chan os.Signal, 1)
 		signal.Notify(quit, syscall.SIGTERM, syscall.SIGINT, syscall.SIGKILL)
 
-		processManager, err := yggdrasil.NewProcessManager()
+		db, err := yggdrasil.NewDatastore()
 		if err != nil {
 			return cli.NewExitError(err, 1)
 		}
 
-		dispatcher, err := yggdrasil.NewDispatcher()
+		processManager, err := yggdrasil.NewProcessManager(db)
 		if err != nil {
 			return cli.NewExitError(err, 1)
 		}
 
-		messageRouter, err := yggdrasil.NewMessageRouter(c.StringSlice("broker"))
+		dispatcher, err := yggdrasil.NewDispatcher(db)
 		if err != nil {
 			return cli.NewExitError(err, 1)
 		}
 
-		payloadProcessor, err := yggdrasil.NewPayloadProcessor()
+		messageRouter, err := yggdrasil.NewMessageRouter(db, c.StringSlice("broker"))
+		if err != nil {
+			return cli.NewExitError(err, 1)
+		}
+
+		dataProcessor, err := yggdrasil.NewDataProcessor(db)
 		if err != nil {
 			return cli.NewExitError(err, 1)
 		}
@@ -111,21 +115,21 @@ func main() {
 		sigProcessDie := processManager.Connect(yggdrasil.SignalProcessDie)
 		go dispatcher.HandleProcessDieSignal(sigProcessDie)
 
-		// Connect payloadProcessor to the messageRouter's "message-recv" signal
-		sigMessageRecv := messageRouter.Connect(yggdrasil.SignalMessageRecv)
-		go payloadProcessor.HandleMessageRecvSignal(sigMessageRecv)
+		// Connect dataProcessor to the messageRouter's "data-recv" signal
+		sigMessageRecv := messageRouter.Connect(yggdrasil.SignalDataRecv)
+		go dataProcessor.HandleDataRecvSignal(sigMessageRecv)
 
-		// Connect dispatcher to the payloadProcessor's "assignment-create" signal
-		sigAssignmentCreate := payloadProcessor.Connect(yggdrasil.SignalAssignmentCreate)
-		go dispatcher.HandleAssignmentCreateSignal(sigAssignmentCreate)
+		// Connect dispatcher to the dataProcessor's "data-process" signal
+		go dispatcher.HandleDataProcessSignal(dataProcessor.Connect(yggdrasil.SignalDataProcess))
 
-		// Connect payloadProcessor to the dispatcher's "work-complete" signal
-		sigWorkComplete := dispatcher.Connect(yggdrasil.SignalWorkComplete)
-		go payloadProcessor.HandleWorkCompleteSignal(sigWorkComplete)
+		// Connect dataProcessor to the dispatcher's "data-return" signal
+		go dataProcessor.HandleDataReturnSignal(dispatcher.Connect(yggdrasil.SignalDataReturn))
 
-		// Connect dispatcher to the payloadProcessor's "assignment-return" signal
-		sigAssignmentReturn := payloadProcessor.Connect(yggdrasil.SignalAssignmentReturn)
-		go dispatcher.HandleAssignmentReturnSignal(sigAssignmentReturn)
+		// Connect dataProcessor to the dispatcher's "worker-register" signal
+		go dataProcessor.HandleWorkerRegisterSignal(dispatcher.Connect(yggdrasil.SignalWorkerRegister))
+
+		// Connect messageRouter to the dataProcessor's "data-consume" signal
+		go messageRouter.HandleDataConsumeSignal(dataProcessor.Connect(yggdrasil.SignalDataConsume))
 
 		// ProcessManager goroutine
 		sigDispatcherListen := dispatcher.Connect(yggdrasil.SignalDispatcherListen)
@@ -168,22 +172,12 @@ func main() {
 				quit <- syscall.SIGTERM
 			}
 
-			facts, localErr := yggdrasil.GetCanonicalFacts()
-			if localErr != nil {
-				err = localErr
-				quit <- syscall.SIGTERM
-			}
-			data, localErr := json.Marshal(facts)
-			if localErr != nil {
-				err = localErr
-				quit <- syscall.SIGTERM
-			}
-			if localErr := messageRouter.Publish("handshake", data); localErr != nil {
+			if localErr := messageRouter.PublishConnectionStatus(); localErr != nil {
 				err = localErr
 				quit <- syscall.SIGTERM
 			}
 
-			if localErr := messageRouter.Subscribe(); localErr != nil {
+			if localErr := messageRouter.SubscribeAndRoute(); localErr != nil {
 				err = localErr
 				quit <- syscall.SIGTERM
 			}

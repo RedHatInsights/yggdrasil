@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"git.sr.ht/~spc/go-log"
+	"github.com/google/uuid"
 	"github.com/hashicorp/go-memdb"
 	pb "github.com/redhatinsights/yggdrasil/protocol"
 	"google.golang.org/grpc"
@@ -18,13 +19,15 @@ const (
 	// ready for workers. The value emitted on the channel is a bool.
 	SignalDispatcherListen = "dispatcher-listen"
 
-	// SignalWorkAssign is emitted when an Assignment is assigned to a worker.
-	// The value emitted on the channel is a yggdrasil.Assignment.
-	SignalWorkAssign = "work-assign"
+	// SignalDataDispatch is emitted when data is dispatched to a worker.
+	// The value emitted on the channel is a data message's "MessageID" field in
+	// the form of a UUIDv4-formatted string.
+	SignalDataDispatch = "data-dispatch"
 
-	// SignalWorkComplete is emitted when an Assignment is reported as finished
-	// by its worker. The value emitted on the channel is a yggdrasil.Assignment.
-	SignalWorkComplete = "work-complete"
+	// SignalDataReturn is emitted when data is returned by a worker. The value
+	// emitted on the channel is a data message's "MessageID" field in the form
+	// of a UUIDv4-formatted string.
+	SignalDataReturn = "data-return"
 
 	// SignalWorkerRegister is emitted when a worker is successfully registered
 	// as handling a specified work type. The value emitted on the channel is
@@ -32,46 +35,17 @@ const (
 	SignalWorkerRegister = "worker-register"
 
 	// SignalWorkerUnregister is emitted when a worker is removed from the
-	// handler table. The value emitted on the channel is a yggdrasil.Worker.
+	// handler table. The value emitted on the channel is the PID of the process
+	// that unregistered.
 	SignalWorkerUnregister = "worker-unregister"
 )
 
-// Assignment is a basic data structure that holds data necessary to create
-// an Assignment protobuf message.
-type Assignment struct {
-	ID       string
-	Data     []byte
-	Complete bool
-	Handler  string
-	Headers  map[string]string
-}
-
-// ToProtobuf converts the assignment into a protobuf Assignment message.
-func (a *Assignment) ToProtobuf() *pb.Assignment {
-	return &pb.Assignment{
-		Id:       a.ID,
-		Data:     a.Data,
-		Complete: a.Complete,
-		Handler:  a.Handler,
-		Headers:  a.Headers,
-	}
-}
-
-// FromProtobuf fills the assignment with values from the given Assignment
-// message.
-func (a *Assignment) FromProtobuf(p *pb.Assignment) {
-	a.ID = p.GetId()
-	a.Data = p.GetData()
-	a.Complete = p.GetComplete()
-	a.Handler = p.GetHandler()
-	a.Headers = p.GetHeaders()
-}
-
 // Worker holds values associated with an actively registered worker process.
 type Worker struct {
-	pid        int
-	handler    string
-	socketAddr string
+	pid             int
+	handler         string
+	socketAddr      string
+	detachedPayload bool
 }
 
 // Dispatcher implements the gRPC Dispatcher service, handling the sending and
@@ -84,44 +58,10 @@ type Dispatcher struct {
 }
 
 // NewDispatcher creates a new dispatcher.
-func NewDispatcher() (*Dispatcher, error) {
+func NewDispatcher(db *memdb.MemDB) (*Dispatcher, error) {
 	d := new(Dispatcher)
 	d.logger = log.New(log.Writer(), fmt.Sprintf("%v[%T] ", log.Prefix(), d), log.Flags(), log.CurrentLevel())
 
-	schema := &memdb.DBSchema{
-		Tables: map[string]*memdb.TableSchema{
-			"worker": {
-				Name: "worker",
-				Indexes: map[string]*memdb.IndexSchema{
-					"id": {
-						Name:    "id",
-						Unique:  true,
-						Indexer: &memdb.IntFieldIndex{Field: "pid"},
-					},
-					"handler": {
-						Name:    "handler",
-						Unique:  true,
-						Indexer: &memdb.StringFieldIndex{Field: "handler"},
-					},
-				},
-			},
-			"assignment": {
-				Name: "assignment",
-				Indexes: map[string]*memdb.IndexSchema{
-					"id": {
-						Name:    "id",
-						Unique:  true,
-						Indexer: &memdb.StringFieldIndex{Field: "ID"},
-					},
-				},
-			},
-		},
-	}
-
-	db, err := memdb.NewMemDB(schema)
-	if err != nil {
-		return nil, err
-	}
 	d.db = db
 
 	return d, nil
@@ -158,21 +98,19 @@ func (d *Dispatcher) ListenAndServe() error {
 }
 
 // Register implements the "Register" RPC method of the Dispatcher service.
-func (d *Dispatcher) Register(ctx context.Context, r *pb.RegisterRequest) (*pb.RegisterResponse, error) {
+func (d *Dispatcher) Register(ctx context.Context, r *pb.RegistrationRequest) (*pb.RegistrationResponse, error) {
 	d.logger.Debugf("Register(%v)", r)
 	tx := d.db.Txn(true)
 	defer tx.Abort()
 
-	if _, err := tx.First("worker", "id", int(r.GetPid())); err != nil {
-		return &pb.RegisterResponse{
+	if _, err := tx.First(tableNameWorker, indexNameID, int(r.GetPid())); err != nil {
+		return &pb.RegistrationResponse{
 			Registered: false,
-			Reason:     fmt.Sprintf("already registered: %v: %v", r.GetPid(), err),
 		}, nil
 	}
-	if _, err := tx.First("worker", "handler", r.GetHandler()); err != nil {
-		return &pb.RegisterResponse{
+	if _, err := tx.First(tableNameWorker, indexNameHandler, r.GetHandler()); err != nil {
+		return &pb.RegistrationResponse{
 			Registered: false,
-			Reason:     fmt.Sprintf("already registered: %v: %v", r.GetHandler(), err),
 		}, nil
 	}
 
@@ -182,7 +120,7 @@ func (d *Dispatcher) Register(ctx context.Context, r *pb.RegisterRequest) (*pb.R
 		socketAddr: fmt.Sprintf("@ygg-%v-%v", r.GetHandler(), randomString(6)),
 	}
 
-	if err := tx.Insert("worker", &w); err != nil {
+	if err := tx.Insert(tableNameWorker, &w); err != nil {
 		return nil, err
 	}
 
@@ -192,27 +130,53 @@ func (d *Dispatcher) Register(ctx context.Context, r *pb.RegisterRequest) (*pb.R
 
 	tx.Commit()
 
-	return &pb.RegisterResponse{
+	return &pb.RegistrationResponse{
 		Registered: true,
 		Address:    w.socketAddr,
 	}, nil
 }
 
-// Update implements the "Update" RPC method of the Dispatcher service.
-func (d *Dispatcher) Update(ctx context.Context, r *pb.Assignment) (*pb.Empty, error) {
-	return &pb.Empty{}, nil
-}
+// Send implements the "Send" RPC method of the Dispatcher service.
+func (d *Dispatcher) Send(ctx context.Context, r *pb.Data) (*pb.Receipt, error) {
+	d.logger.Debug("Send")
+	d.logger.Tracef("%#v", r)
 
-// Finish implements the "Finish" RPC method of the Dispatcher service.
-func (d *Dispatcher) Finish(ctx context.Context, r *pb.Assignment) (*pb.Empty, error) {
-	var a Assignment
-	a.FromProtobuf(r)
+	var (
+		tx  *memdb.Txn
+		obj interface{}
+		err error
+	)
 
-	d.sig.emit(SignalWorkComplete, a)
-	d.logger.Debugf("emitted signal \"%v\"", SignalWorkComplete)
-	d.logger.Tracef("emitted value: %#v", a)
+	tx = d.db.Txn(false)
+	obj, err = tx.First(tableNameData, indexNameID, r.GetMessageId())
+	if err != nil {
+		d.logger.Error(err)
+		return nil, err
+	}
+	originalDataMessage := obj.(Data)
 
-	return &pb.Empty{}, nil
+	dataMessage := Data{
+		Type:       MessageTypeData,
+		MessageID:  uuid.New().String(),
+		ResponseTo: originalDataMessage.MessageID,
+		Version:    1,
+		Sent:       time.Now(),
+		Directive:  originalDataMessage.Directive,
+		Content:    r.Payload,
+	}
+
+	tx = d.db.Txn(true)
+	if err := tx.Insert(tableNameData, dataMessage); err != nil {
+		tx.Abort()
+		return nil, err
+	}
+	tx.Commit()
+
+	d.sig.emit(SignalDataReturn, dataMessage.MessageID)
+	d.logger.Debugf("emitted signal \"%v\"", SignalDataReturn)
+	d.logger.Tracef("emitted value: %#v", dataMessage.MessageID)
+
+	return &pb.Receipt{}, nil
 }
 
 // HandleProcessDieSignal receives values on the channel, looks up the PID in
@@ -220,63 +184,82 @@ func (d *Dispatcher) Finish(ctx context.Context, r *pb.Assignment) (*pb.Empty, e
 func (d *Dispatcher) HandleProcessDieSignal(c <-chan interface{}) {
 	for e := range c {
 		func() {
-			process := e.(Process)
+			pid := e.(int)
 			d.logger.Debug("HandleProcessDieSignal")
-			d.logger.Tracef("emitted value: %#v", process)
+			d.logger.Tracef("emitted value: %#v", pid)
 
 			tx := d.db.Txn(true)
 			defer tx.Abort()
 
-			obj, err := tx.First("worker", "id", process.pid)
+			obj, err := tx.First(tableNameWorker, indexNameID, pid)
 			if err != nil {
 				d.logger.Error(err)
 				return
 			}
 			if obj == nil {
-				d.logger.Errorf("unknown worker with PID %v", process.pid)
+				d.logger.Errorf("unknown worker with PID %v", pid)
 				return
 			}
+			worker := obj.(Worker)
 
-			if err := tx.Delete("worker", obj); err != nil {
+			if err := tx.Delete(tableNameWorker, obj); err != nil {
 				d.logger.Error(err)
 				return
 			}
-			worker := obj.(*Worker)
-
-			d.sig.emit(SignalWorkerUnregister, *worker)
-			d.logger.Debugf("emitted signal \"%v\"", SignalWorkerUnregister)
-			d.logger.Tracef("emitted value: %#v", *worker)
-
+			if _, err := tx.DeleteAll(tableNameData, indexNameHandler, worker.handler); err != nil {
+				d.logger.Error(err)
+				return
+			}
 			tx.Commit()
+
+			d.sig.emit(SignalWorkerUnregister, worker.pid)
+			d.logger.Debugf("emitted signal \"%v\"", SignalWorkerUnregister)
+			d.logger.Tracef("emitted value: %#v", worker.pid)
+
 		}()
 	}
 }
 
-// HandleAssignmentCreateSignal receives values on the channel, looks up the
-// requested handler in its registry of active workers and dispatches the
-// assignment to the chosen worker.
-func (d *Dispatcher) HandleAssignmentCreateSignal(c <-chan interface{}) {
+// HandleDataProcessSignal receives values on the channel, looks up the
+// requested handler in its registry of active workers and dispatches the data
+// to the chosen worker.
+func (d *Dispatcher) HandleDataProcessSignal(c <-chan interface{}) {
 	for e := range c {
 		func() {
-			assignment := e.(Assignment)
-			d.logger.Debug("HandleAssignmentCreateSignal")
-			d.logger.Tracef("emitted value: %#v", assignment)
+			var (
+				tx  *memdb.Txn
+				obj interface{}
+				err error
+			)
 
-			var tx *memdb.Txn
+			messageID := e.(string)
+			d.logger.Debug("HandleDataProcessSignal")
+			d.logger.Tracef("emitted value: %#v", messageID)
 
 			tx = d.db.Txn(false)
-			obj, err := tx.First("worker", "handler", assignment.Handler)
+			obj, err = tx.First(tableNameData, indexNameID, messageID)
 			if err != nil {
 				d.logger.Error(err)
 				return
 			}
 			if obj == nil {
-				d.logger.Errorf("no worker detected for handler %v", assignment.Handler)
+				d.logger.Errorf("no data message with ID %v", messageID)
 				return
 			}
-			worker := obj.(*Worker)
+			dataMessage := obj.(Data)
 
-			d.logger.Debugf("dialing worker %v", assignment.Handler)
+			obj, err = tx.First(tableNameWorker, indexNameHandler, dataMessage.Directive)
+			if err != nil {
+				d.logger.Error(err)
+				return
+			}
+			if obj == nil {
+				d.logger.Errorf("no worker detected for handler %v", dataMessage.Directive)
+				return
+			}
+			worker := obj.(Worker)
+
+			d.logger.Debugf("dialing worker %v", dataMessage.Directive)
 			conn, err := grpc.Dial("unix:"+worker.socketAddr, grpc.WithInsecure())
 			if err != nil {
 				d.logger.Error(err)
@@ -288,63 +271,19 @@ func (d *Dispatcher) HandleAssignmentCreateSignal(c <-chan interface{}) {
 			ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 			defer cancel()
 
-			msg := assignment.ToProtobuf()
-			r, err := c.Start(ctx, msg)
+			msg := pb.Data{
+				MessageId: dataMessage.MessageID,
+				Payload:   dataMessage.Content,
+			}
+			_, err = c.Send(ctx, &msg)
 			if err != nil {
 				d.logger.Error(err)
 				return
 			}
 
-			tx = d.db.Txn(true)
-			if err := tx.Insert("assignment", &assignment); err != nil {
-				d.logger.Error(err)
-				tx.Abort()
-				return
-			}
-			tx.Commit()
-
-			d.logger.Debugf("dispatched work: %v", assignment.ID)
-			if !r.GetAccepted() {
-				d.logger.Errorf("work %v rejected by worker %v", assignment.ID, worker.socketAddr)
-				return
-			}
-
-			d.sig.emit(SignalWorkAssign, assignment)
-			d.logger.Debugf("emitted signal \"%v\"", SignalWorkAssign)
-			d.logger.Tracef("emitted value: %#v", assignment)
-		}()
-	}
-}
-
-// HandleAssignmentReturnSignal receives values on the channel and removes the
-// assignment from its table of pending assignments.
-func (d *Dispatcher) HandleAssignmentReturnSignal(c <-chan interface{}) {
-	for e := range c {
-		func() {
-			assignment := e.(Assignment)
-			d.logger.Debug("HandleAssignmentReturnSignal")
-			d.logger.Tracef("emitted value: %#v", assignment)
-
-			var tx *memdb.Txn
-
-			tx = d.db.Txn(false)
-			obj, err := tx.First("assignment", "id", assignment.ID)
-			if err != nil {
-				d.logger.Error(err)
-				return
-			}
-			d.logger.Tracef("found stored assignment: %#v", obj)
-
-			tx = d.db.Txn(true)
-			if err := tx.Delete("assignment", obj); err != nil {
-				d.logger.Error(err)
-				tx.Abort()
-				return
-			}
-			tx.Commit()
-
-			d.logger.Debugf("deleted complete assignment: %#v", obj)
-
+			d.sig.emit(SignalDataDispatch, dataMessage.MessageID)
+			d.logger.Debugf("emitted signal \"%v\"", SignalDataDispatch)
+			d.logger.Tracef("emitted value: %#v", dataMessage.MessageID)
 		}()
 	}
 }

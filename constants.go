@@ -3,7 +3,7 @@ package yggdrasil
 import "path/filepath"
 
 var (
-	// Version is the version as described by git
+	// Version is the version as described by git.
 	Version string
 
 	// ShortName is used as a prefix to binary file names.
@@ -14,6 +14,9 @@ var (
 
 	// Summary is a long-form description.
 	Summary string
+
+	// TopicPrefix is used as a prefix to all MQTT topics in the client.
+	TopicPrefix string
 )
 
 // Installation directory prefix and paths. Values are specified by compile-time
@@ -76,5 +79,8 @@ func init() {
 	}
 	if Summary == "" {
 		Summary = "yggdrasil"
+	}
+	if TopicPrefix == "" {
+		TopicPrefix = "yggdrasil"
 	}
 }

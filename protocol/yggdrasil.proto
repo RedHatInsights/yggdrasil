@@ -7,80 +7,57 @@ package yggdrasil;
 service Dispatcher {
     // Register is called by a worker to indicate it is ready and capable of
     // handling the specified type of work.
-    rpc Register (RegisterRequest) returns (RegisterResponse) {}
+    rpc Register (RegistrationRequest) returns (RegistrationResponse) {}
 
-    // Update can be called by a worker if it wants to submit some output,
-    // but has not completed the assigned work.
-    rpc Update (Assignment) returns (Empty) {}
-
-    // Finish is called by a worker when it has completed its assigned work.
-    rpc Finish (Assignment) returns (Empty) {}
+    // Send is called by a worker to send data to the dispatcher.
+    rpc Send (Data) returns (Receipt) {}
 }
 
 service Worker {
-    // Start is called by the manager to assign work to a worker.
-    rpc Start (Assignment) returns (StartResponse) {}
-
-    // Status is called by the manager to check whether or not a worker is busy.
-    rpc Status (Empty) returns (WorkerStatus) {}
+    // Send is called by the dispatcher to send data to a worker.
+    rpc Send (Data) returns (Receipt) {}
 }
 
 // An Empty message.
 message Empty {}
 
-// A RegisterRequest message contains information necessary for a client to
-// register with the dispatcher for a specified work type.
-message RegisterRequest {
+// A RegistrationRequest message contains information necessary for a client to
+// request registration with the dispatcher for a specified work type.
+message RegistrationRequest {
     // The type of work the worker is capable of handling.
     string handler = 1;
 
     // The PID of the worker.
     int64 pid = 2;
+
+    // Whether or not the worker requires detached payload processing.
+    bool detached_payload = 3;
+
+    // A set of features a worker can announce during registration.
+    map<string, string> features = 4;
 }
 
-// A RegisterResponse message contains the result of a registration request.
-message RegisterResponse {
-    // Whether the dispatcher accepted the registration request or not.
+// A RegistrationResponse message contains the result of a registration request.
+message RegistrationResponse {
+    // Whether or not the dispatcher accepted the registration request.
     bool registered = 1;
 
     // The address on which the worker can be dialed to assign work.
     string address = 2;
-
-    // A message from the dispatch with more information about the request.
-    string reason = 3;
 }
 
-// An Assignment message contains information about a work assignment. It's
-// an envelope to tranport the data to the worker along with an ID for tracking
-// responses.
-message Assignment {
-    // The assignment identifier.
-    string id = 1;
+// A Data message contains data and metadata suitable to exchange data between
+// the dispatcher and a worker.
+message Data {
+    // The MQTT message ID that generated this message.
+    string message_id = 1;
 
-    // The assignment payload.
-    bytes data = 2;
+    // Optional key-value pairs to be included in the data message.
+    map<string, string> metadata = 2;
 
-    // Whether an assignment is completed or not.
-    bool complete = 3;
-
-    // The handler to which this assignment should get routed.
-    string handler = 4;
-
-    // Any headers to include in the return_url HTTP request.
-    map<string, string> headers = 5;
+    // The data payload.
+    bytes payload = 3;
 }
 
-// A StartResponse message contains the result of a work assignment request.
-message StartResponse {
-    // Whether the worker accepted the work assignment or not.
-    bool accepted = 1;
-}
-
-// A WorkerStatus message contains the status of a worker.
-message WorkerStatus {
-    enum Status {
-        READY = 0;
-        BUSY  = 1;
-    }
-    Status status = 1;
-}
+// A Receipt message is sent as a successful response to a Send method.
+message Receipt {}
