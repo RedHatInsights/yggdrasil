@@ -215,24 +215,3 @@ func (p *DataProcessor) HandleDataReturnSignal(c <-chan interface{}) {
 		}()
 	}
 }
-
-// HandleWorkerRegisterSignal receives values on the channel and inserts them
-// into a registry of known workers.
-func (p *DataProcessor) HandleWorkerRegisterSignal(c <-chan interface{}) {
-	for e := range c {
-		func() {
-			worker := e.(Worker)
-			p.logger.Debug("HandleWorkerRegisterSignal")
-			p.logger.Tracef("emitted value: %#v", worker)
-
-			tx := p.db.Txn(true)
-			defer tx.Abort()
-
-			if err := tx.Insert("worker", worker); err != nil {
-				p.logger.Error(err)
-				return
-			}
-			tx.Commit()
-		}()
-	}
-}

@@ -125,9 +125,6 @@ func main() {
 		// Connect dataProcessor to the dispatcher's "data-return" signal
 		go dataProcessor.HandleDataReturnSignal(dispatcher.Connect(yggdrasil.SignalDataReturn))
 
-		// Connect dataProcessor to the dispatcher's "worker-register" signal
-		go dataProcessor.HandleWorkerRegisterSignal(dispatcher.Connect(yggdrasil.SignalWorkerRegister))
-
 		// Connect messageRouter to the dataProcessor's "data-consume" signal
 		go messageRouter.HandleDataConsumeSignal(dataProcessor.Connect(yggdrasil.SignalDataConsume))
 
