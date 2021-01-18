@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"path/filepath"
+	"strings"
 
 	"git.sr.ht/~spc/go-log"
 	"github.com/godbus/dbus/v5"
@@ -188,6 +189,10 @@ func (p *DataProcessor) HandleDataReturnSignal(c <-chan interface{}) {
 				}
 
 				req, err := http.NewRequest(http.MethodPost, dataMessage.Directive, bytes.NewReader(dataMessage.Content))
+
+				for k, v := range dataMessage.Metadata {
+					req.Header.Add(k, strings.TrimSpace(v))
+				}
 
 				resp, err := client.Do(req)
 				if err != nil {

@@ -162,6 +162,7 @@ func (d *Dispatcher) Send(ctx context.Context, r *pb.Data) (*pb.Receipt, error) 
 		Version:    1,
 		Sent:       time.Now(),
 		Directive:  originalDataMessage.Directive,
+		Metadata:   r.Metadata,
 		Content:    r.Payload,
 	}
 
@@ -273,6 +274,7 @@ func (d *Dispatcher) HandleDataProcessSignal(c <-chan interface{}) {
 
 			msg := pb.Data{
 				MessageId: dataMessage.MessageID,
+				Metadata:  dataMessage.Metadata,
 				Payload:   dataMessage.Content,
 			}
 			_, err = c.Send(ctx, &msg)
