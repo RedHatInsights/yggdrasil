@@ -46,6 +46,7 @@ type Worker struct {
 	handler         string
 	socketAddr      string
 	detachedPayload bool
+	features        map[string]string
 }
 
 // Dispatcher implements the gRPC Dispatcher service, handling the sending and
@@ -115,9 +116,11 @@ func (d *Dispatcher) Register(ctx context.Context, r *pb.RegistrationRequest) (*
 	}
 
 	w := Worker{
-		pid:        int(r.GetPid()),
-		handler:    r.GetHandler(),
-		socketAddr: fmt.Sprintf("@ygg-%v-%v", r.GetHandler(), randomString(6)),
+		pid:             int(r.GetPid()),
+		handler:         r.GetHandler(),
+		socketAddr:      fmt.Sprintf("@ygg-%v-%v", r.GetHandler(), randomString(6)),
+		detachedPayload: r.GetDetachedPayload(),
+		features:        r.GetFeatures(),
 	}
 
 	if err := tx.Insert(tableNameWorker, &w); err != nil {
