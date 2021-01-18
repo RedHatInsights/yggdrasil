@@ -150,12 +150,12 @@ func (p *ProcessManager) KillAllWorkers() error {
 		if err := proc.Kill(); err != nil {
 			return err
 		}
-		p.sig.emit(SignalProcessDie, *process)
+		p.sig.emit(SignalProcessDie, process.pid)
 		p.logger.Debugf("emitted signal \"%v\"", SignalProcessDie)
-		p.logger.Tracef("emitted value: %#v", *process)
+		p.logger.Tracef("emitted value: %#v", process.pid)
 	}
 
-	if _, err := tx.DeleteAll("process", "id"); err != nil {
+	if _, err := tx.DeleteAll(tableNameProcess, indexNameID); err != nil {
 		return err
 	}
 
