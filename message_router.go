@@ -108,8 +108,7 @@ func (m *MessageRouter) PublishConnectionStatus() error {
 
 	for obj := all.Next(); obj != nil; obj = all.Next() {
 		worker := obj.(*Worker)
-		msg.Content.Dispatchers[worker.handler] = make(map[string]string)
-		// TODO: Add handler capabilities
+		msg.Content.Dispatchers[worker.handler] = worker.features
 	}
 
 	data, err := json.Marshal(msg)
