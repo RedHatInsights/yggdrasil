@@ -18,7 +18,7 @@ const (
 	SignalProcessSpawn = "process-spawn"
 
 	// SignalProcessDie is emitted when a process dies. The value emitted on the
-	// channel is a yggdrasil.Process.
+	// channel is the PID of the process that died.
 	SignalProcessDie = "process-die"
 
 	// SignalProcessBootstrap is emitted when all workers detected at startup
@@ -42,29 +42,10 @@ type ProcessManager struct {
 }
 
 // NewProcessManager creates a new ProcessManager.
-func NewProcessManager() (*ProcessManager, error) {
+func NewProcessManager(db *memdb.MemDB) (*ProcessManager, error) {
 	p := new(ProcessManager)
 	p.logger = log.New(log.Writer(), fmt.Sprintf("%v[%T] ", log.Prefix(), p), log.Flags(), log.CurrentLevel())
 
-	schema := &memdb.DBSchema{
-		Tables: map[string]*memdb.TableSchema{
-			"process": {
-				Name: "process",
-				Indexes: map[string]*memdb.IndexSchema{
-					"id": {
-						Name:    "id",
-						Unique:  true,
-						Indexer: &memdb.IntFieldIndex{Field: "pid"},
-					},
-				},
-			},
-		},
-	}
-
-	db, err := memdb.NewMemDB(schema)
-	if err != nil {
-		return nil, err
-	}
 	p.db = db
 
 	return p, nil
@@ -112,17 +93,17 @@ func (p *ProcessManager) WaitProcess(process Process) {
 		p.logger.Error(err)
 	}
 
-	p.sig.emit(SignalProcessDie, process)
+	p.sig.emit(SignalProcessDie, process.pid)
 	p.logger.Debugf("emitted signal \"%v\"", SignalProcessDie)
-	p.logger.Tracef("emitted value: %#v", process)
+	p.logger.Tracef("emitted value: %#v", process.pid)
 
 	tx := p.db.Txn(true)
-	obj, err := tx.First("process", "id", process.pid)
+	obj, err := tx.First(tableNameProcess, indexNameID, process.pid)
 	if err != nil {
 		p.logger.Error(err)
 		return
 	}
-	tx.Delete("process", obj)
+	tx.Delete(tableNameProcess, obj)
 	tx.Commit()
 
 	go p.StartProcess(process.file)

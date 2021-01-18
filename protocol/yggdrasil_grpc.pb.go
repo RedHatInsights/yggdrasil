@@ -19,12 +19,9 @@ const _ = grpc.SupportPackageIsVersion7
 type DispatcherClient interface {
 	// Register is called by a worker to indicate it is ready and capable of
 	// handling the specified type of work.
-	Register(ctx context.Context, in *RegisterRequest, opts ...grpc.CallOption) (*RegisterResponse, error)
-	// Update can be called by a worker if it wants to submit some output,
-	// but has not completed the assigned work.
-	Update(ctx context.Context, in *Assignment, opts ...grpc.CallOption) (*Empty, error)
-	// Finish is called by a worker when it has completed its assigned work.
-	Finish(ctx context.Context, in *Assignment, opts ...grpc.CallOption) (*Empty, error)
+	Register(ctx context.Context, in *RegistrationRequest, opts ...grpc.CallOption) (*RegistrationResponse, error)
+	// Send is called by a worker to send data to the dispatcher.
+	Send(ctx context.Context, in *Data, opts ...grpc.CallOption) (*Receipt, error)
 }
 
 type dispatcherClient struct {
@@ -35,8 +32,8 @@ func NewDispatcherClient(cc grpc.ClientConnInterface) DispatcherClient {
 	return &dispatcherClient{cc}
 }
 
-func (c *dispatcherClient) Register(ctx context.Context, in *RegisterRequest, opts ...grpc.CallOption) (*RegisterResponse, error) {
-	out := new(RegisterResponse)
+func (c *dispatcherClient) Register(ctx context.Context, in *RegistrationRequest, opts ...grpc.CallOption) (*RegistrationResponse, error) {
+	out := new(RegistrationResponse)
 	err := c.cc.Invoke(ctx, "/yggdrasil.Dispatcher/Register", in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -44,18 +41,9 @@ func (c *dispatcherClient) Register(ctx context.Context, in *RegisterRequest, op
 	return out, nil
 }
 
-func (c *dispatcherClient) Update(ctx context.Context, in *Assignment, opts ...grpc.CallOption) (*Empty, error) {
-	out := new(Empty)
-	err := c.cc.Invoke(ctx, "/yggdrasil.Dispatcher/Update", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *dispatcherClient) Finish(ctx context.Context, in *Assignment, opts ...grpc.CallOption) (*Empty, error) {
-	out := new(Empty)
-	err := c.cc.Invoke(ctx, "/yggdrasil.Dispatcher/Finish", in, out, opts...)
+func (c *dispatcherClient) Send(ctx context.Context, in *Data, opts ...grpc.CallOption) (*Receipt, error) {
+	out := new(Receipt)
+	err := c.cc.Invoke(ctx, "/yggdrasil.Dispatcher/Send", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -68,12 +56,9 @@ func (c *dispatcherClient) Finish(ctx context.Context, in *Assignment, opts ...g
 type DispatcherServer interface {
 	// Register is called by a worker to indicate it is ready and capable of
 	// handling the specified type of work.
-	Register(context.Context, *RegisterRequest) (*RegisterResponse, error)
-	// Update can be called by a worker if it wants to submit some output,
-	// but has not completed the assigned work.
-	Update(context.Context, *Assignment) (*Empty, error)
-	// Finish is called by a worker when it has completed its assigned work.
-	Finish(context.Context, *Assignment) (*Empty, error)
+	Register(context.Context, *RegistrationRequest) (*RegistrationResponse, error)
+	// Send is called by a worker to send data to the dispatcher.
+	Send(context.Context, *Data) (*Receipt, error)
 	mustEmbedUnimplementedDispatcherServer()
 }
 
@@ -81,14 +66,11 @@ type DispatcherServer interface {
 type UnimplementedDispatcherServer struct {
 }
 
-func (UnimplementedDispatcherServer) Register(context.Context, *RegisterRequest) (*RegisterResponse, error) {
+func (UnimplementedDispatcherServer) Register(context.Context, *RegistrationRequest) (*RegistrationResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Register not implemented")
 }
-func (UnimplementedDispatcherServer) Update(context.Context, *Assignment) (*Empty, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method Update not implemented")
-}
-func (UnimplementedDispatcherServer) Finish(context.Context, *Assignment) (*Empty, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method Finish not implemented")
+func (UnimplementedDispatcherServer) Send(context.Context, *Data) (*Receipt, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Send not implemented")
 }
 func (UnimplementedDispatcherServer) mustEmbedUnimplementedDispatcherServer() {}
 
@@ -104,7 +86,7 @@ func RegisterDispatcherServer(s grpc.ServiceRegistrar, srv DispatcherServer) {
 }
 
 func _Dispatcher_Register_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(RegisterRequest)
+	in := new(RegistrationRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -116,43 +98,25 @@ func _Dispatcher_Register_Handler(srv interface{}, ctx context.Context, dec func
 		FullMethod: "/yggdrasil.Dispatcher/Register",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(DispatcherServer).Register(ctx, req.(*RegisterRequest))
+		return srv.(DispatcherServer).Register(ctx, req.(*RegistrationRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Dispatcher_Update_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(Assignment)
+func _Dispatcher_Send_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(Data)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(DispatcherServer).Update(ctx, in)
+		return srv.(DispatcherServer).Send(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/yggdrasil.Dispatcher/Update",
+		FullMethod: "/yggdrasil.Dispatcher/Send",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(DispatcherServer).Update(ctx, req.(*Assignment))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _Dispatcher_Finish_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(Assignment)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(DispatcherServer).Finish(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/yggdrasil.Dispatcher/Finish",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(DispatcherServer).Finish(ctx, req.(*Assignment))
+		return srv.(DispatcherServer).Send(ctx, req.(*Data))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -169,12 +133,8 @@ var Dispatcher_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _Dispatcher_Register_Handler,
 		},
 		{
-			MethodName: "Update",
-			Handler:    _Dispatcher_Update_Handler,
-		},
-		{
-			MethodName: "Finish",
-			Handler:    _Dispatcher_Finish_Handler,
+			MethodName: "Send",
+			Handler:    _Dispatcher_Send_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
@@ -185,10 +145,8 @@ var Dispatcher_ServiceDesc = grpc.ServiceDesc{
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type WorkerClient interface {
-	// Start is called by the manager to assign work to a worker.
-	Start(ctx context.Context, in *Assignment, opts ...grpc.CallOption) (*StartResponse, error)
-	// Status is called by the manager to check whether or not a worker is busy.
-	Status(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*WorkerStatus, error)
+	// Send is called by the dispatcher to send data to a worker.
+	Send(ctx context.Context, in *Data, opts ...grpc.CallOption) (*Receipt, error)
 }
 
 type workerClient struct {
@@ -199,18 +157,9 @@ func NewWorkerClient(cc grpc.ClientConnInterface) WorkerClient {
 	return &workerClient{cc}
 }
 
-func (c *workerClient) Start(ctx context.Context, in *Assignment, opts ...grpc.CallOption) (*StartResponse, error) {
-	out := new(StartResponse)
-	err := c.cc.Invoke(ctx, "/yggdrasil.Worker/Start", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *workerClient) Status(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*WorkerStatus, error) {
-	out := new(WorkerStatus)
-	err := c.cc.Invoke(ctx, "/yggdrasil.Worker/Status", in, out, opts...)
+func (c *workerClient) Send(ctx context.Context, in *Data, opts ...grpc.CallOption) (*Receipt, error) {
+	out := new(Receipt)
+	err := c.cc.Invoke(ctx, "/yggdrasil.Worker/Send", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -221,10 +170,8 @@ func (c *workerClient) Status(ctx context.Context, in *Empty, opts ...grpc.CallO
 // All implementations must embed UnimplementedWorkerServer
 // for forward compatibility
 type WorkerServer interface {
-	// Start is called by the manager to assign work to a worker.
-	Start(context.Context, *Assignment) (*StartResponse, error)
-	// Status is called by the manager to check whether or not a worker is busy.
-	Status(context.Context, *Empty) (*WorkerStatus, error)
+	// Send is called by the dispatcher to send data to a worker.
+	Send(context.Context, *Data) (*Receipt, error)
 	mustEmbedUnimplementedWorkerServer()
 }
 
@@ -232,11 +179,8 @@ type WorkerServer interface {
 type UnimplementedWorkerServer struct {
 }
 
-func (UnimplementedWorkerServer) Start(context.Context, *Assignment) (*StartResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method Start not implemented")
-}
-func (UnimplementedWorkerServer) Status(context.Context, *Empty) (*WorkerStatus, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method Status not implemented")
+func (UnimplementedWorkerServer) Send(context.Context, *Data) (*Receipt, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Send not implemented")
 }
 func (UnimplementedWorkerServer) mustEmbedUnimplementedWorkerServer() {}
 
@@ -251,38 +195,20 @@ func RegisterWorkerServer(s grpc.ServiceRegistrar, srv WorkerServer) {
 	s.RegisterService(&Worker_ServiceDesc, srv)
 }
 
-func _Worker_Start_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(Assignment)
+func _Worker_Send_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(Data)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(WorkerServer).Start(ctx, in)
+		return srv.(WorkerServer).Send(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/yggdrasil.Worker/Start",
+		FullMethod: "/yggdrasil.Worker/Send",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(WorkerServer).Start(ctx, req.(*Assignment))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _Worker_Status_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(Empty)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(WorkerServer).Status(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/yggdrasil.Worker/Status",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(WorkerServer).Status(ctx, req.(*Empty))
+		return srv.(WorkerServer).Send(ctx, req.(*Data))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -295,12 +221,8 @@ var Worker_ServiceDesc = grpc.ServiceDesc{
 	HandlerType: (*WorkerServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "Start",
-			Handler:    _Worker_Start_Handler,
-		},
-		{
-			MethodName: "Status",
-			Handler:    _Worker_Status_Handler,
+			MethodName: "Send",
+			Handler:    _Worker_Send_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

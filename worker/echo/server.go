@@ -17,10 +17,11 @@ type echoServer struct {
 	pb.UnimplementedWorkerServer
 }
 
-func (s *echoServer) Start(ctx context.Context, a *pb.Assignment) (*pb.StartResponse, error) {
+// Send implements the "Send" method of the Worker gRPC service.
+func (s *echoServer) Send(ctx context.Context, d *pb.Data) (*pb.Receipt, error) {
 	go func() {
-		log.Tracef("starting assignment: %#v", a)
-		message := string(a.GetData())
+		log.Tracef("received data: %#v", d)
+		message := string(d.GetPayload())
 		log.Infof("echoing %v", message)
 
 		// Dial the Dispatcher and call "Finish"
@@ -35,23 +36,19 @@ func (s *echoServer) Start(ctx context.Context, a *pb.Assignment) (*pb.StartResp
 		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 		defer cancel()
 
-		// Create a complete assignment to send back to the dispatcher.
-		completeAssignment := &pb.Assignment{
-			Id:       a.GetId(),
-			Data:     a.GetData(),
-			Complete: !a.GetComplete(),
-			Handler:  a.GetHandler(),
-			Headers:  map[string]string{"x-ygg-echo-worker": string(a.GetData())},
+		// Create a data message to send back to the dispatcher.
+		data := &pb.Data{
+			MessageId: d.GetMessageId(),
+			Metadata:  d.GetMetadata(),
+			Payload:   d.GetPayload(),
 		}
 
-		// Call "Finish"
-		if _, err := c.Finish(ctx, completeAssignment); err != nil {
+		// Call "Send"
+		if _, err := c.Send(ctx, data); err != nil {
 			log.Fatal(err)
 		}
 	}()
 
 	// Respond to the start request that the work was accepted.
-	return &pb.StartResponse{
-		Accepted: true,
-	}, nil
+	return &pb.Receipt{}, nil
 }
