@@ -27,15 +27,13 @@ a receiving queue for instructions to be sent to the system via a broker.
 %build
 make PREFIX=%{_prefix} \
      SYSCONFDIR=%{_sysconfdir} \
-     LOCALSTATEDIR=%{_localstatedir} \
-     BROKERADDR=tcp://192.168.122.1:1883
+     LOCALSTATEDIR=%{_localstatedir}
 
 
 %install
 make PREFIX=%{_prefix} \
      SYSCONFDIR=%{_sysconfdir} \
      LOCALSTATEDIR=%{_localstatedir} \
-     BROKERADDR=tcp://192.168.122.1:1883 \
      DESTDIR=%{buildroot} \
      install
 
