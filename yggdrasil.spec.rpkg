@@ -44,6 +44,8 @@ make PREFIX=%{_prefix} \
 %{_sbindir}/yggd
 %{_sysconfdir}/%{name}/config.toml
 %{_unitdir}/yggd.service
+%{_datadir}/bash-completion/completions/*
+%{_mandir}/man1/*
 
 
 %changelog
