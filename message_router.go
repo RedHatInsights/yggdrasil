@@ -107,7 +107,7 @@ func (m *MessageRouter) PublishConnectionStatus() error {
 	}
 
 	for obj := all.Next(); obj != nil; obj = all.Next() {
-		worker := obj.(*Worker)
+		worker := obj.(Worker)
 		msg.Content.Dispatchers[worker.handler] = worker.features
 	}
 
