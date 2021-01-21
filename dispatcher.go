@@ -135,7 +135,7 @@ func (d *Dispatcher) Register(ctx context.Context, r *pb.RegistrationRequest) (*
 		features:        r.GetFeatures(),
 	}
 
-	if err := tx.Insert(tableNameWorker, &w); err != nil {
+	if err := tx.Insert(tableNameWorker, w); err != nil {
 		return nil, err
 	}
 
