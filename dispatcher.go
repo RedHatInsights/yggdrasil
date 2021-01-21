@@ -12,6 +12,7 @@ import (
 	"github.com/hashicorp/go-memdb"
 	pb "github.com/redhatinsights/yggdrasil/protocol"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
 )
 
 const (
@@ -75,9 +76,11 @@ func (d *Dispatcher) Connect(name string) <-chan interface{} {
 }
 
 // ListenAndServe opens a UNIX domain socket, registers a Dispatcher service with
-// grpc and accepts incoming connections on the domain socket.
-func (d *Dispatcher) ListenAndServe() error {
-	socketAddr := "@yggd-dispatcher"
+// grpc and accepts incoming connections on the domain socket. If certFile and
+// keyFile are both not empty strings, they are used as the certificate and key,
+// respectively, for creating TLS authentication credentials. The server is
+// configured with TLS authentication.
+func (d *Dispatcher) ListenAndServe(socketAddr string, certFile string, keyFile string) error {
 	d.logger.Debugf("ListenAndServe() -> %v", socketAddr)
 
 	l, err := net.Listen("unix", socketAddr)
@@ -85,7 +88,16 @@ func (d *Dispatcher) ListenAndServe() error {
 		return err
 	}
 
-	s := grpc.NewServer()
+	var opts []grpc.ServerOption
+	if certFile != "" && keyFile != "" {
+		creds, err := credentials.NewServerTLSFromFile(certFile, keyFile)
+		if err != nil {
+			return err
+		}
+		opts = append(opts, grpc.Creds(creds))
+	}
+	s := grpc.NewServer(opts...)
+
 	pb.RegisterDispatcherServer(s, d)
 
 	d.sig.emit(SignalDispatcherListen, true)
@@ -291,6 +303,10 @@ func (d *Dispatcher) HandleDataProcessSignal(c <-chan interface{}) {
 			d.logger.Tracef("emitted value: %#v", dataMessage.MessageID)
 		}()
 	}
+}
+
+func init() {
+	rand.Seed(time.Now().UnixNano())
 }
 
 func randomString(n int) string {

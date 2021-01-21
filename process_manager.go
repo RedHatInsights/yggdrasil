@@ -1,7 +1,9 @@
 package yggdrasil
 
 import (
+	"bufio"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"os"
 	"os/exec"
@@ -29,24 +31,28 @@ const (
 // Process encapsulates the information about a process monitored by
 // ProcessManager.
 type Process struct {
-	pid  int
-	file string
+	pid    int
+	file   string
+	stdout io.ReadCloser
+	stderr io.ReadCloser
 }
 
 // ProcessManager spawns processes and monitors them for unexpected exits.
 // If a managed process unexpectedly exits, it is spawned again.
 type ProcessManager struct {
-	logger *log.Logger
-	sig    signalEmitter
-	db     *memdb.MemDB
+	logger    *log.Logger
+	sig       signalEmitter
+	db        *memdb.MemDB
+	workerEnv []string
 }
 
 // NewProcessManager creates a new ProcessManager.
-func NewProcessManager(db *memdb.MemDB) (*ProcessManager, error) {
+func NewProcessManager(db *memdb.MemDB, workerEnv []string) (*ProcessManager, error) {
 	p := new(ProcessManager)
 	p.logger = log.New(log.Writer(), fmt.Sprintf("%v[%T] ", log.Prefix(), p), log.Flags(), log.CurrentLevel())
 
 	p.db = db
+	p.workerEnv = workerEnv
 
 	return p, nil
 }
@@ -61,13 +67,30 @@ func (p *ProcessManager) Connect(name string) <-chan interface{} {
 func (p *ProcessManager) StartProcess(file string) {
 	p.logger.Debugf("StartProcess(%v)", file)
 	cmd := exec.Command(file)
+	cmd.Env = p.workerEnv
+
+	stdout, err := cmd.StdoutPipe()
+	if err != nil {
+		p.logger.Error(err)
+		return
+	}
+
+	stderr, err := cmd.StderrPipe()
+	if err != nil {
+		p.logger.Error(err)
+		return
+	}
+
 	if err := cmd.Start(); err != nil {
 		p.logger.Error(err)
+		return
 	}
 
 	process := Process{
-		pid:  cmd.Process.Pid,
-		file: file,
+		pid:    cmd.Process.Pid,
+		file:   file,
+		stdout: stdout,
+		stderr: stderr,
 	}
 
 	p.sig.emit(SignalProcessSpawn, process)
@@ -91,6 +114,24 @@ func (p *ProcessManager) WaitProcess(process Process) {
 	_, err = proc.Wait()
 	if err != nil {
 		p.logger.Error(err)
+	}
+
+	stdout := bufio.NewScanner(process.stdout)
+	for stdout.Scan() {
+		p.logger.Tracef("[%v] %v", process.file, stdout.Text())
+	}
+	if err := stdout.Err(); err != nil {
+		p.logger.Error(err)
+		return
+	}
+
+	stderr := bufio.NewScanner(process.stderr)
+	for stderr.Scan() {
+		p.logger.Errorf("[%v] %v", process.file, stderr.Text())
+	}
+	if err := stderr.Err(); err != nil {
+		p.logger.Error(err)
+		return
 	}
 
 	p.sig.emit(SignalProcessDie, process.pid)
