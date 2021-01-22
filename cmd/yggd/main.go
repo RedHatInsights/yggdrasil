@@ -96,9 +96,6 @@ func main() {
 		workerEnv := []string{
 			fmt.Sprintf("YGG_SOCKET_ADDR=unix:%v", dispatcherSocketAddr),
 		}
-		if c.Path("cert-file") != "" {
-			workerEnv = append(workerEnv, fmt.Sprintf("YGG_CERT_FILE=%v", c.Path("cert-file")))
-		}
 		processManager, err := yggdrasil.NewProcessManager(db, workerEnv)
 		if err != nil {
 			return cli.NewExitError(err, 1)
@@ -157,7 +154,7 @@ func main() {
 			logger := log.New(os.Stderr, fmt.Sprintf("%v[dispatcher_routine] ", log.Prefix()), log.Flags(), log.CurrentLevel())
 			logger.Trace("init")
 
-			if localErr := dispatcher.ListenAndServe(dispatcherSocketAddr, c.Path("cert-file"), c.Path("key-file")); localErr != nil {
+			if localErr := dispatcher.ListenAndServe(dispatcherSocketAddr); localErr != nil {
 				logger.Trace(localErr)
 				err = localErr
 				quit <- syscall.SIGTERM

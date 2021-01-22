@@ -10,7 +10,6 @@ import (
 
 	pb "github.com/redhatinsights/yggdrasil/protocol"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials"
 )
 
 var yggdDispatchSocketAddr string
@@ -21,21 +20,9 @@ func main() {
 	if !ok {
 		log.Fatal("Missing YGG_SOCKET_ADDR environment variable")
 	}
-	certFile, _ := os.LookupEnv("YGG_CERT_FILE")
-
-	var opts []grpc.DialOption
-	if certFile != "" {
-		creds, err := credentials.NewClientTLSFromFile(certFile, "")
-		if err != nil {
-			log.Fatal(err)
-		}
-		opts = append(opts, grpc.WithTransportCredentials(creds))
-	} else {
-		opts = append(opts, grpc.WithInsecure())
-	}
 
 	// Dial the dispatcher on its well-known address.
-	conn, err := grpc.Dial(yggdDispatchSocketAddr, opts...)
+	conn, err := grpc.Dial(yggdDispatchSocketAddr, grpc.WithInsecure())
 	if err != nil {
 		log.Fatal(err)
 	}
