@@ -162,7 +162,15 @@ func (p *DataProcessor) HandleDataReturnSignal(c <-chan interface{}) {
 			dataMessage := obj.(Data)
 
 			tx = p.db.Txn(false)
-			obj, err = tx.First(tableNameWorker, indexNameHandler, dataMessage.Directive)
+			obj, err = tx.First(tableNameData, indexNameID, dataMessage.ResponseTo)
+			if err != nil {
+				p.logger.Error(err)
+				return
+			}
+			originalMessage := obj.(Data)
+
+			tx = p.db.Txn(false)
+			obj, err = tx.First(tableNameWorker, indexNameHandler, originalMessage.Directive)
 			if err != nil {
 				p.logger.Error(err)
 				return
