@@ -12,11 +12,6 @@ import (
 )
 
 const (
-	// SignalMessageRecv is emitted when an MQTT message is received and
-	// unmarshaled. The value emitted on the channel is the message ID in the
-	// form of a UUIDv4-formatted string.
-	SignalMessageRecv = "message-recv"
-
 	// SignalMessageSend is emitted when an MQTT message is marshaled and
 	// published. The value emitted on the channel is the message ID on the
 	// form of a UUIDv4-formatted string.
