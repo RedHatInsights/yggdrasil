@@ -9,6 +9,8 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"sync"
+	"time"
 
 	"git.sr.ht/~spc/go-log"
 	"github.com/hashicorp/go-memdb"
@@ -31,19 +33,22 @@ const (
 // Process encapsulates the information about a process monitored by
 // ProcessManager.
 type Process struct {
-	pid    int
-	file   string
-	stdout io.ReadCloser
-	stderr io.ReadCloser
+	pid       int
+	file      string
+	stdout    io.ReadCloser
+	stderr    io.ReadCloser
+	startedAt time.Time
 }
 
 // ProcessManager spawns processes and monitors them for unexpected exits.
 // If a managed process unexpectedly exits, it is spawned again.
 type ProcessManager struct {
-	logger    *log.Logger
-	sig       signalEmitter
-	db        *memdb.MemDB
-	workerEnv []string
+	logger     *log.Logger
+	sig        signalEmitter
+	db         *memdb.MemDB
+	workerEnv  []string
+	rw         sync.RWMutex
+	delayStart map[string]time.Duration
 }
 
 // NewProcessManager creates a new ProcessManager.
@@ -53,6 +58,7 @@ func NewProcessManager(db *memdb.MemDB, workerEnv []string) (*ProcessManager, er
 
 	p.db = db
 	p.workerEnv = workerEnv
+	p.delayStart = make(map[string]time.Duration)
 
 	return p, nil
 }
@@ -64,7 +70,7 @@ func (p *ProcessManager) Connect(name string) <-chan interface{} {
 }
 
 // StartProcess executes file and asynchronously waits for the process to die.
-func (p *ProcessManager) StartProcess(file string) {
+func (p *ProcessManager) StartProcess(file string, delay time.Duration) {
 	p.logger.Debugf("StartProcess(%v)", file)
 	cmd := exec.Command(file)
 	cmd.Env = p.workerEnv
@@ -81,16 +87,29 @@ func (p *ProcessManager) StartProcess(file string) {
 		return
 	}
 
+	if delay < 0 {
+		p.logger.Warnf("process %v has failed to start too many times", file)
+		return
+	}
+
+	p.rw.Lock()
+	p.delayStart[file] = delay
+	p.rw.Unlock()
+
+	p.logger.Tracef("sleeping for %v", delay)
+	time.Sleep(delay)
+
 	if err := cmd.Start(); err != nil {
 		p.logger.Error(err)
 		return
 	}
 
 	process := Process{
-		pid:    cmd.Process.Pid,
-		file:   file,
-		stdout: stdout,
-		stderr: stderr,
+		pid:       cmd.Process.Pid,
+		file:      file,
+		stdout:    stdout,
+		stderr:    stderr,
+		startedAt: time.Now(),
 	}
 
 	p.sig.emit(SignalProcessSpawn, process)
@@ -98,7 +117,7 @@ func (p *ProcessManager) StartProcess(file string) {
 	p.logger.Tracef("emitted value: %#v", process)
 
 	tx := p.db.Txn(true)
-	tx.Insert("process", &process)
+	tx.Insert(tableNameProcess, &process)
 	tx.Commit()
 
 	go p.WaitProcess(process)
@@ -114,6 +133,15 @@ func (p *ProcessManager) WaitProcess(process Process) {
 	_, err = proc.Wait()
 	if err != nil {
 		p.logger.Error(err)
+	}
+
+	var delay time.Duration
+	timeAlive := time.Now().Sub(process.startedAt)
+	if timeAlive < 1*time.Second {
+		p.rw.Lock()
+		p.delayStart[process.file] += 5 * time.Second
+		delay = p.delayStart[process.file]
+		p.rw.Unlock()
 	}
 
 	stdout := bufio.NewScanner(process.stdout)
@@ -147,7 +175,12 @@ func (p *ProcessManager) WaitProcess(process Process) {
 	tx.Delete(tableNameProcess, obj)
 	tx.Commit()
 
-	go p.StartProcess(process.file)
+	if delay > 30*time.Second {
+		p.logger.Warnf("file %v has spawned too many times", process.file)
+		return
+	}
+
+	go p.StartProcess(process.file, delay)
 }
 
 // BootstrapWorkers identifies any worker programs in dir and spawns them.
@@ -160,7 +193,7 @@ func (p *ProcessManager) BootstrapWorkers(dir string) error {
 	for _, info := range fileInfos {
 		if strings.HasSuffix(info.Name(), "worker") {
 			p.logger.Debugf("found worker: %v", info.Name())
-			p.StartProcess(filepath.Join(dir, info.Name()))
+			p.StartProcess(filepath.Join(dir, info.Name()), 0)
 		}
 	}
 
