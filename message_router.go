@@ -1,8 +1,11 @@
 package yggdrasil
 
 import (
+	"crypto/tls"
+	"crypto/x509"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"time"
 
 	"git.sr.ht/~spc/go-log"
@@ -35,21 +38,46 @@ type MessageRouter struct {
 
 // NewMessageRouter creates a new router, configured with an MQTT client for
 // communcation with remote services.
-func NewMessageRouter(db *memdb.MemDB, brokers []string) (*MessageRouter, error) {
+func NewMessageRouter(db *memdb.MemDB, brokers []string, certFile, keyFile, caRoot string) (*MessageRouter, error) {
 	m := new(MessageRouter)
 	m.logger = log.New(log.Writer(), fmt.Sprintf("%v[%T] ", log.Prefix(), m), log.Flags(), log.CurrentLevel())
-
-	opts := mqtt.NewClientOptions()
-	for _, broker := range brokers {
-		opts.AddBroker(broker)
-	}
-	m.client = mqtt.NewClient(opts)
 
 	consumerID, err := getConsumerUUID()
 	if err != nil {
 		return nil, err
 	}
 	m.consumerID = consumerID
+
+	opts := mqtt.NewClientOptions()
+	opts.SetClientID(m.consumerID)
+
+	for _, broker := range brokers {
+		opts.AddBroker(broker)
+	}
+
+	if certFile != "" && keyFile != "" {
+		tlsConfig := &tls.Config{}
+
+		if caRoot != "" {
+			pool := x509.NewCertPool()
+
+			data, err := ioutil.ReadFile(caRoot)
+			if err != nil {
+				return nil, err
+			}
+			pool.AppendCertsFromPEM(data)
+			tlsConfig.RootCAs = pool
+		}
+
+		cert, err := tls.LoadX509KeyPair(certFile, keyFile)
+		if err != nil {
+			return nil, err
+		}
+		tlsConfig.Certificates = []tls.Certificate{cert}
+
+		opts.SetTLSConfig(tlsConfig)
+	}
+	m.client = mqtt.NewClient(opts)
 
 	m.db = db
 
@@ -67,7 +95,10 @@ func (m *MessageRouter) ConnectClient() error {
 	if token := m.client.Connect(); token.Wait() && token.Error() != nil {
 		return token.Error()
 	}
-	m.logger.Trace("connected to broker")
+	options := m.client.OptionsReader()
+	for _, url := range options.Servers() {
+		m.logger.Tracef("connected to broker %v", url)
+	}
 	return nil
 }
 

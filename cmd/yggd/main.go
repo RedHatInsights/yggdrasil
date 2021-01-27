@@ -33,6 +33,16 @@ func main() {
 			Name:  "log-level",
 			Value: "info",
 		}),
+		altsrc.NewStringFlag(&cli.StringFlag{
+			Name: "cert-file",
+		}),
+		altsrc.NewStringFlag(&cli.StringFlag{
+			Name: "key-file",
+		}),
+		&cli.StringFlag{
+			Name:   "ca-root",
+			Hidden: true,
+		},
 		altsrc.NewStringSliceFlag(&cli.StringSliceFlag{
 			Name: "broker",
 		}),
@@ -106,7 +116,7 @@ func main() {
 			return cli.NewExitError(err, 1)
 		}
 
-		messageRouter, err := yggdrasil.NewMessageRouter(db, c.StringSlice("broker"))
+		messageRouter, err := yggdrasil.NewMessageRouter(db, c.StringSlice("broker"), c.String("cert-file"), c.String("key-file"), c.String("ca-root"))
 		if err != nil {
 			return cli.NewExitError(err, 1)
 		}
@@ -172,16 +182,19 @@ func main() {
 			if localError := messageRouter.ConnectClient(); localError != nil {
 				err = localError
 				quit <- syscall.SIGTERM
+				return
 			}
 
 			if localErr := messageRouter.PublishConnectionStatus(); localErr != nil {
 				err = localErr
 				quit <- syscall.SIGTERM
+				return
 			}
 
 			if localErr := messageRouter.SubscribeAndRoute(); localErr != nil {
 				err = localErr
 				quit <- syscall.SIGTERM
+				return
 			}
 		}(sigProcessBootstrap)
 
