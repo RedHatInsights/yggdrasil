@@ -17,7 +17,7 @@ LONGNAME  := yggdrasil
 SUMMARY   := yggdrasil
 # Used as the tarball file name. Cannot contain spaces.
 PKGNAME   := yggdrasil
-VERSION   := 0.0.1
+VERSION   := 0.1
 
 # Installation directories
 PREFIX        ?= /usr/local
@@ -36,20 +36,20 @@ SYSTEMD_SYSTEM_UNIT_DIR  := $(shell pkg-config --variable systemdsystemunitdir s
 
 # Build flags
 LDFLAGS := 
-LDFLAGS += -X github.com/redhatinsights/yggdrasil.Version=$(VERSION)
-LDFLAGS += -X github.com/redhatinsights/yggdrasil.ShortName=$(SHORTNAME)
-LDFLAGS += -X github.com/redhatinsights/yggdrasil.LongName=$(LONGNAME)
-LDFLAGS += -X github.com/redhatinsights/yggdrasil.Summary=$(SUMMARY)
-LDFLAGS += -X github.com/redhatinsights/yggdrasil.PrefixDir=$(PREFIX)
-LDFLAGS += -X github.com/redhatinsights/yggdrasil.BinDir=$(BINDIR)
-LDFLAGS += -X github.com/redhatinsights/yggdrasil.SbinDir=$(SBINDIR)
-LDFLAGS += -X github.com/redhatinsights/yggdrasil.LibexecDir=$(LIBEXECDIR)
-LDFLAGS += -X github.com/redhatinsights/yggdrasil.SysconfDir=$(SYSCONFDIR)
-LDFLAGS += -X github.com/redhatinsights/yggdrasil.DataDir=$(DATADIR)
-LDFLAGS += -X github.com/redhatinsights/yggdrasil.DatarootDir=$(DATAROOTDIR)
-LDFLAGS += -X github.com/redhatinsights/yggdrasil.ManDir=$(MANDIR)
-LDFLAGS += -X github.com/redhatinsights/yggdrasil.DocDir=$(DOCDIR)
-LDFLAGS += -X github.com/redhatinsights/yggdrasil.LocalstateDir=$(LOCALSTATEDIR)
+LDFLAGS += -X 'github.com/redhatinsights/yggdrasil.Version=$(VERSION)'
+LDFLAGS += -X 'github.com/redhatinsights/yggdrasil.ShortName=$(SHORTNAME)'
+LDFLAGS += -X 'github.com/redhatinsights/yggdrasil.LongName=$(LONGNAME)'
+LDFLAGS += -X 'github.com/redhatinsights/yggdrasil.Summary=$(SUMMARY)'
+LDFLAGS += -X 'github.com/redhatinsights/yggdrasil.PrefixDir=$(PREFIX)'
+LDFLAGS += -X 'github.com/redhatinsights/yggdrasil.BinDir=$(BINDIR)'
+LDFLAGS += -X 'github.com/redhatinsights/yggdrasil.SbinDir=$(SBINDIR)'
+LDFLAGS += -X 'github.com/redhatinsights/yggdrasil.LibexecDir=$(LIBEXECDIR)'
+LDFLAGS += -X 'github.com/redhatinsights/yggdrasil.SysconfDir=$(SYSCONFDIR)'
+LDFLAGS += -X 'github.com/redhatinsights/yggdrasil.DataDir=$(DATADIR)'
+LDFLAGS += -X 'github.com/redhatinsights/yggdrasil.DatarootDir=$(DATAROOTDIR)'
+LDFLAGS += -X 'github.com/redhatinsights/yggdrasil.ManDir=$(MANDIR)'
+LDFLAGS += -X 'github.com/redhatinsights/yggdrasil.DocDir=$(DOCDIR)'
+LDFLAGS += -X 'github.com/redhatinsights/yggdrasil.LocalstateDir=$(LOCALSTATEDIR)'
 
 BUILDFLAGS :=
 ifeq ($(shell find . -name vendor), ./vendor)
