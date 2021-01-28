@@ -28,23 +28,29 @@ func main() {
 			Name:      "config",
 			Value:     defaultConfigFilePath,
 			TakesFile: true,
+			Usage:     "Read config values from `FILE`",
 		},
 		altsrc.NewStringFlag(&cli.StringFlag{
 			Name:  "log-level",
 			Value: "info",
+			Usage: "Set the logging output level to `LEVEL`",
 		}),
 		altsrc.NewStringFlag(&cli.StringFlag{
-			Name: "cert-file",
+			Name:  "cert-file",
+			Usage: "Use `FILE` as the client certificate",
 		}),
 		altsrc.NewStringFlag(&cli.StringFlag{
-			Name: "key-file",
+			Name:  "key-file",
+			Usage: "Use `FILE` as the client's private key",
 		}),
 		&cli.StringFlag{
 			Name:   "ca-root",
 			Hidden: true,
+			Usage:  "Use `FILE` as the root CA",
 		},
 		altsrc.NewStringSliceFlag(&cli.StringSliceFlag{
-			Name: "broker",
+			Name:  "broker",
+			Usage: "Connect to the broker specified in `URI`",
 		}),
 		&cli.BoolFlag{
 			Name:   "generate-man-page",
