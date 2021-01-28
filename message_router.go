@@ -141,7 +141,7 @@ func (m *MessageRouter) PublishConnectionStatus() error {
 	if err != nil {
 		return err
 	}
-	if err := m.publishControl(byte(0), true, data); err != nil {
+	if err := m.publishControl(2, true, data); err != nil {
 		return err
 	}
 
@@ -189,7 +189,7 @@ func (m *MessageRouter) SubscribeAndRoute() error {
 				m.logger.Error(err)
 				return
 			}
-			if err := m.publishControl(byte(0), false, data); err != nil {
+			if err := m.publishControl(0, false, data); err != nil {
 				m.logger.Error(err)
 			}
 		case CommandNameReconnect:
@@ -255,7 +255,7 @@ func (m *MessageRouter) HandleDataConsumeSignal(c <-chan interface{}) {
 					return
 				}
 
-				if err := m.publishData(byte(0), false, data); err != nil {
+				if err := m.publishData(0, false, data); err != nil {
 					m.logger.Error(err)
 					return
 				}
@@ -318,14 +318,14 @@ func (m *MessageRouter) subscribeData(handler func(mqtt.Client, mqtt.Message)) e
 	topic := fmt.Sprintf("%v/%v/data/in", TopicPrefix, m.consumerID)
 	m.logger.Debugf("subscribeData(%v)", topic)
 
-	return m.subscribe(topic, byte(0), handler)
+	return m.subscribe(topic, 2, handler)
 }
 
 func (m *MessageRouter) subscribeControl(handler func(mqtt.Client, mqtt.Message)) error {
 	topic := fmt.Sprintf("%v/%v/control/in", TopicPrefix, m.consumerID)
 	m.logger.Debugf("subscribeControl(%v)", topic)
 
-	return m.subscribe(topic, byte(0), handler)
+	return m.subscribe(topic, 2, handler)
 }
 
 func (m *MessageRouter) subscribe(topic string, qos byte, handler func(mqtt.Client, mqtt.Message)) error {
