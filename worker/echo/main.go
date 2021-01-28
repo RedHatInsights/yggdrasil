@@ -16,7 +16,8 @@ var yggdDispatchSocketAddr string
 
 func main() {
 	// Get initialization values from the environment.
-	yggdDispatchSocketAddr, ok := os.LookupEnv("YGG_SOCKET_ADDR")
+	var ok bool
+	yggdDispatchSocketAddr, ok = os.LookupEnv("YGG_SOCKET_ADDR")
 	if !ok {
 		log.Fatal("Missing YGG_SOCKET_ADDR environment variable")
 	}
