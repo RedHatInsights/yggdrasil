@@ -116,7 +116,7 @@ install: $(BINS) $(DATA)
 	pkg-config --modversion systemd || exit 1
 	install -D -m755 ./yggd $(DESTDIR)$(SBINDIR)/$(SHORTNAME)d
 	install -D -m755 ./ygg $(DESTDIR)$(BINDIR)/$(SHORTNAME)
-	[[ -e $(DESTDIR)$(SYSCONFDIR)/$(LONGNAME)/config.toml ]] || install -D -m644 ./data/$(LONGNAME)/config.toml $(DESTDIR)$(SYSCONFDIR)/$(LONGNAME)/config.toml
+	[[ -e $(DESTDIR)$(SYSCONFDIR)/$(LONGNAME)/config.toml ]] || install -D -m644 ./data/yggdrasil/config.toml $(DESTDIR)$(SYSCONFDIR)/$(LONGNAME)/config.toml
 	install -D -m644 ./data/systemd/yggd.service $(DESTDIR)$(SYSTEMD_SYSTEM_UNIT_DIR)/$(SHORTNAME)d.service
 	install -D -m644 ./ygg.1.gz $(DESTDIR)$(MANDIR)/man1/$(SHORTNAME).1.gz
 	install -D -m644 ./yggd.1.gz $(DESTDIR)$(MANDIR)/man1/$(SHORTNAME)d.1.gz
