@@ -98,6 +98,8 @@ func NewMessageRouter(db *memdb.MemDB, brokers []string, certFile, keyFile, caRo
 	}
 	opts.SetBinaryWill(fmt.Sprintf("%v/%v/control/out", TopicPrefix, consumerID), data, 2, true)
 
+	opts.SetCleanSession(true)
+
 	m.client = mqtt.NewClient(opts)
 
 	m.db = db
