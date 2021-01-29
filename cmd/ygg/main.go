@@ -153,58 +153,14 @@ func main() {
 		},
 		{
 			Name:  "status",
-			Usage: "reports status of connection and activation",
-			Flags: []cli.Flag{
-				// TODO: load this value from config ? (or have a default)
-				&cli.StringSliceFlag{
-					Name: "broker",
-				},
-			},
+			Usage: "reports connection status",
 			Action: func(c *cli.Context) error {
-				hostname, err := os.Hostname()
+				s, err := getStatus()
 				if err != nil {
-					// default for messaging if hostname can't be read
-					hostname = "host"
+					return cli.NewExitError(err, 1)
 				}
-				fmt.Printf("Connection status for %s:\n\n", hostname)
+				fmt.Println(s)
 
-				// get RHSM registration status
-				uuid, err := getConsumerUUID()
-				if err != nil {
-					fmt.Printf("⛔️ ERROR: Unable to check Red Hat Subscription Manager status: %s\n\n", err)
-				} else {
-
-					if uuid != "" {
-						fmt.Println("✅ Connected to Red Hat Subscription Manager (RHSM).")
-					} else {
-						fmt.Println("❌ Not connected to Red Hat Subscription Manager (RHSM).")
-					}
-				}
-
-				// get broker connection status
-				errMsg := "⛔️ ERROR: Unable to connect to Cloud Client service: %s\n\n"
-				r, err := yggdrasil.NewMessageRouter(c.StringSlice("broker"))
-				if err != nil {
-					fmt.Printf(errMsg, err)
-				} else {
-					err = r.ConnectClient()
-					if err != nil {
-						// connection error
-						fmt.Printf(errMsg, err)
-					} else {
-						fmt.Println("✅ Cloud Client service is active.\n")
-					}
-				}
-				fmt.Println("See all your connected systems: http://red.ht/connect\n")
-
-				// get Insights registration status
-				// TODO (?)
-
-				// log active services (prescribed by yggdrasil-ux)
-				// TODO
-
-				// get service dashboard status
-				// TODO
 				return nil
 			},
 		},
