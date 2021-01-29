@@ -77,6 +77,27 @@ func NewMessageRouter(db *memdb.MemDB, brokers []string, certFile, keyFile, caRo
 
 		opts.SetTLSConfig(tlsConfig)
 	}
+
+	willMessage := ConnectionStatus{
+		Type:       "connection-status",
+		MessageID:  uuid.New().String(),
+		ResponseTo: "",
+		Version:    1,
+		Sent:       time.Now(),
+		Content: struct {
+			CanonicalFacts CanonicalFacts               "json:\"canonical_facts\""
+			Dispatchers    map[string]map[string]string "json:\"dispatchers\""
+			State          ConnectionState              "json:\"state\""
+		}{
+			State: ConnectionStateOffline,
+		},
+	}
+	data, err := json.Marshal(&willMessage)
+	if err != nil {
+		return nil, err
+	}
+	opts.SetBinaryWill(fmt.Sprintf("%v/%v/control/out", TopicPrefix, consumerID), data, 2, true)
+
 	m.client = mqtt.NewClient(opts)
 
 	m.db = db
