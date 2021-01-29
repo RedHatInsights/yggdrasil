@@ -271,13 +271,13 @@ func (m *MessageRouter) HandleDataConsumeSignal(c <-chan interface{}) {
 
 			if dataMessage.ResponseTo != "" {
 				tx := m.db.Txn(false)
-				obj, err := tx.First(tableNameData, indexNameID, messageID)
+				obj, err := tx.First(tableNameData, indexNameID, dataMessage.ResponseTo)
 				if err != nil {
 					m.logger.Error(err)
 					return
 				}
 				if obj == nil {
-					m.logger.Errorf("no data message with ID %v", messageID)
+					m.logger.Errorf("no original data message with ID %v", messageID)
 					return
 				}
 
