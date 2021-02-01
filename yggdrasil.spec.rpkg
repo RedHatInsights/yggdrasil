@@ -1,5 +1,10 @@
 %define debug_package %{nil}
 
+%global long_name %{name}
+%global short_name %(s=%{long_name}; echo ${s:0:3})
+%global pkg_name %{name}
+%global _summary %{name}
+
 Name:    {{{ git_dir_name }}}
 Version: {{{ git_dir_version }}}
 Release: 1%{?dist}
@@ -28,10 +33,10 @@ a receiving queue for instructions to be sent to the system via a broker.
 make PREFIX=%{_prefix} \
      SYSCONFDIR=%{_sysconfdir} \
      LOCALSTATEDIR=%{_localstatedir} \
-     SHORTNAME=%{name} \
-     LONGNAME=%{name} \
-     PKGNAME=%{name} \
-     SUMMARY=%{name}
+     SHORTNAME=%{short_name} \
+     LONGNAME=%{long_name} \
+     PKGNAME=%{pkg_name} \
+     SUMMARY=%{_summary}
 
 
 %install
@@ -39,19 +44,19 @@ make PREFIX=%{_prefix} \
      SYSCONFDIR=%{_sysconfdir} \
      LOCALSTATEDIR=%{_localstatedir} \
      DESTDIR=%{buildroot} \
-     SHORTNAME=%{name} \
-     LONGNAME=%{name} \
-     PKGNAME=%{name} \
-     SUMMARY=%{name} \
+     SHORTNAME=%{short_name} \
+     LONGNAME=%{long_name} \
+     PKGNAME=%{pkg_name} \
+     SUMMARY=%{_summary} \
      install
 
 
 %files
 %doc README.md
-%{_bindir}/ygg
-%{_sbindir}/yggd
-%{_sysconfdir}/%{name}/config.toml
-%{_unitdir}/yggd.service
+%{_bindir}/%{short_name}
+%{_sbindir}/%{short_name}d
+%{_sysconfdir}/%{long_name}/config.toml
+%{_unitdir}/%{short_name}d.service
 %{_datadir}/bash-completion/completions/*
 %{_mandir}/man1/*
 
