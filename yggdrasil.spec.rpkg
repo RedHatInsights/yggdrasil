@@ -1,9 +1,9 @@
 %define debug_package %{nil}
 
-%global long_name %{name}
-%global short_name %(s=%{long_name}; echo ${s:0:3})
-%global pkg_name %{name}
-%global _summary %{name}
+%global long_name  {{{ git_dir_name }}}
+%global short_name %(s={{{ git_dir_name }}}; echo ${s:0:3})
+%global pkg_name   {{{ git_dir_name }}}
+%global _summary   {{{ git_dir_name }}}
 
 Name:    {{{ git_dir_name }}}
 Version: {{{ git_dir_version }}}
