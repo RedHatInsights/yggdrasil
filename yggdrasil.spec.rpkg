@@ -27,7 +27,11 @@ a receiving queue for instructions to be sent to the system via a broker.
 %build
 make PREFIX=%{_prefix} \
      SYSCONFDIR=%{_sysconfdir} \
-     LOCALSTATEDIR=%{_localstatedir}
+     LOCALSTATEDIR=%{_localstatedir} \
+     SHORTNAME=%{name} \
+     LONGNAME=%{name} \
+     PKGNAME=%{name} \
+     SUMMARY=%{name}
 
 
 %install
@@ -35,6 +39,10 @@ make PREFIX=%{_prefix} \
      SYSCONFDIR=%{_sysconfdir} \
      LOCALSTATEDIR=%{_localstatedir} \
      DESTDIR=%{buildroot} \
+     SHORTNAME=%{name} \
+     LONGNAME=%{name} \
+     PKGNAME=%{name} \
+     SUMMARY=%{name} \
      install
 
 
