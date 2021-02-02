@@ -1,3 +1,8 @@
+# This RPM spec file exists primarily to enable CI/CD pipelines and automatic
+# testing of built RPMs. This RPM can be used as a suitable baseline for a
+# proper distribution package, but changes should be made to suit the needs of
+# the package.
+
 %define debug_package %{nil}
 
 %global long_name  {{{ git_dir_name }}}
