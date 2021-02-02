@@ -12,8 +12,8 @@ var (
 	// LongName is used in file and directory names.
 	LongName string
 
-	// Summary is a long-form description.
-	Summary string
+	// BrandName is a long-form description.
+	BrandName string
 
 	// TopicPrefix is used as a prefix to all MQTT topics in the client.
 	TopicPrefix string
@@ -77,8 +77,8 @@ func init() {
 	if LongName == "" {
 		LongName = "yggdrasil"
 	}
-	if Summary == "" {
-		Summary = "yggdrasil"
+	if BrandName == "" {
+		BrandName = "yggdrasil"
 	}
 	if TopicPrefix == "" {
 		TopicPrefix = "yggdrasil"

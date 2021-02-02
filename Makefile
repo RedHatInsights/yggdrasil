@@ -14,7 +14,7 @@ SHORTNAME := ygg
 # Used as file and directory names. Cannot contain spaces.
 LONGNAME  := yggdrasil
 # Used as a long-form description. Can contain spaces and punctuation.
-SUMMARY   := yggdrasil
+BRANDNAME   := yggdrasil
 # Used as the tarball file name. Cannot contain spaces.
 PKGNAME   := yggdrasil
 VERSION   := 0.1
@@ -39,7 +39,7 @@ LDFLAGS :=
 LDFLAGS += -X 'github.com/redhatinsights/yggdrasil.Version=$(VERSION)'
 LDFLAGS += -X 'github.com/redhatinsights/yggdrasil.ShortName=$(SHORTNAME)'
 LDFLAGS += -X 'github.com/redhatinsights/yggdrasil.LongName=$(LONGNAME)'
-LDFLAGS += -X 'github.com/redhatinsights/yggdrasil.Summary=$(SUMMARY)'
+LDFLAGS += -X 'github.com/redhatinsights/yggdrasil.BrandName=$(BRANDNAME)'
 LDFLAGS += -X 'github.com/redhatinsights/yggdrasil.PrefixDir=$(PREFIX)'
 LDFLAGS += -X 'github.com/redhatinsights/yggdrasil.BinDir=$(BINDIR)'
 LDFLAGS += -X 'github.com/redhatinsights/yggdrasil.SbinDir=$(SBINDIR)'
@@ -96,7 +96,7 @@ data: $(DATA)
 	sed \
 	    -e 's,[@]SHORTNAME[@],$(SHORTNAME),g' \
 		-e 's,[@]LONGNAME[@],$(LONGNAME),g' \
-		-e 's,[@]SUMMARY[@],$(SUMMARY),g' \
+		-e 's,[@]BRANDNAME[@],$(BRANDNAME),g' \
 		-e 's,[@]VERSION[@],$(VERSION),g' \
 		-e 's,[@]PACKAGE[@],$(PACKAGE),g' \
 		-e 's,[@]PREFIX[@],$(PREFIX),g' \

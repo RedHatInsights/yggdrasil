@@ -8,7 +8,7 @@
 %global long_name  {{{ git_dir_name }}}
 %global short_name %(s={{{ git_dir_name }}}; echo ${s:0:3})
 %global pkg_name   {{{ git_dir_name }}}
-%global _summary   {{{ git_dir_name }}}
+%global brand_name   {{{ git_dir_name }}}
 
 Name:    {{{ git_dir_name }}}
 Version: {{{ git_dir_version }}}
@@ -41,7 +41,7 @@ make PREFIX=%{_prefix} \
      SHORTNAME=%{short_name} \
      LONGNAME=%{long_name} \
      PKGNAME=%{pkg_name} \
-     SUMMARY=%{_summary}
+     BRANDNAME=%{brand_name}
 
 
 %install
@@ -52,7 +52,7 @@ make PREFIX=%{_prefix} \
      SHORTNAME=%{short_name} \
      LONGNAME=%{long_name} \
      PKGNAME=%{pkg_name} \
-     SUMMARY=%{_summary} \
+     BRANDNAME=%{brand_name} \
      install
 
 
