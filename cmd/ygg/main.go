@@ -144,7 +144,7 @@ func main() {
 			Action: func(c *cli.Context) error {
 				facts, err := yggdrasil.GetCanonicalFacts()
 				if err != nil {
-					return err
+					return cli.Exit(err, 1)
 				}
 				data, err := json.Marshal(facts)
 				if err != nil {
@@ -166,13 +166,13 @@ func main() {
 			Action: func(c *cli.Context) error {
 				facts, err := yggdrasil.GetFacts()
 				if err != nil {
-					return err
+					return cli.Exit(err, 1)
 				}
 				switch c.String("format") {
 				case "json":
 					data, err := json.Marshal(facts)
 					if err != nil {
-						return err
+						return cli.Exit(err, 1)
 					}
 					fmt.Print(string(data))
 				case "table":
@@ -187,7 +187,7 @@ func main() {
 					}
 					w.Flush()
 				default:
-					return fmt.Errorf("unsupported value for '--format': %v", c.String("format"))
+					return cli.Exit(fmt.Errorf("unsupported value for '--format': %v", c.String("format")), 1)
 				}
 				return nil
 			},
@@ -253,7 +253,7 @@ func main() {
 		}
 		data, err := generationFunc()
 		if err != nil {
-			return err
+			return cli.Exit(err, 1)
 		}
 		fmt.Println(data)
 		return nil
