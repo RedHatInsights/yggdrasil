@@ -8,9 +8,12 @@ import (
 	"sort"
 	"strings"
 	"text/tabwriter"
+	"time"
 
 	"git.sr.ht/~spc/go-log"
 
+	"github.com/briandowns/spinner"
+	systemd "github.com/coreos/go-systemd/v22/dbus"
 	"github.com/redhatinsights/yggdrasil"
 	internal "github.com/redhatinsights/yggdrasil/internal"
 	"github.com/urfave/cli/v2"
@@ -46,10 +49,20 @@ func main() {
 					Usage: "register with `PASSWORD`",
 				},
 			},
+			Usage:       "Connects the system to cloud.redhat.com",
+			UsageText:   fmt.Sprintf("%v connect [command options]", app.Name),
+			Description: fmt.Sprintf("The connect command connects the system to Red Hat Subscription Manager and cloud.redhat.com and activates the %v daemon that enables cloud.redhat.com to interact with your system. For details visit: http://rd.ht/connector", yggdrasil.BrandName),
 			Action: func(c *cli.Context) error {
+				hostname, err := os.Hostname()
+				if err != nil {
+					return cli.Exit(err, 1)
+				}
+
+				fmt.Printf("Connecting %v to cloud.redhat.com.\nThis might take a few minutes.\n\n", hostname)
+
 				uuid, err := getConsumerUUID()
 				if err != nil {
-					return err
+					return cli.Exit(err, 1)
 				}
 				if uuid == "" {
 					username := c.String("username")
@@ -65,20 +78,36 @@ func main() {
 						fmt.Print("Password: ")
 						data, err := terminal.ReadPassword(int(os.Stdin.Fd()))
 						if err != nil {
-							return err
+							return cli.Exit(err, 1)
 						}
 						password = string(data)
 						fmt.Println()
 					}
 
+					s := spinner.New(spinner.CharSets[9], 100*time.Millisecond)
+					s.Suffix = " Connecting to Red Hat Subscription Manager..."
+					s.Start()
 					if err := register(username, password); err != nil {
-						log.Error(err)
+						log.Error(fmt.Sprintf("❌ %v", err))
 					}
+					s.Stop()
+					fmt.Printf("✅ Connected to Red Hat Subscription Manager\n")
+				} else {
+					fmt.Printf("✅ This system is already connected to Red Hat Subscription Manager\n")
 				}
 
+				s := spinner.New(spinner.CharSets[9], 100*time.Millisecond)
+				s.Suffix = fmt.Sprintf(" Activating the %v daemon", yggdrasil.BrandName)
+				s.Start()
 				if err := activate(); err != nil {
-					log.Error(err)
+					s.Stop()
+					log.Error(fmt.Sprintf("❌ %v", err))
+				} else {
+					s.Stop()
+					fmt.Printf("✅ Activated the %v daemon\n", yggdrasil.BrandName)
 				}
+
+				fmt.Printf("\nSee all your connected systems: http://red.ht/connector\n")
 
 				return nil
 			},
@@ -86,13 +115,25 @@ func main() {
 		{
 			Name: "disconnect",
 			Action: func(c *cli.Context) error {
+				hostname, err := os.Hostname()
+				if err != nil {
+					return cli.Exit(err, 1)
+				}
+				fmt.Printf("Disconnecting %v from cloud.redhat.com.\nThis might take a few minutes.\n\n", hostname)
+
+				s := spinner.New(spinner.CharSets[9], 100*time.Millisecond)
+				s.Suffix = " Disconnecting..."
+				s.Start()
 				if err := deactivate(); err != nil {
-					log.Error(err)
+					log.Error(fmt.Sprintf("❌ %v", err))
 				}
 
 				if err := unregister(); err != nil {
-					log.Error(err)
+					log.Error(fmt.Sprintf("❌ %v", err))
 				}
+				s.Stop()
+
+				fmt.Printf("\nSee all your connected systems: http://red.ht/connector\n")
 
 				return nil
 			},
@@ -155,11 +196,44 @@ func main() {
 			Name:  "status",
 			Usage: "reports connection status",
 			Action: func(c *cli.Context) error {
-				s, err := getStatus()
+				hostname, err := os.Hostname()
 				if err != nil {
-					return cli.NewExitError(err, 1)
+					return cli.Exit(err, 1)
 				}
-				fmt.Println(s)
+
+				fmt.Printf("Connection status for %v:\n", hostname)
+
+				uuid, err := getConsumerUUID()
+				if err != nil {
+					return cli.Exit(err, 1)
+				}
+				if uuid == "" {
+					fmt.Printf("❌ Not connected to Red Hat Subscription Manager\n")
+				} else {
+					fmt.Printf("✅ Connected to Red Hat Subscription Manager\n")
+				}
+
+				conn, err := systemd.NewSystemConnection()
+				if err != nil {
+					return cli.Exit(err, 1)
+				}
+				defer conn.Close()
+
+				unitName := yggdrasil.ShortName + "d.service"
+
+				properties, err := conn.GetUnitProperties(unitName)
+				if err != nil {
+					return cli.Exit(err, 1)
+				}
+
+				activeState := properties["ActiveState"]
+				if activeState.(string) == "active" {
+					fmt.Printf("✅ The %v daemon is active\n", yggdrasil.BrandName)
+				} else {
+					fmt.Printf("❌ The %v daemon is inactive\n", yggdrasil.BrandName)
+				}
+
+				fmt.Printf("\nSee all your connected systems: http://red.ht/connector\n")
 
 				return nil
 			},
