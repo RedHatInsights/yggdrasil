@@ -20,6 +20,9 @@ import (
 	"golang.org/x/crypto/ssh/terminal"
 )
 
+const successPrefix = "✅"
+const failPrefix = "❌"
+
 func main() {
 	app := cli.NewApp()
 	app.Usage = "control the system's connection to cloud.redhat.com"
@@ -42,59 +45,63 @@ func main() {
 			Name: "connect",
 			Flags: []cli.Flag{
 				&cli.StringFlag{
-					Name:  "username",
-					Usage: "register with `USERNAME`",
+					Name:    "username",
+					Usage:   "register with `USERNAME`",
+					Aliases: []string{"u"},
 				},
 				&cli.StringFlag{
-					Name:  "password",
-					Usage: "register with `PASSWORD`",
+					Name:    "password",
+					Usage:   "register with `PASSWORD`",
+					Aliases: []string{"p"},
 				},
 			},
 			Usage:       "Connects the system to cloud.redhat.com",
 			UsageText:   fmt.Sprintf("%v connect [command options]", app.Name),
 			Description: fmt.Sprintf("The connect command connects the system to Red Hat Subscription Manager and cloud.redhat.com and activates the %v daemon that enables cloud.redhat.com to interact with the system. For details visit: http://rd.ht/connector", yggdrasil.BrandName),
 			Action: func(c *cli.Context) error {
+				username := c.String("username")
+				password := c.String("password")
+				if username == "" {
+					password = ""
+					scanner := bufio.NewScanner(os.Stdin)
+					fmt.Print("Username: ")
+					scanner.Scan()
+					username = strings.TrimSpace(scanner.Text())
+				}
+				if password == "" {
+					fmt.Print("Password: ")
+					data, err := terminal.ReadPassword(int(os.Stdin.Fd()))
+					if err != nil {
+						return cli.Exit(err, 1)
+					}
+					password = string(data)
+					fmt.Printf("\n\n")
+				}
+
 				hostname, err := os.Hostname()
 				if err != nil {
 					return cli.Exit(err, 1)
 				}
 
-				fmt.Printf("Connecting %v to cloud.redhat.com.\nThis might take a few minutes.\n\n", hostname)
+				fmt.Printf("Connecting %v to cloud.redhat.com.\nThis might take a few seconds.\n\n", hostname)
 
 				uuid, err := getConsumerUUID()
 				if err != nil {
 					return cli.Exit(err, 1)
 				}
-				if uuid == "" {
-					username := c.String("username")
-					password := c.String("password")
-					if username == "" {
-						password = ""
-						scanner := bufio.NewScanner(os.Stdin)
-						fmt.Print("Username: ")
-						scanner.Scan()
-						username = strings.TrimSpace(scanner.Text())
-					}
-					if password == "" {
-						fmt.Print("Password: ")
-						data, err := terminal.ReadPassword(int(os.Stdin.Fd()))
-						if err != nil {
-							return cli.Exit(err, 1)
-						}
-						password = string(data)
-						fmt.Println()
-					}
 
+				if uuid == "" {
 					s := spinner.New(spinner.CharSets[9], 100*time.Millisecond)
 					s.Suffix = " Connecting to Red Hat Subscription Manager..."
 					s.Start()
 					if err := register(username, password); err != nil {
-						log.Error(fmt.Sprintf("❌ %v", err))
+						s.Stop()
+						return cli.Exit(err, 1)
 					}
 					s.Stop()
-					fmt.Printf("✅ Connected to Red Hat Subscription Manager\n")
+					fmt.Printf(successPrefix + " Connected to Red Hat Subscription Manager\n")
 				} else {
-					fmt.Printf("✅ This system is already connected to Red Hat Subscription Manager\n")
+					fmt.Printf(successPrefix + " This system is already connected to Red Hat Subscription Manager\n")
 				}
 
 				s := spinner.New(spinner.CharSets[9], 100*time.Millisecond)
@@ -102,11 +109,10 @@ func main() {
 				s.Start()
 				if err := activate(); err != nil {
 					s.Stop()
-					log.Error(fmt.Sprintf("❌ %v", err))
-				} else {
-					s.Stop()
-					fmt.Printf("✅ Activated the %v daemon\n", yggdrasil.BrandName)
+					return cli.Exit(err, 1)
 				}
+				s.Stop()
+				fmt.Printf(successPrefix+" Activated the %v daemon\n", yggdrasil.BrandName)
 
 				fmt.Printf("\nSee all your connected systems: http://red.ht/connector\n")
 
@@ -123,17 +129,18 @@ func main() {
 				if err != nil {
 					return cli.Exit(err, 1)
 				}
-				fmt.Printf("Disconnecting %v from cloud.redhat.com.\nThis might take a few minutes.\n\n", hostname)
+				fmt.Printf("Disconnecting %v from cloud.redhat.com.\nThis might take a few seconds.\n\n", hostname)
 
 				s := spinner.New(spinner.CharSets[9], 100*time.Millisecond)
+				defer s.Stop()
 				s.Suffix = " Disconnecting..."
 				s.Start()
 				if err := deactivate(); err != nil {
-					log.Error(fmt.Sprintf("❌ %v", err))
+					return cli.Exit(err, 1)
 				}
 
 				if err := unregister(); err != nil {
-					log.Error(fmt.Sprintf("❌ %v", err))
+					return cli.Exit(err, 1)
 				}
 				s.Stop()
 
@@ -168,8 +175,9 @@ func main() {
 			Description: "The facts command queries the system's dmiinfo to determine relevant facts about it (e.g. system architecture, etc.).",
 			Flags: []cli.Flag{
 				&cli.StringFlag{
-					Name:  "format",
-					Value: "table",
+					Name:    "format",
+					Aliases: []string{"f"},
+					Value:   "table",
 				},
 			},
 			Action: func(c *cli.Context) error {
@@ -212,16 +220,16 @@ func main() {
 					return cli.Exit(err, 1)
 				}
 
-				fmt.Printf("Connection status for %v:\n", hostname)
+				fmt.Printf("Connection status for %v:\n\n", hostname)
 
 				uuid, err := getConsumerUUID()
 				if err != nil {
 					return cli.Exit(err, 1)
 				}
 				if uuid == "" {
-					fmt.Printf("❌ Not connected to Red Hat Subscription Manager\n")
+					fmt.Printf(failPrefix + " Not connected to Red Hat Subscription Manager\n")
 				} else {
-					fmt.Printf("✅ Connected to Red Hat Subscription Manager\n")
+					fmt.Printf(successPrefix + " Connected to Red Hat Subscription Manager\n")
 				}
 
 				conn, err := systemd.NewSystemConnection()
@@ -239,9 +247,9 @@ func main() {
 
 				activeState := properties["ActiveState"]
 				if activeState.(string) == "active" {
-					fmt.Printf("✅ The %v daemon is active\n", yggdrasil.BrandName)
+					fmt.Printf(successPrefix+" The %v daemon is active\n", yggdrasil.BrandName)
 				} else {
-					fmt.Printf("❌ The %v daemon is inactive\n", yggdrasil.BrandName)
+					fmt.Printf(failPrefix+" The %v daemon is inactive\n", yggdrasil.BrandName)
 				}
 
 				fmt.Printf("\nSee all your connected systems: http://red.ht/connector\n")
