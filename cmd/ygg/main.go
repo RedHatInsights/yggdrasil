@@ -54,6 +54,10 @@ func main() {
 					Usage:   "register with `PASSWORD`",
 					Aliases: []string{"p"},
 				},
+				&cli.StringFlag{
+					Name:  "server",
+					Usage: "register against `URL`",
+				},
 			},
 			Usage:       "Connects the system to cloud.redhat.com",
 			UsageText:   fmt.Sprintf("%v connect [command options]", app.Name),
@@ -94,7 +98,7 @@ func main() {
 					s := spinner.New(spinner.CharSets[9], 100*time.Millisecond)
 					s.Suffix = " Connecting to Red Hat Subscription Manager..."
 					s.Start()
-					if err := register(username, password); err != nil {
+					if err := register(username, password, c.String("server")); err != nil {
 						s.Stop()
 						return cli.Exit(err, 1)
 					}

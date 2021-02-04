@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"net/url"
 
 	"github.com/godbus/dbus/v5"
 )
@@ -19,7 +20,7 @@ func getConsumerUUID() (string, error) {
 	return uuid, nil
 }
 
-func register(username, password string) error {
+func register(username, password, serverURL string) error {
 	conn, err := dbus.SystemBus()
 	if err != nil {
 		return err
@@ -51,7 +52,18 @@ func register(username, password string) error {
 		return err
 	}
 
-	if err := privConn.Object("com.redhat.RHSM1", "/com/redhat/RHSM1/Register").Call("com.redhat.RHSM1.Register.Register", dbus.Flags(0), "", username, password, map[string]string{}, map[string]string{}, "").Err; err != nil {
+	connectionOptions := make(map[string]string)
+	if serverURL != "" {
+		URL, err := url.Parse(serverURL)
+		if err != nil {
+			return err
+		}
+		connectionOptions["host"] = URL.Hostname()
+		connectionOptions["port"] = URL.Port()
+		connectionOptions["handler"] = URL.EscapedPath()
+	}
+
+	if err := privConn.Object("com.redhat.RHSM1", "/com/redhat/RHSM1/Register").Call("com.redhat.RHSM1.Register.Register", dbus.Flags(0), "", username, password, map[string]string{}, connectionOptions, "").Err; err != nil {
 		return err
 	}
 
