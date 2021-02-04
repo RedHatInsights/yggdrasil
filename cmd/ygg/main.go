@@ -22,6 +22,7 @@ import (
 
 func main() {
 	app := cli.NewApp()
+	app.Usage = "control the system's connection to cloud.redhat.com"
 
 	log.SetFlags(0)
 	log.SetPrefix("")
