@@ -143,6 +143,7 @@ func main() {
 		},
 		{
 			Name:        "canonical-facts",
+			Hidden:      true,
 			Usage:       "Prints canonical facts about the system.",
 			UsageText:   fmt.Sprintf("%v canonical-facts", app.Name),
 			Description: "The canonical-facts command prints data that uniquely identifies the system in the cloud.redhat.com inventory service. Use only as directed for debugging purposes.",
