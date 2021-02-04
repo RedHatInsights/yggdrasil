@@ -51,7 +51,7 @@ func main() {
 			},
 			Usage:       "Connects the system to cloud.redhat.com",
 			UsageText:   fmt.Sprintf("%v connect [command options]", app.Name),
-			Description: fmt.Sprintf("The connect command connects the system to Red Hat Subscription Manager and cloud.redhat.com and activates the %v daemon that enables cloud.redhat.com to interact with your system. For details visit: http://rd.ht/connector", yggdrasil.BrandName),
+			Description: fmt.Sprintf("The connect command connects the system to Red Hat Subscription Manager and cloud.redhat.com and activates the %v daemon that enables cloud.redhat.com to interact with the system. For details visit: http://rd.ht/connector", yggdrasil.BrandName),
 			Action: func(c *cli.Context) error {
 				hostname, err := os.Hostname()
 				if err != nil {
@@ -113,7 +113,10 @@ func main() {
 			},
 		},
 		{
-			Name: "disconnect",
+			Name:        "disconnect",
+			Usage:       "Disconnects the system from cloud.redhat.com",
+			UsageText:   fmt.Sprintf("%v disconnect", app.Name),
+			Description: fmt.Sprintf("The disconnect command disconnects the system from Red Hat Subscription Manager and cloud.redhat.com and deactivates the %v daemon. cloud.redhat.com will no longer be able to interact with the system.", yggdrasil.BrandName),
 			Action: func(c *cli.Context) error {
 				hostname, err := os.Hostname()
 				if err != nil {
@@ -139,8 +142,10 @@ func main() {
 			},
 		},
 		{
-			Name:  "canonical-facts",
-			Usage: "prints canonical facts about the system",
+			Name:        "canonical-facts",
+			Usage:       "Prints canonical facts about the system.",
+			UsageText:   fmt.Sprintf("%v canonical-facts", app.Name),
+			Description: "The canonical-facts command prints data that uniquely identifies the system in the cloud.redhat.com inventory service. Use only as directed for debugging purposes.",
 			Action: func(c *cli.Context) error {
 				facts, err := yggdrasil.GetCanonicalFacts()
 				if err != nil {
@@ -155,8 +160,10 @@ func main() {
 			},
 		},
 		{
-			Name:  "facts",
-			Usage: "prints information about the system like architecture",
+			Name:        "facts",
+			Usage:       "Prints information about the system.",
+			UsageText:   fmt.Sprintf("%v facts", app.Name),
+			Description: "The facts command queries the system's dmiinfo to determine relevant facts about it (e.g. system architecture, etc.).",
 			Flags: []cli.Flag{
 				&cli.StringFlag{
 					Name:  "format",
@@ -193,8 +200,10 @@ func main() {
 			},
 		},
 		{
-			Name:  "status",
-			Usage: "reports connection status",
+			Name:        "status",
+			Usage:       "Prints status of the system's connection to cloud.redhat.com",
+			UsageText:   fmt.Sprintf("%v status", app.Name),
+			Description: "The status command prints the state of the connection to Red Hat Subscription Manager and cloud.redhat.com.",
 			Action: func(c *cli.Context) error {
 				hostname, err := os.Hostname()
 				if err != nil {
