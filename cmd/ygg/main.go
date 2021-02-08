@@ -55,12 +55,14 @@ func main() {
 					Aliases: []string{"p"},
 				},
 				&cli.StringFlag{
-					Name:  "organization",
-					Usage: "register with `ID`",
+					Name:    "organization",
+					Usage:   "register with `ID`",
+					Aliases: []string{"o"},
 				},
 				&cli.StringSliceFlag{
-					Name:  "activation-key",
-					Usage: "register with `KEY`",
+					Name:    "activation-key",
+					Usage:   "register with `KEY`",
+					Aliases: []string{"a"},
 				},
 				&cli.StringFlag{
 					Name:  "server",
