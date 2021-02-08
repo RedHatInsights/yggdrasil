@@ -1,13 +1,16 @@
 package yggdrasil
 
 import (
+	"crypto/x509"
+	"encoding/pem"
+	"fmt"
 	"io/ioutil"
 	"net"
 	"os"
+	"path/filepath"
 	"sort"
 	"strings"
 
-	"github.com/godbus/dbus/v5"
 	"github.com/google/uuid"
 )
 
@@ -128,7 +131,7 @@ func GetCanonicalFacts() (*CanonicalFacts, error) {
 		return nil, err
 	}
 
-	facts.SubscriptionManagerID, err = getConsumerUUID()
+	facts.SubscriptionManagerID, err = readCert("/etc/pki/consumer/cert.pem")
 	if err != nil {
 		return nil, err
 	}
@@ -161,18 +164,35 @@ func readFile(filename string) (string, error) {
 	return strings.TrimSpace(string(data)), nil
 }
 
-// getConsumerUUID queries the RHSM D-Bus interface for the consumer UUID.
-func getConsumerUUID() (string, error) {
-	conn, err := dbus.SystemBus()
+// readCert reads the data in filename, decodes it if necessary, and returns
+// the certificate subject CN.
+func readCert(filename string) (string, error) {
+	var asn1Data []byte
+	switch filepath.Ext(filename) {
+	case ".pem":
+		data, err := ioutil.ReadFile(filename)
+		if err != nil {
+			return "", err
+		}
+
+		block, _ := pem.Decode(data)
+		if block == nil {
+			return "", fmt.Errorf("failed to decode PEM data: %v", filename)
+		}
+		asn1Data = append(asn1Data, block.Bytes...)
+	default:
+		var err error
+		asn1Data, err = ioutil.ReadFile(filename)
+		if err != nil {
+			return "", err
+		}
+	}
+
+	cert, err := x509.ParseCertificate(asn1Data)
 	if err != nil {
 		return "", err
 	}
-
-	var uuid string
-	if err := conn.Object("com.redhat.RHSM1", "/com/redhat/RHSM1/Consumer").Call("com.redhat.RHSM1.Consumer.GetUuid", dbus.Flags(0), "").Store(&uuid); err != nil {
-		return "", err
-	}
-	return uuid, nil
+	return cert.Subject.CommonName, nil
 }
 
 // collectIPAddresses iterates over network interfaces and collects IP
