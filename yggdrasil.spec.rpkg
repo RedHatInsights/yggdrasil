@@ -64,6 +64,7 @@ make PREFIX=%{_prefix} \
 %{_unitdir}/%{short_name}d.service
 %{_datadir}/bash-completion/completions/*
 %{_mandir}/man1/*
+%{_prefix}/share/pkgconfig/%{long_name}.pc
 
 
 %changelog

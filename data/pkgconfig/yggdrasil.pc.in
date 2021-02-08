@@ -1,0 +1,14 @@
+Name: @LONGNAME@
+Description: @BRANDNAME@
+URL: https://github.com/redhatinsights/yggdrasil
+Version: @VERSION@
+
+shortname=@SHORTNAME@
+longname=@LONGNAME@
+brandname=@BRANDNAME@
+
+prefix=@PREFIX@
+sysconfdir=@SYSCONFDIR@
+libexecdir=@LIBEXECDIR@
+workerexecdir=${libexecdir}/@LONGNAME@
+workerconfdir=${sysconfdir}/@LONGNAME@/workers

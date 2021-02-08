@@ -64,7 +64,8 @@ DATA = ygg.bash \
 	   yggd.1.gz \
 	   ygg-USAGE.md \
 	   yggd-USAGE.md \
-	   data/systemd/yggd.service
+	   data/systemd/yggd.service \
+	   data/pkgconfig/yggdrasil.pc
 
 GOSRC := $(shell find . -name '*.go')
 GOSRC += go.mod go.sum
@@ -123,6 +124,7 @@ install: $(BINS) $(DATA)
 	install -D -m644 ./yggd.1.gz $(DESTDIR)$(MANDIR)/man1/$(SHORTNAME)d.1.gz
 	install -D -m644 ./ygg.bash $(DESTDIR)$(DATADIR)/bash-completion/completions/$(SHORTNAME)
 	install -D -m644 ./yggd.bash $(DESTDIR)$(DATADIR)/bash-completion/completions/$(SHORTNAME)d
+	install -D -m644 ./data/pkgconfig/yggdrasil.pc $(DESTDIR)$(PREFIX)/share/pkgconfig/$(LONGNAME).pc
 
 .PHONY: uninstall
 uninstall:
@@ -133,6 +135,7 @@ uninstall:
 	rm -f $(DESTDIR)$(MANDIR)/man1/$(SHORTNAME)d.1.gz
 	rm -f $(DESTDIR)$(DATADIR)/bash-completion/completions/$(SHORTNAME)
 	rm -f $(DESTDIR)$(DATADIR)/bash-completion/completions/$(SHORTNAME)d
+	rm -f $(DESTDIR)$(PREFIX)/share/pkgconfig/$(LONGNAME).pc
 
 .PHONY: dist
 dist:
