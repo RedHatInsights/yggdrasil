@@ -39,6 +39,11 @@ func main() {
 			Name:   "generate-markdown",
 			Hidden: true,
 		},
+		&cli.StringFlag{
+			Name:   "log-level",
+			Hidden: true,
+			Value:  "error",
+		},
 	}
 	app.Commands = []*cli.Command{
 		{
@@ -298,6 +303,15 @@ func main() {
 			return cli.Exit(err, 1)
 		}
 		fmt.Println(data)
+		return nil
+	}
+	app.Before = func(c *cli.Context) error {
+		level, err := log.ParseLevel(c.String("log-level"))
+		if err != nil {
+			return cli.Exit(err, 1)
+		}
+		log.SetLevel(level)
+
 		return nil
 	}
 
