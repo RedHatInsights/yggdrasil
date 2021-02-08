@@ -30,6 +30,7 @@ DATAROOTDIR   ?= $(PREFIX)/share
 MANDIR        ?= $(DATADIR)/man
 DOCDIR        ?= $(PREFIX)/doc
 LOCALSTATEDIR ?= $(PREFIX)/var
+DESTDIR       ?=
 
 # Dependent package directories
 SYSTEMD_SYSTEM_UNIT_DIR  := $(shell pkg-config --variable systemdsystemunitdir systemd)
