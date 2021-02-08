@@ -164,7 +164,7 @@ func (m *MessageRouter) PublishConnectionStatus() error {
 	if err != nil {
 		return err
 	}
-	if err := m.publishControl(2, true, data); err != nil {
+	if err := m.publishControl(1, false, data); err != nil {
 		return err
 	}
 
