@@ -55,6 +55,14 @@ func main() {
 					Aliases: []string{"p"},
 				},
 				&cli.StringFlag{
+					Name:  "organization",
+					Usage: "register with `ID`",
+				},
+				&cli.StringSliceFlag{
+					Name:  "activation-key",
+					Usage: "register with `KEY`",
+				},
+				&cli.StringFlag{
 					Name:  "server",
 					Usage: "register against `URL`",
 				},
@@ -65,21 +73,24 @@ func main() {
 			Action: func(c *cli.Context) error {
 				username := c.String("username")
 				password := c.String("password")
-				if username == "" {
-					password = ""
-					scanner := bufio.NewScanner(os.Stdin)
-					fmt.Print("Username: ")
-					scanner.Scan()
-					username = strings.TrimSpace(scanner.Text())
-				}
-				if password == "" {
-					fmt.Print("Password: ")
-					data, err := terminal.ReadPassword(int(os.Stdin.Fd()))
-					if err != nil {
-						return cli.Exit(err, 1)
+
+				if c.String("organization") == "" {
+					if username == "" {
+						password = ""
+						scanner := bufio.NewScanner(os.Stdin)
+						fmt.Print("Username: ")
+						scanner.Scan()
+						username = strings.TrimSpace(scanner.Text())
 					}
-					password = string(data)
-					fmt.Printf("\n\n")
+					if password == "" {
+						fmt.Print("Password: ")
+						data, err := terminal.ReadPassword(int(os.Stdin.Fd()))
+						if err != nil {
+							return cli.Exit(err, 1)
+						}
+						password = string(data)
+						fmt.Printf("\n\n")
+					}
 				}
 
 				hostname, err := os.Hostname()
@@ -98,7 +109,13 @@ func main() {
 					s := spinner.New(spinner.CharSets[9], 100*time.Millisecond)
 					s.Suffix = " Connecting to Red Hat Subscription Manager..."
 					s.Start()
-					if err := register(username, password, c.String("server")); err != nil {
+					var err error
+					if c.String("organization") != "" {
+						err = registerActivationKey(c.String("organization"), c.StringSlice("activation-key"), c.String("server"))
+					} else {
+						err = registerPassword(username, password, c.String("server"))
+					}
+					if err != nil {
 						s.Stop()
 						return cli.Exit(err, 1)
 					}
