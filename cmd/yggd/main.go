@@ -185,20 +185,8 @@ func main() {
 
 			<-c
 
-			if localError := messageRouter.ConnectClient(); localError != nil {
+			if localError := messageRouter.ConnectPublishSubscribeAndRoute(); localError != nil {
 				err = localError
-				quit <- syscall.SIGTERM
-				return
-			}
-
-			if localErr := messageRouter.PublishConnectionStatus(); localErr != nil {
-				err = localErr
-				quit <- syscall.SIGTERM
-				return
-			}
-
-			if localErr := messageRouter.SubscribeAndRoute(); localErr != nil {
-				err = localErr
 				quit <- syscall.SIGTERM
 				return
 			}

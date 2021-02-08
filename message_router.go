@@ -216,7 +216,10 @@ func (m *MessageRouter) SubscribeAndRoute() error {
 				m.logger.Error(err)
 			}
 		case CommandNameReconnect:
-			m.logger.Errorf("command %v not implemented", CommandNameReconnect)
+			m.client.Disconnect(500)
+			if err := m.ConnectPublishSubscribeAndRoute(); err != nil {
+				m.logger.Error(err)
+			}
 		}
 	})
 	if err != nil {
@@ -229,6 +232,25 @@ func (m *MessageRouter) SubscribeAndRoute() error {
 		m.handleDataMessage(msg.Payload())
 	})
 	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// ConnectPublishSubscribeAndRoute connects to the MQTT client, publishes a
+// connection-status message, subscribes to the control and data topics, and
+// sets up a message handler to route data messages to workers.
+func (m *MessageRouter) ConnectPublishSubscribeAndRoute() error {
+	if err := m.ConnectClient(); err != nil {
+		return err
+	}
+
+	if err := m.PublishConnectionStatus(); err != nil {
+		return err
+	}
+
+	if err := m.SubscribeAndRoute(); err != nil {
 		return err
 	}
 
