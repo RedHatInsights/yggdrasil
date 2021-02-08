@@ -204,7 +204,7 @@ func main() {
 				},
 			},
 			Action: func(c *cli.Context) error {
-				facts, err := yggdrasil.GetFacts()
+				facts, err := getFacts()
 				if err != nil {
 					return cli.Exit(err, 1)
 				}

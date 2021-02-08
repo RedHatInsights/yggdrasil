@@ -1,9 +1,9 @@
-package yggdrasil
+package main
 
 import "github.com/godbus/dbus/v5"
 
-// GetFacts calls the GetFacts method on the RHSM daemon.
-func GetFacts() (map[string]interface{}, error) {
+// getFacts calls the GetFacts method on the RHSM daemon.
+func getFacts() (map[string]interface{}, error) {
 	conn, err := dbus.SystemBus()
 	if err != nil {
 		return nil, err
