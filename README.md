@@ -144,11 +144,19 @@ line argument to `yggd` or `ygg`.
 `protocol/yggdrasil.proto`. This protocol defines two services (`Dispatcher` and
 `Worker`), and the messages necessary for the services to exchange data. In
 order to interact with `yggd` as a worker process an executable must be
-installed into `$LIBEXECDIR/yggdrasil/`. The executable name must end with the
-string "worker". `yggd` will execute worker programs at start up. It will set
-the `YGG_SOCKET_ADDR` variable in the worker's environment. This address is the
-socket on which the worker must dial the dispatcher and call the "Register" RPC
-method. Upon successful registration, the worker will receive back a socket
-address. The worker must bind to and listen on this address for RPC methods.
+installed into `$LIBEXECDIR/yggdrasil/`. A pkg-config module named 'yggdrasil'
+is installed so that workers can locate the worker exec directory at build time.
+
+```
+pkg-config --variable workerexecdir yggdrasil
+/usr/local/libexec/yggdrasil
+```
+
+The executable name must end with the string "worker". `yggd` will execute worker
+programs at start up. It will set the `YGG_SOCKET_ADDR` variable in the worker's
+environment. This address is the socket on which the worker must dial the
+dispatcher and call the "Register" RPC method. Upon successful registration, the
+worker will receive back a socket address. The worker must bind to and listen on
+this address for RPC methods.
 See `worker/echo` for an example worker process that does nothing more than
 return the payload data it received from the dispatcher.
