@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/url"
 
@@ -15,7 +16,7 @@ func getConsumerUUID() (string, error) {
 
 	var uuid string
 	if err := conn.Object("com.redhat.RHSM1", "/com/redhat/RHSM1/Consumer").Call("com.redhat.RHSM1.Consumer.GetUuid", dbus.Flags(0), "").Store(&uuid); err != nil {
-		return "", err
+		return "", unpackError(err)
 	}
 	return uuid, nil
 }
@@ -64,7 +65,7 @@ func registerPassword(username, password, serverURL string) error {
 	}
 
 	if err := privConn.Object("com.redhat.RHSM1", "/com/redhat/RHSM1/Register").Call("com.redhat.RHSM1.Register.Register", dbus.Flags(0), "", username, password, map[string]string{}, connectionOptions, "").Err; err != nil {
-		return err
+		return unpackError(err)
 	}
 
 	return nil
@@ -114,7 +115,7 @@ func registerActivationKey(orgID string, activationKeys []string, serverURL stri
 	}
 
 	if err := privConn.Object("com.redhat.RHSM1", "/com/redhat/RHSM1/Register").Call("com.redhat.RHSM1.Register.RegisterWithActivationKeys", dbus.Flags(0), orgID, activationKeys, map[string]string{}, connectionOptions, "").Err; err != nil {
-		return err
+		return unpackError(err)
 	}
 
 	return nil
@@ -135,8 +136,30 @@ func unregister() error {
 	}
 
 	if err := conn.Object("com.redhat.RHSM1", "/com/redhat/RHSM1/Unregister").Call("com.redhat.RHSM1.Unregister.Unregister", dbus.Flags(0), map[string]string{}, "").Err; err != nil {
-		return err
+		return unpackError(err)
 	}
 
 	return nil
+}
+
+func unpackError(err error) error {
+	switch e := err.(type) {
+	case dbus.Error:
+		switch e.Name {
+		case "com.redhat.RHSM1.Error":
+			rhsmError := struct {
+				Exception string `json:"exception"`
+				Severity  string `json:"severity"`
+				Message   string `json:"message"`
+			}{}
+			if err := json.Unmarshal([]byte(e.Error()), &rhsmError); err != nil {
+				return err
+			}
+			return fmt.Errorf("%v: %v", rhsmError.Severity, rhsmError.Message)
+		default:
+			return e
+		}
+	default:
+		return err
+	}
 }
