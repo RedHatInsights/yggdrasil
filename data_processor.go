@@ -5,11 +5,9 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	"path/filepath"
 	"strings"
 
 	"git.sr.ht/~spc/go-log"
-	"github.com/godbus/dbus/v5"
 	"github.com/hashicorp/go-memdb"
 )
 
@@ -31,12 +29,19 @@ type DataProcessor struct {
 	logger *log.Logger
 	sig    signalEmitter
 	db     *memdb.MemDB
+	client *HTTPClient
 }
 
 // NewDataProcessor creates a new data message processor.
-func NewDataProcessor(db *memdb.MemDB) (*DataProcessor, error) {
+func NewDataProcessor(db *memdb.MemDB, certFile string, keyFile string) (*DataProcessor, error) {
 	p := new(DataProcessor)
 	p.logger = log.New(log.Writer(), fmt.Sprintf("%v[%T] ", log.Prefix(), p), log.Flags(), log.CurrentLevel())
+
+	client, err := NewHTTPClientCertAuth(certFile, keyFile, "")
+	if err != nil {
+		return nil, err
+	}
+	p.client = client
 
 	p.db = db
 
@@ -82,25 +87,7 @@ func (p *DataProcessor) HandleDataRecvSignal(c <-chan interface{}) {
 			worker := obj.(Worker)
 
 			if worker.detachedPayload {
-				conn, err := dbus.SystemBus()
-				if err != nil {
-					p.logger.Error(err)
-					return
-				}
-
-				var consumerCertDir string
-				if err := conn.Object("com.redhat.RHSM1", "/com/redhat/RHSM1/Config").Call("com.redhat.RHSM1.Config.Get", dbus.Flags(0), "rhsm.consumercertdir", "").Store(&consumerCertDir); err != nil {
-					p.logger.Error(err)
-					return
-				}
-
-				client, err := NewHTTPClientCertAuth(filepath.Join(consumerCertDir, "cert.pem"), filepath.Join(consumerCertDir, "key.pem"), "")
-				if err != nil {
-					p.logger.Error(err)
-					return
-				}
-
-				resp, err := client.Get(string(dataMessage.Content))
+				resp, err := p.client.Get(string(dataMessage.Content))
 				if err != nil {
 					p.logger.Error(err)
 					return
@@ -178,31 +165,13 @@ func (p *DataProcessor) HandleDataReturnSignal(c <-chan interface{}) {
 			worker := obj.(Worker)
 
 			if worker.detachedPayload {
-				conn, err := dbus.SystemBus()
-				if err != nil {
-					p.logger.Error(err)
-					return
-				}
-
-				var consumerCertDir string
-				if err := conn.Object("com.redhat.RHSM1", "/com/redhat/RHSM1/Config").Call("com.redhat.RHSM1.Config.Get", dbus.Flags(0), "rhsm.consumercertdir", "").Store(&consumerCertDir); err != nil {
-					p.logger.Error(err)
-					return
-				}
-
-				client, err := NewHTTPClientCertAuth(filepath.Join(consumerCertDir, "cert.pem"), filepath.Join(consumerCertDir, "key.pem"), "")
-				if err != nil {
-					p.logger.Error(err)
-					return
-				}
-
 				req, err := http.NewRequest(http.MethodPost, dataMessage.Directive, bytes.NewReader(dataMessage.Content))
 
 				for k, v := range dataMessage.Metadata {
 					req.Header.Add(k, strings.TrimSpace(v))
 				}
 
-				resp, err := client.Do(req)
+				resp, err := p.client.Do(req)
 				if err != nil {
 					p.logger.Error(err)
 					return

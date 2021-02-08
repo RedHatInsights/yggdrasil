@@ -127,7 +127,7 @@ func main() {
 			return cli.NewExitError(err, 1)
 		}
 
-		dataProcessor, err := yggdrasil.NewDataProcessor(db)
+		dataProcessor, err := yggdrasil.NewDataProcessor(db, c.String("cert-file"), c.String("key-file"))
 		if err != nil {
 			return cli.NewExitError(err, 1)
 		}
