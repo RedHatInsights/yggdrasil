@@ -1,5 +1,5 @@
 [Unit]
-Description=@SUMMARY@
+Description=@BRANDNAME@ daemon
 Documentation=https://github.com/redhatinsights/yggdrasil
 
 [Service]
