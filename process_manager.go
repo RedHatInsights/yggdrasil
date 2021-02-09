@@ -202,6 +202,32 @@ func (p *ProcessManager) WaitProcess(process Process) {
 	go p.StartProcess(process.file, delay)
 }
 
+// StopProcess kills the process and removes the entry from the worker registry.
+func (p *ProcessManager) StopProcess(process *Process) error {
+	proc, err := os.FindProcess(process.pid)
+	if err != nil {
+		return err
+	}
+	if err := proc.Kill(); err != nil {
+		return err
+	}
+	if err := os.Remove(process.pidFile); err != nil {
+		return err
+	}
+
+	tx := p.db.Txn(true)
+	if err := tx.Delete(tableNameProcess, process); err != nil {
+		return err
+	}
+	tx.Commit()
+
+	p.sig.emit(SignalProcessDie, process.pid)
+	p.logger.Debugf("emitted signal \"%v\"", SignalProcessDie)
+	p.logger.Tracef("emitted value: %#v", process.pid)
+
+	return nil
+}
+
 // BootstrapWorkers identifies any worker programs in dir and spawns them.
 func (p *ProcessManager) BootstrapWorkers(dir string) error {
 	fileInfos, err := ioutil.ReadDir(dir)
@@ -227,35 +253,16 @@ func (p *ProcessManager) BootstrapWorkers(dir string) error {
 func (p *ProcessManager) KillAllWorkers() error {
 	p.logger.Debug("KillAllWorkers")
 
-	tx := p.db.Txn(true)
-	defer tx.Abort()
-
+	tx := p.db.Txn(false)
 	all, err := tx.Get("process", "id")
 	if err != nil {
 		return err
 	}
+
 	for obj := all.Next(); obj != nil; obj = all.Next() {
 		process := obj.(*Process)
-		proc, err := os.FindProcess(process.pid)
-		if err != nil {
-			return err
-		}
-		if err := proc.Kill(); err != nil {
-			return err
-		}
-		if err := os.Remove(process.pidFile); err != nil {
-			return err
-		}
-		p.sig.emit(SignalProcessDie, process.pid)
-		p.logger.Debugf("emitted signal \"%v\"", SignalProcessDie)
-		p.logger.Tracef("emitted value: %#v", process.pid)
+		p.StopProcess(process)
 	}
-
-	if _, err := tx.DeleteAll(tableNameProcess, indexNameID); err != nil {
-		return err
-	}
-
-	tx.Commit()
 
 	return nil
 }
