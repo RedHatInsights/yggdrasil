@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -38,6 +39,7 @@ type Process struct {
 	stdout    io.ReadCloser
 	stderr    io.ReadCloser
 	startedAt time.Time
+	pidFile   string
 }
 
 // ProcessManager spawns processes and monitors them for unexpected exits.
@@ -110,7 +112,24 @@ func (p *ProcessManager) StartProcess(file string, delay time.Duration) {
 		stdout:    stdout,
 		stderr:    stderr,
 		startedAt: time.Now(),
+		pidFile:   filepath.Join(LocalstateDir, "run", LongName, "workers", filepath.Base(file)+".pid"),
 	}
+
+	if err := os.MkdirAll(filepath.Dir(process.pidFile), 0755); err != nil {
+		p.logger.Error(err)
+		return
+	}
+	pidFile, err := os.Create(process.pidFile)
+	if err != nil {
+		p.logger.Error(err)
+		return
+	}
+	defer pidFile.Close()
+	if _, err := pidFile.WriteString(fmt.Sprintf("%v", cmd.Process.Pid)); err != nil {
+		p.logger.Error(err)
+		return
+	}
+	pidFile.Close()
 
 	p.sig.emit(SignalProcessSpawn, process)
 	p.logger.Debugf("emitted signal \"%v\"", SignalProcessSpawn)
@@ -224,6 +243,9 @@ func (p *ProcessManager) KillAllWorkers() error {
 		if err := proc.Kill(); err != nil {
 			return err
 		}
+		if err := os.Remove(process.pidFile); err != nil {
+			return err
+		}
 		p.sig.emit(SignalProcessDie, process.pid)
 		p.logger.Debugf("emitted signal \"%v\"", SignalProcessDie)
 		p.logger.Tracef("emitted value: %#v", process.pid)
@@ -234,6 +256,53 @@ func (p *ProcessManager) KillAllWorkers() error {
 	}
 
 	tx.Commit()
+
+	return nil
+}
+
+// KillAllOrphans reads any PID files found left over from a previous process
+// finds the process, kills it, and removes the PID file.
+func (p *ProcessManager) KillAllOrphans() error {
+	p.logger.Debug("KillAllOrphans")
+
+	dir := filepath.Join(LocalstateDir, "run", LongName, "workers")
+
+	if err := os.MkdirAll(dir, 0755); err != nil {
+		return err
+	}
+
+	fileInfos, err := ioutil.ReadDir(dir)
+	if err != nil {
+		return err
+	}
+
+	for _, info := range fileInfos {
+		file := filepath.Join(dir, info.Name())
+		data, err := ioutil.ReadFile(file)
+		if err != nil {
+			return err
+		}
+
+		pid, err := strconv.ParseInt(string(data), 10, 64)
+		if err != nil {
+			return err
+		}
+
+		proc, err := os.FindProcess(int(pid))
+		if err != nil {
+			return err
+		}
+		p.logger.Debugf("found orphaned worker process with PID %v", proc.Pid)
+
+		if err := proc.Kill(); err != nil {
+			return err
+		}
+		p.logger.Debugf("killed orphaned worker process with PID %v", proc.Pid)
+
+		if err := os.Remove(file); err != nil {
+			return err
+		}
+	}
 
 	return nil
 }

@@ -157,6 +157,12 @@ func main() {
 
 			<-c
 
+			if localErr := processManager.KillAllOrphans(); localErr != nil {
+				err = localErr
+				quit <- syscall.SIGTERM
+				return
+			}
+
 			p := filepath.Join(yggdrasil.LibexecDir, yggdrasil.LongName)
 			os.MkdirAll(p, 0755)
 			if localErr := processManager.BootstrapWorkers(p); localErr != nil {
