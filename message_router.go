@@ -338,6 +338,26 @@ func (m *MessageRouter) HandleDataConsumeSignal(c <-chan interface{}) {
 	}
 }
 
+// HandleWorkerUnregisterSignal receives values on the channel, and publishes
+// a new ConnectionStatus message.
+func (m *MessageRouter) HandleWorkerUnregisterSignal(c <-chan interface{}) {
+	for range c {
+		if err := m.PublishConnectionStatus(); err != nil {
+			m.logger.Error(err)
+		}
+	}
+}
+
+// HandleWorkerRegisterSignal receives values on the channel, and publishes
+// a new ConnectionStatus message.
+func (m *MessageRouter) HandleWorkerRegisterSignal(c <-chan interface{}) {
+	for range c {
+		if err := m.PublishConnectionStatus(); err != nil {
+			m.logger.Error(err)
+		}
+	}
+}
+
 func (m *MessageRouter) handleDataMessage(d []byte) {
 	var dataMessage Data
 
