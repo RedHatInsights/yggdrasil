@@ -254,7 +254,7 @@ func (p *ProcessManager) KillAllWorkers() error {
 	p.logger.Debug("KillAllWorkers")
 
 	tx := p.db.Txn(false)
-	all, err := tx.Get("process", "id")
+	all, err := tx.Get(tableNameProcess, indexNameID)
 	if err != nil {
 		return err
 	}
