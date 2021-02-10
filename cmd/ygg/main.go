@@ -20,8 +20,8 @@ import (
 	"golang.org/x/crypto/ssh/terminal"
 )
 
-const successPrefix = "✅"
-const failPrefix = "❌"
+const successPrefix = "\033[32m●\033[0m"
+const failPrefix = "\033[31m●\033[0m"
 
 func main() {
 	app := cli.NewApp()
