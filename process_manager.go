@@ -102,6 +102,26 @@ func (p *ProcessManager) StartProcess(file string, delay time.Duration) {
 	p.logger.Tracef("sleeping for %v", delay)
 	time.Sleep(delay)
 
+	go func() {
+		scanner := bufio.NewScanner(stdout)
+		for scanner.Scan() {
+			p.logger.Debugf("[%v] %v", file, scanner.Text())
+		}
+		if err := scanner.Err(); err != nil {
+			p.logger.Error(err)
+		}
+	}()
+
+	go func() {
+		scanner := bufio.NewScanner(stderr)
+		for scanner.Scan() {
+			p.logger.Debugf("[%v] %v", file, scanner.Text())
+		}
+		if err := scanner.Err(); err != nil {
+			p.logger.Error(err)
+		}
+	}()
+
 	if err := cmd.Start(); err != nil {
 		p.logger.Error(err)
 		return
