@@ -136,7 +136,7 @@ precendence over configuration file values. The configuration file is
 
 The system-wide configuration file is located at `/etc/yggdrasil/config.toml`.
 The location of the file may be overridden by passing the `--config` command-
-line argument to `yggd` or `ygg`.
+line argument to `yggd`.
 
 ## Workers
 
