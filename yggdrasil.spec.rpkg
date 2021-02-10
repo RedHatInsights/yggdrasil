@@ -9,7 +9,12 @@
 %global short_name %(s={{{ git_dir_name }}}; echo ${s:0:3})
 %global pkg_name   {{{ git_dir_name }}}
 %global brand_name   {{{ git_dir_name }}}
+
+%if "%{brand_name}" == "rhc"
+%global topic_prefix redhat/insights
+%else
 %global topic_prefix {{{ git_dir_name }}}
+%endif
 
 Name:    {{{ git_dir_name }}}
 Version: {{{ git_dir_version }}}
