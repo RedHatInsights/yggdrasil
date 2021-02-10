@@ -169,6 +169,11 @@ func main() {
 				err = localErr
 				quit <- syscall.SIGTERM
 			}
+
+			if localErr := processManager.WatchForProcesses(p); localErr != nil {
+				err = localErr
+				quit <- syscall.SIGTERM
+			}
 		}(sigDispatcherListen)
 
 		// Dispatcher goroutine

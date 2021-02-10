@@ -8,6 +8,7 @@ const (
 	tableNameProcess string = "process"
 	indexNameID      string = "id"
 	indexNameHandler string = "handler"
+	indexNameFile    string = "file"
 )
 
 // NewDatastore creates a new MemDB initialized with the application schema.
@@ -51,6 +52,11 @@ func NewDatastore() (*memdb.MemDB, error) {
 						Name:    indexNameID,
 						Unique:  true,
 						Indexer: &memdb.IntFieldIndex{Field: "pid"},
+					},
+					indexNameFile: {
+						Name:    indexNameFile,
+						Unique:  true,
+						Indexer: &memdb.StringFieldIndex{Field: "file"},
 					},
 				},
 			},

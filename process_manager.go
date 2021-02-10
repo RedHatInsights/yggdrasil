@@ -15,6 +15,7 @@ import (
 
 	"git.sr.ht/~spc/go-log"
 	"github.com/hashicorp/go-memdb"
+	"github.com/rjeczalik/notify"
 )
 
 const (
@@ -106,7 +107,7 @@ func (p *ProcessManager) StartProcess(file string, delay time.Duration) {
 		return
 	}
 
-	process := Process{
+	process := &Process{
 		pid:       cmd.Process.Pid,
 		file:      file,
 		stdout:    stdout,
@@ -136,14 +137,14 @@ func (p *ProcessManager) StartProcess(file string, delay time.Duration) {
 	p.logger.Tracef("emitted value: %#v", process)
 
 	tx := p.db.Txn(true)
-	tx.Insert(tableNameProcess, &process)
+	tx.Insert(tableNameProcess, process)
 	tx.Commit()
 
 	go p.WaitProcess(process)
 }
 
 // WaitProcess waits for the process with pid to exit.
-func (p *ProcessManager) WaitProcess(process Process) {
+func (p *ProcessManager) WaitProcess(process *Process) {
 	p.logger.Debugf("WaitProcess(%v)", process)
 	proc, err := os.FindProcess(process.pid)
 	if err != nil {
@@ -181,18 +182,16 @@ func (p *ProcessManager) WaitProcess(process Process) {
 		return
 	}
 
-	p.sig.emit(SignalProcessDie, process.pid)
-	p.logger.Debugf("emitted signal \"%v\"", SignalProcessDie)
-	p.logger.Tracef("emitted value: %#v", process.pid)
-
 	tx := p.db.Txn(true)
-	obj, err := tx.First(tableNameProcess, indexNameID, process.pid)
-	if err != nil {
+	if err := tx.Delete(tableNameProcess, process); err != nil {
 		p.logger.Error(err)
 		return
 	}
-	tx.Delete(tableNameProcess, obj)
 	tx.Commit()
+
+	p.sig.emit(SignalProcessDie, process.pid)
+	p.logger.Debugf("emitted signal \"%v\"", SignalProcessDie)
+	p.logger.Tracef("emitted value: %#v", process.pid)
 
 	if delay > 30*time.Second {
 		p.logger.Warnf("file %v has spawned too many times", process.file)
@@ -202,7 +201,7 @@ func (p *ProcessManager) WaitProcess(process Process) {
 	go p.StartProcess(process.file, delay)
 }
 
-// StopProcess kills the process and removes the entry from the worker registry.
+// StopProcess kills the process and removes the PID file.
 func (p *ProcessManager) StopProcess(process *Process) error {
 	proc, err := os.FindProcess(process.pid)
 	if err != nil {
@@ -211,19 +210,11 @@ func (p *ProcessManager) StopProcess(process *Process) error {
 	if err := proc.Kill(); err != nil {
 		return err
 	}
+	p.logger.Debugf("stopped process %v", process.pid)
 	if err := os.Remove(process.pidFile); err != nil {
 		return err
 	}
-
-	tx := p.db.Txn(true)
-	if err := tx.Delete(tableNameProcess, process); err != nil {
-		return err
-	}
-	tx.Commit()
-
-	p.sig.emit(SignalProcessDie, process.pid)
-	p.logger.Debugf("emitted signal \"%v\"", SignalProcessDie)
-	p.logger.Tracef("emitted value: %#v", process.pid)
+	p.logger.Debugf("removed PID file %v", process.pidFile)
 
 	return nil
 }
@@ -262,6 +253,16 @@ func (p *ProcessManager) KillAllWorkers() error {
 	for obj := all.Next(); obj != nil; obj = all.Next() {
 		process := obj.(*Process)
 		p.StopProcess(process)
+
+		tx := p.db.Txn(true)
+		if err := tx.Delete(tableNameProcess, process); err != nil {
+			return err
+		}
+		tx.Commit()
+
+		p.sig.emit(SignalProcessDie, process.pid)
+		p.logger.Debugf("emitted signal \"%v\"", SignalProcessDie)
+		p.logger.Tracef("emitted value: %#v", process.pid)
 	}
 
 	return nil
@@ -299,15 +300,51 @@ func (p *ProcessManager) KillAllOrphans() error {
 		if err != nil {
 			return err
 		}
-		p.logger.Debugf("found orphaned worker process with PID %v", proc.Pid)
+		p.logger.Debugf("found orphaned process with PID %v", proc.Pid)
 
 		if err := proc.Kill(); err != nil {
-			return err
+			p.logger.Errorf("error killing process: %v", err)
 		}
-		p.logger.Debugf("killed orphaned worker process with PID %v", proc.Pid)
 
 		if err := os.Remove(file); err != nil {
 			return err
+		}
+	}
+
+	return nil
+}
+
+// WatchForProcesses creates a notify watch channel and waits for create and
+// delete events. A process is started when a file is created, and stopped when
+// a file is deleted.
+func (p *ProcessManager) WatchForProcesses(dir string) error {
+	c := make(chan notify.EventInfo, 1)
+
+	if err := notify.Watch(dir, c, notify.Create, notify.InDelete); err != nil {
+		return err
+	}
+	defer notify.Stop(c)
+
+	for ei := range c {
+		p.logger.Debugf("notify event %v", ei)
+		switch ei.Event() {
+		case notify.Create:
+			if strings.HasSuffix(ei.Path(), "worker") {
+				p.logger.Debugf("found worker: %v", ei.Path())
+				go p.StartProcess(ei.Path(), 1*time.Second)
+			}
+		case notify.InDelete:
+			tx := p.db.Txn(false)
+			obj, err := tx.First(tableNameProcess, indexNameFile, ei.Path())
+			if err != nil {
+				p.logger.Error(err)
+				continue
+			}
+			process := obj.(*Process)
+			if err := p.StopProcess(process); err != nil {
+				p.logger.Error(err)
+				continue
+			}
 		}
 	}
 
