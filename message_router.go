@@ -291,18 +291,21 @@ func (m *MessageRouter) HandleDataConsumeSignal(c <-chan interface{}) {
 				m.logger.Error(err)
 				return
 			}
-			worker := obj.(Worker)
+			if obj != nil {
+				m.logger.Warnf("no worker registered to handle '%v' messages", dataMessage.Directive)
+				worker := obj.(Worker)
 
-			if !worker.detachedPayload {
-				data, err := json.Marshal(dataMessage)
-				if err != nil {
-					m.logger.Error(err)
-					return
-				}
+				if !worker.detachedPayload {
+					data, err := json.Marshal(dataMessage)
+					if err != nil {
+						m.logger.Error(err)
+						return
+					}
 
-				if err := m.publishData(0, false, data); err != nil {
-					m.logger.Error(err)
-					return
+					if err := m.publishData(0, false, data); err != nil {
+						m.logger.Error(err)
+						return
+					}
 				}
 			}
 
