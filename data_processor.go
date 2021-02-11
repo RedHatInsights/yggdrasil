@@ -84,6 +84,13 @@ func (p *DataProcessor) HandleDataRecvSignal(c <-chan interface{}) {
 				p.logger.Error(err)
 				return
 			}
+			if obj == nil {
+				p.logger.Errorf("no worker registered to handle '%v' messages", dataMessage.Directive)
+				p.sig.emit(SignalDataConsume, dataMessage.MessageID)
+				p.logger.Debugf("emitted signal \"%v\"", SignalDataConsume)
+				p.logger.Tracef("emitted value: %#v", dataMessage.MessageID)
+				return
+			}
 			worker := obj.(Worker)
 
 			if worker.detachedPayload {
