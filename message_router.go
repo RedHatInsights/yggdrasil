@@ -96,7 +96,7 @@ func NewMessageRouter(db *memdb.MemDB, brokers []string, certFile, keyFile, caRo
 	if err != nil {
 		return nil, err
 	}
-	opts.SetBinaryWill(fmt.Sprintf("%v/%v/control/out", TopicPrefix, consumerID), data, 2, true)
+	opts.SetBinaryWill(fmt.Sprintf("%v/%v/control/out", TopicPrefix, consumerID), data, 1, false)
 
 	opts.SetCleanSession(true)
 
