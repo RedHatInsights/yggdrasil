@@ -43,8 +43,9 @@ type Process struct {
 	pidFile   string
 }
 
-// ProcessManager spawns processes and monitors them for unexpected exits.
-// If a managed process unexpectedly exits, it is spawned again.
+// ProcessManager is a specialized process lifecycle manager. It spawns
+// processes and waits for the process to exit. If a managed process exits, it
+// is spawned again.
 type ProcessManager struct {
 	logger     *log.Logger
 	sig        signalEmitter
@@ -72,7 +73,12 @@ func (p *ProcessManager) Connect(name string) <-chan interface{} {
 	return p.sig.connect(name, 1)
 }
 
-// StartProcess executes file and asynchronously waits for the process to die.
+// StartProcess executes file. The child process's stderr and stdout are
+// connected to pipes that are read in two goroutines. If the log level is set
+// to debug or higher, the child process output is logged. Once a process is
+// started a file is created with the process PID. The process is emitted on the
+// "process-spawn" signal. Finally, it calls WaitProcess asynchronously to wait
+// for the process to exit.
 func (p *ProcessManager) StartProcess(file string, delay time.Duration) {
 	p.logger.Debugf("StartProcess(%v)", file)
 	cmd := exec.Command(file)
@@ -163,7 +169,13 @@ func (p *ProcessManager) StartProcess(file string, delay time.Duration) {
 	go p.WaitProcess(process)
 }
 
-// WaitProcess waits for the process with pid to exit.
+// WaitProcess waits for the process to exit. When the process exits, a
+// time-alive value is calculated. If the time alive was less than 1 second, a 5
+// second start time delay penalty is added to the process. Any output from
+// stdout and stderr are printed and the process PID is emitted on the
+// "process-die" signal. If the delay penalty is greater than 30 seconds, the
+// process is assumed to be permanently dead and is not restarted. Otherwise,
+// the process is asyncrhonously restarted with the delay penalty.
 func (p *ProcessManager) WaitProcess(process *Process) {
 	p.logger.Debugf("WaitProcess(%v)", process)
 	proc, err := os.FindProcess(process.pid)
@@ -239,7 +251,10 @@ func (p *ProcessManager) StopProcess(process *Process) error {
 	return nil
 }
 
-// BootstrapWorkers identifies any worker programs in dir and spawns them.
+// BootstrapWorkers detects qualifying worker programs in dir and spawns them.
+// To be considered for execution, the file must be executable, exist in the
+// given directory, and end with the suffix "worker". Once all detected workers
+// are started, the "process-bootstrap" signal is emitted.
 func (p *ProcessManager) BootstrapWorkers(dir string) error {
 	fileInfos, err := ioutil.ReadDir(dir)
 	if err != nil {
@@ -260,7 +275,8 @@ func (p *ProcessManager) BootstrapWorkers(dir string) error {
 	return err
 }
 
-// KillAllWorkers gets all actively managed worker processes and kills them.
+// KillAllWorkers gets all actively managed worker processes and kills them,
+// emitting "process-die" for each one.
 func (p *ProcessManager) KillAllWorkers() error {
 	p.logger.Debug("KillAllWorkers")
 
@@ -288,8 +304,9 @@ func (p *ProcessManager) KillAllWorkers() error {
 	return nil
 }
 
-// KillAllOrphans reads any PID files found left over from a previous process
-// finds the process, kills it, and removes the PID file.
+// KillAllOrphans looks for PID files written by previous processes, and
+// attempts to kill the process. Regardless of whether the process was
+// successfully killed, the PID file is removed.
 func (p *ProcessManager) KillAllOrphans() error {
 	p.logger.Debug("KillAllOrphans")
 
@@ -334,9 +351,11 @@ func (p *ProcessManager) KillAllOrphans() error {
 	return nil
 }
 
-// WatchForProcesses creates a notify watch channel and waits for create and
-// delete events. A process is started when a file is created, and stopped when
-// a file is deleted.
+// WatchForProcesses watches dir for inotify activity and waits for create and
+// delete events. When a file is created, if it qualifies as a worker
+// executable, it is started via a call to StartProcess. When a file is deleted,
+// if a running process matches the deleted file, it is killed vua a call to
+// StopProcess.
 func (p *ProcessManager) WatchForProcesses(dir string) error {
 	c := make(chan notify.EventInfo, 1)
 
