@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"git.sr.ht/~spc/go-log"
-	"github.com/google/uuid"
 	"github.com/hashicorp/go-memdb"
 	pb "github.com/redhatinsights/yggdrasil/protocol"
 	"google.golang.org/grpc"
@@ -143,32 +142,18 @@ func (d *Dispatcher) Send(ctx context.Context, r *pb.Data) (*pb.Receipt, error) 
 	d.logger.Debug("Send")
 	d.logger.Tracef("%#v", r)
 
-	var (
-		tx  *memdb.Txn
-		obj interface{}
-		err error
-	)
-
-	tx = d.db.Txn(false)
-	obj, err = tx.First(tableNameData, indexNameID, r.GetMessageId())
-	if err != nil {
-		d.logger.Error(err)
-		return nil, err
-	}
-	originalDataMessage := obj.(Data)
-
 	dataMessage := Data{
 		Type:       MessageTypeData,
-		MessageID:  uuid.New().String(),
-		ResponseTo: originalDataMessage.MessageID,
+		MessageID:  r.GetMessageId(),
+		ResponseTo: r.GetResponseTo(),
 		Version:    1,
 		Sent:       time.Now(),
-		Directive:  originalDataMessage.Directive,
-		Metadata:   r.Metadata,
-		Content:    r.Payload,
+		Directive:  r.GetDirective(),
+		Metadata:   r.GetMetadata(),
+		Content:    r.GetContent(),
 	}
 
-	tx = d.db.Txn(true)
+	tx := d.db.Txn(true)
 	if err := tx.Insert(tableNameData, dataMessage); err != nil {
 		tx.Abort()
 		return nil, err
@@ -275,9 +260,11 @@ func (d *Dispatcher) HandleDataProcessSignal(c <-chan interface{}) {
 			defer cancel()
 
 			msg := pb.Data{
-				MessageId: dataMessage.MessageID,
-				Metadata:  dataMessage.Metadata,
-				Payload:   dataMessage.Content,
+				MessageId:  dataMessage.MessageID,
+				ResponseTo: dataMessage.ResponseTo,
+				Directive:  dataMessage.Directive,
+				Metadata:   dataMessage.Metadata,
+				Content:    dataMessage.Content,
 			}
 			_, err = c.Send(ctx, &msg)
 			if err != nil {

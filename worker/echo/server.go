@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"git.sr.ht/~spc/go-log"
+	"github.com/google/uuid"
 	pb "github.com/redhatinsights/yggdrasil/protocol"
 	"google.golang.org/grpc"
 )
@@ -21,7 +22,7 @@ type echoServer struct {
 func (s *echoServer) Send(ctx context.Context, d *pb.Data) (*pb.Receipt, error) {
 	go func() {
 		log.Tracef("received data: %#v", d)
-		message := string(d.GetPayload())
+		message := string(d.GetContent())
 		log.Infof("echoing %v", message)
 
 		// Dial the Dispatcher and call "Finish"
@@ -38,9 +39,11 @@ func (s *echoServer) Send(ctx context.Context, d *pb.Data) (*pb.Receipt, error) 
 
 		// Create a data message to send back to the dispatcher.
 		data := &pb.Data{
-			MessageId: d.GetMessageId(),
-			Metadata:  d.GetMetadata(),
-			Payload:   d.GetPayload(),
+			MessageId:  uuid.New().String(),
+			ResponseTo: d.GetMessageId(),
+			Metadata:   d.GetMetadata(),
+			Content:    d.GetContent(),
+			Directive:  d.GetDirective(),
 		}
 
 		// Call "Send"

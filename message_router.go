@@ -292,10 +292,11 @@ func (m *MessageRouter) HandleDataConsumeSignal(c <-chan interface{}) {
 				return
 			}
 			if obj != nil {
-				m.logger.Warnf("no worker registered to handle '%v' messages", dataMessage.Directive)
 				worker := obj.(Worker)
+				m.logger.Tracef("found worker %#v", worker)
 
 				if !worker.detachedPayload {
+					m.logger.Tracef("worker.detachedPayload = %v", worker.detachedPayload)
 					data, err := json.Marshal(dataMessage)
 					if err != nil {
 						m.logger.Error(err)
@@ -306,7 +307,10 @@ func (m *MessageRouter) HandleDataConsumeSignal(c <-chan interface{}) {
 						m.logger.Error(err)
 						return
 					}
+					m.logger.Tracef("published %#v to data topic", string(data))
 				}
+			} else {
+				m.logger.Warnf("no worker registered to handle '%v' messages", dataMessage.Directive)
 			}
 
 			tx = m.db.Txn(true)
