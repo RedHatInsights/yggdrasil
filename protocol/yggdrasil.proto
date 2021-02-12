@@ -56,7 +56,13 @@ message Data {
     map<string, string> metadata = 2;
 
     // The data payload.
-    bytes payload = 3;
+    bytes content = 3;
+
+    // The MQTT message ID this message is in response to.
+    string response_to = 4;
+
+    // The destination of the message.
+    string directive = 5;
 }
 
 // A Receipt message is sent as a successful response to a Send method.
