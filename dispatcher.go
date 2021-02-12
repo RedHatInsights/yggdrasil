@@ -44,7 +44,7 @@ type Worker struct {
 	pid             int
 	handler         string
 	socketAddr      string
-	detachedPayload bool
+	detachedContent bool
 	features        map[string]string
 }
 
@@ -117,7 +117,7 @@ func (d *Dispatcher) Register(ctx context.Context, r *pb.RegistrationRequest) (*
 		pid:             int(r.GetPid()),
 		handler:         r.GetHandler(),
 		socketAddr:      fmt.Sprintf("@ygg-%v-%v", r.GetHandler(), randomString(6)),
-		detachedPayload: r.GetDetachedPayload(),
+		detachedContent: r.GetDetachedContent(),
 		features:        r.GetFeatures(),
 	}
 

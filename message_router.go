@@ -295,8 +295,8 @@ func (m *MessageRouter) HandleDataConsumeSignal(c <-chan interface{}) {
 				worker := obj.(Worker)
 				m.logger.Tracef("found worker %#v", worker)
 
-				if !worker.detachedPayload {
-					m.logger.Tracef("worker.detachedPayload = %v", worker.detachedPayload)
+				if !worker.detachedContent {
+					m.logger.Tracef("worker.detachedContent = %v", worker.detachedContent)
 					data, err := json.Marshal(dataMessage)
 					if err != nil {
 						m.logger.Error(err)

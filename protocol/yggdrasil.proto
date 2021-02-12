@@ -30,8 +30,8 @@ message RegistrationRequest {
     // The PID of the worker.
     int64 pid = 2;
 
-    // Whether or not the worker requires detached payload processing.
-    bool detached_payload = 3;
+    // Whether or not the worker requires detached content processing.
+    bool detached_content = 3;
 
     // A set of features a worker can announce during registration.
     map<string, string> features = 4;
