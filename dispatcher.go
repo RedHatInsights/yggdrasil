@@ -142,6 +142,21 @@ func (d *Dispatcher) Send(ctx context.Context, r *pb.Data) (*pb.Receipt, error) 
 	d.logger.Debug("Send")
 	d.logger.Tracef("%#v", r)
 
+	var (
+		tx  *memdb.Txn
+		obj interface{}
+		err error
+	)
+
+	tx = d.db.Txn(false)
+	obj, err = tx.First(tableNameData, indexNameID, r.GetMessageId())
+	if err != nil {
+		return nil, err
+	}
+	if obj != nil {
+		return nil, fmt.Errorf("existing message with ID %v found", r.GetMessageId())
+	}
+
 	dataMessage := Data{
 		Type:       MessageTypeData,
 		MessageID:  r.GetMessageId(),
@@ -153,7 +168,7 @@ func (d *Dispatcher) Send(ctx context.Context, r *pb.Data) (*pb.Receipt, error) 
 		Content:    r.GetContent(),
 	}
 
-	tx := d.db.Txn(true)
+	tx = d.db.Txn(true)
 	if err := tx.Insert(tableNameData, dataMessage); err != nil {
 		tx.Abort()
 		return nil, err
