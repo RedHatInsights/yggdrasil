@@ -93,7 +93,7 @@ func (p *DataProcessor) HandleDataRecvSignal(c <-chan interface{}) {
 			}
 			worker := obj.(Worker)
 
-			if worker.detachedPayload {
+			if worker.detachedContent {
 				resp, err := p.client.Get(string(dataMessage.Content))
 				if err != nil {
 					p.logger.Error(err)
@@ -171,7 +171,7 @@ func (p *DataProcessor) HandleDataReturnSignal(c <-chan interface{}) {
 			}
 			worker := obj.(Worker)
 
-			if worker.detachedPayload {
+			if worker.detachedContent {
 				req, err := http.NewRequest(http.MethodPost, dataMessage.Directive, bytes.NewReader(dataMessage.Content))
 
 				for k, v := range dataMessage.Metadata {

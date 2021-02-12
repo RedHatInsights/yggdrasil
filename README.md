@@ -92,8 +92,8 @@ is a data transformer. It has no directly callable methods. Instead, it handles
 This handler receives message IDs from a `MessageRouter` when a `Data` message
 is emitted on the "data-recv" signal. It fetches the `Data` message from the
 database and looks up the worker it is destined for. If the worker has been
-registered with `detachedPayload` set to `false`, the `DataProcessor` proceeds
-with emitting the message ID on the "data-process" signal. If `detachedPayload`
+registered with `detachedContent` set to `false`, the `DataProcessor` proceeds
+with emitting the message ID on the "data-process" signal. If `detachedContent`
 is `true`, then the `DataProcessor` creates an HTTP GET request. It parses the
 value of the `Data` message's `Content` field as a URL, and sends a GET request
 to the URL. If the URL response is 200, any data in the response body is written
@@ -109,7 +109,7 @@ database along with the original message the `Data` message is in response to
 (by looking for a message with the message ID specified in the `Data` message's
 `ResponseTo` field). Finally, a worker matching the **original** `Data`
 message's `Directive` field is fetched from the database. If the worker has been
-registered with `detachedPayload` set to `true`, an HTTP POST request is
+registered with `detachedContent` set to `true`, an HTTP POST request is
 created. The URL of the request is set to the value of the received `Data`
 message's `Directive` field. The request body is set to the value of the
 received `Data` message's `Content` field. Any key/value pairs found in the
@@ -138,7 +138,7 @@ method, passing an appropriately constructed `RegistrationRequest` message. A
 | ----------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `Handler`         | A unique string identifying the worker in the system. This value is referenced by external messages as the `Directive`.                                                                            |
 | `Pid`             | The worker's process ID.                                                                                                                                                                           |
-| `DetachedPayload` | Setting this to true will reroute the source of the `Content` field to a URL instead of embedded in the message. Likewise, response `Data` messages have their data sent via HTTP instead of MQTT. |
+| `DetachedContent` | Setting this to true will reroute the source of the `Content` field to a URL instead of embedded in the message. Likewise, response `Data` messages have their data sent via HTTP instead of MQTT. |
 | `Features`        | A map of string key/value pairs that are sent with the `MessageRouter`'s published `ConnectionStatus` message.                                                                                     |
 
 When a worker successfully registers itself by calling this method, it receives
@@ -242,5 +242,5 @@ worker's environment. This address is the socket on which the worker must dial
 the dispatcher and call the "Register" RPC method. Upon successful registration,
 the worker will receive back a socket address. The worker must bind to and
 listen on this address for RPC methods. See `worker/echo` for an example worker
-process that does nothing more than return the payload data it received from the
+process that does nothing more than return the content data it received from the
 dispatcher.
