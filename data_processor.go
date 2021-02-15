@@ -2,6 +2,7 @@ package yggdrasil
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -94,7 +95,13 @@ func (p *DataProcessor) HandleDataRecvSignal(c <-chan interface{}) {
 			worker := obj.(Worker)
 
 			if worker.detachedContent {
-				resp, err := p.client.Get(string(dataMessage.Content))
+				var URL string
+				if err := json.Unmarshal(dataMessage.Content, &URL); err != nil {
+					p.logger.Error(err)
+					return
+				}
+				p.logger.Tracef("fetching content from %v", URL)
+				resp, err := p.client.Get(URL)
 				if err != nil {
 					p.logger.Error(err)
 					return
