@@ -309,8 +309,6 @@ func (m *MessageRouter) HandleDataConsumeSignal(c <-chan interface{}) {
 					}
 					m.logger.Tracef("published %#v to data topic", string(data))
 				}
-			} else {
-				m.logger.Warnf("no worker registered to handle '%v' messages", dataMessage.Directive)
 			}
 
 			tx = m.db.Txn(true)
