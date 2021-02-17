@@ -129,6 +129,7 @@ install: $(BINS) $(DATA)
 	install -D -m644 ./ygg.bash $(DESTDIR)$(DATADIR)/bash-completion/completions/$(SHORTNAME)
 	install -D -m644 ./yggd.bash $(DESTDIR)$(DATADIR)/bash-completion/completions/$(SHORTNAME)d
 	install -D -m644 ./data/pkgconfig/yggdrasil.pc $(DESTDIR)$(PREFIX)/share/pkgconfig/$(LONGNAME).pc
+	install -d -m755 $(DESTDIR)$(LIBEXECDIR)/$(LONGNAME)
 
 .PHONY: uninstall
 uninstall:

@@ -75,6 +75,7 @@ make PREFIX=%{_prefix} \
 %{_datadir}/bash-completion/completions/*
 %{_mandir}/man1/*
 %{_prefix}/share/pkgconfig/%{long_name}.pc
+%{_libexecdir}/%{long_name}
 
 
 %changelog
