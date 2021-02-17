@@ -116,8 +116,11 @@ func (p *DataProcessor) HandleDataRecvSignal(c <-chan interface{}) {
 
 				switch {
 				case resp.StatusCode >= 400:
-					p.logger.Error(&APIResponseError{Code: resp.StatusCode, body: string(data)})
+					p.logger.Error(&APIResponseError{Code: resp.StatusCode, body: strings.TrimSpace(string(data))})
 					return
+				default:
+					p.logger.Infof("received HTTP response body: %v", strings.TrimSpace(string(data)))
+					p.logger.Tracef("received HTTP response: %#v", resp)
 				}
 
 				dataMessage.Content = data
@@ -184,6 +187,7 @@ func (p *DataProcessor) HandleDataReturnSignal(c <-chan interface{}) {
 				for k, v := range dataMessage.Metadata {
 					req.Header.Add(k, strings.TrimSpace(v))
 				}
+				p.logger.Tracef("created HTTP request: %#v", req)
 
 				resp, err := p.client.Do(req)
 				if err != nil {
@@ -200,8 +204,11 @@ func (p *DataProcessor) HandleDataReturnSignal(c <-chan interface{}) {
 
 				switch {
 				case resp.StatusCode >= 400:
-					p.logger.Error(&APIResponseError{Code: resp.StatusCode, body: string(data)})
+					p.logger.Error(&APIResponseError{Code: resp.StatusCode, body: strings.TrimSpace(string(data))})
 					return
+				default:
+					p.logger.Infof("received HTTP response body: %v", strings.TrimSpace(string(data)))
+					p.logger.Tracef("received HTTP response: %#v", resp)
 				}
 			}
 
