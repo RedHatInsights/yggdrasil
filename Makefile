@@ -17,7 +17,7 @@ LONGNAME  := yggdrasil
 BRANDNAME   := yggdrasil
 # Used as the tarball file name. Cannot contain spaces.
 PKGNAME   := yggdrasil
-VERSION   := 0.1
+VERSION   := 0.1.1
 # Used as the prefix for MQTT topic names
 TOPICPREFIX := yggdrasil
 
