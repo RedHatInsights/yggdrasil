@@ -373,7 +373,7 @@ func (m *MessageRouter) handleDataMessage(d []byte) {
 	var dataMessage Data
 
 	if err := json.Unmarshal(d, &dataMessage); err != nil {
-		m.logger.Error(err)
+		m.logger.Errorf("cannot unmarshal data message: %v", err)
 		return
 	}
 
