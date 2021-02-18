@@ -48,6 +48,26 @@ func TestCanonicalFactsFromMap(t *testing.T) {
 			},
 			wantError: &InvalidValueTypeError{key: "insights_id", val: 1},
 		},
+		{
+			description: "valid with absent insights_id",
+			input: map[string]interface{}{
+				"machine_id":              "acc046d0-0add-4550-ac7c-5a833b1b6470",
+				"bios_uuid":               "d8ec3cd5-a6bc-4742-bd2f-32940da182b0",
+				"subscription_manager_id": "bc452b83-c4ee-4b80-91d8-98ff816b2440",
+				"ip_addresses":            []string{"1.2.3.4", "5.6.7.8"},
+				"fqdn":                    "foo.bar.com",
+				"mac_addresses":           []string{"CC:D1:7A:44:6D:1B", "A7:03:90:D0:05:A7"},
+			},
+			want: &CanonicalFacts{
+				InsightsID:            "",
+				MachineID:             "acc046d0-0add-4550-ac7c-5a833b1b6470",
+				BIOSUUID:              "d8ec3cd5-a6bc-4742-bd2f-32940da182b0",
+				SubscriptionManagerID: "bc452b83-c4ee-4b80-91d8-98ff816b2440",
+				IPAddresses:           []string{"1.2.3.4", "5.6.7.8"},
+				FQDN:                  "foo.bar.com",
+				MACAddresses:          []string{"CC:D1:7A:44:6D:1B", "A7:03:90:D0:05:A7"},
+			},
+		},
 	}
 
 	for _, test := range tests {
