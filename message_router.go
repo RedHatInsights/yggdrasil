@@ -246,6 +246,12 @@ func (m *MessageRouter) ConnectPublishSubscribeAndRoute() error {
 		return err
 	}
 
+	// Publish a throwaway message in case the topic does not exist; this is a
+	// workaround for the Akamai MQTT broker implementation.
+	if err := m.publishData(0, false, []byte{}); err != nil {
+		return err
+	}
+
 	if err := m.PublishConnectionStatus(); err != nil {
 		return err
 	}
@@ -416,6 +422,8 @@ func (m *MessageRouter) publishControl(qos byte, retained bool, payload []byte) 
 }
 
 func (m *MessageRouter) publish(topic string, qos byte, retained bool, payload []byte) error {
+	m.logger.Debugf("publish(%v, %v, %v, %T)", topic, qos, retained, payload)
+	m.logger.Tracef("published payload: %#v", string(payload))
 	if token := m.client.Publish(topic, qos, retained, payload); token.Wait() && token.Error() != nil {
 		return token.Error()
 	}
