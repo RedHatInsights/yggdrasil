@@ -16,6 +16,7 @@ import (
 
 func main() {
 	app := cli.NewApp()
+	app.Name = yggdrasil.ShortName + "d"
 	app.Version = yggdrasil.Version
 
 	defaultConfigFilePath, err := yggdrasil.ConfigPath()

@@ -25,6 +25,8 @@ const failPrefix = "\033[31m●\033[0m"
 
 func main() {
 	app := cli.NewApp()
+	app.Name = yggdrasil.ShortName
+	app.Version = yggdrasil.Version
 	app.Usage = "control the system's connection to cloud.redhat.com"
 
 	log.SetFlags(0)
