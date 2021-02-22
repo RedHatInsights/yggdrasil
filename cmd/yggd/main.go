@@ -67,6 +67,11 @@ func main() {
 			Name:   "generate-markdown",
 			Hidden: true,
 		},
+		altsrc.NewStringFlag(&cli.StringFlag{
+			Name:  "data-host",
+			Usage: "Force all HTTP traffic over `HOST`",
+			Value: yggdrasil.DataHost,
+		}),
 	}
 
 	// This BeforeFunc will load flag values from a config file only if the
@@ -141,7 +146,7 @@ func main() {
 			return cli.Exit(err, 1)
 		}
 
-		dataProcessor, err := yggdrasil.NewDataProcessor(db, c.String("cert-file"), c.String("key-file"))
+		dataProcessor, err := yggdrasil.NewDataProcessor(db, c.String("cert-file"), c.String("key-file"), c.String("data-host"))
 		if err != nil {
 			return cli.Exit(err, 1)
 		}

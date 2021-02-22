@@ -12,6 +12,7 @@
 
 %if "%{brand_name}" == "rhc"
 %global topic_prefix redhat/insights
+%global data_host cert.cloud.redhat.com
 %else
 %global topic_prefix {{{ git_dir_name }}}
 %endif
@@ -51,7 +52,8 @@ make PREFIX=%{_prefix} \
      PKGNAME=%{pkg_name} \
      BRANDNAME=%{brand_name} \
      TOPICPREFIX=%{topic_prefix} \
-     VERSION=%{version}
+     VERSION=%{version} \
+     DATAHOST=%{data_host}
 
 
 %install
@@ -65,6 +67,7 @@ make PREFIX=%{_prefix} \
      BRANDNAME=%{brand_name} \
      TOPICPREFIX=%{topic_prefix} \
      VERSION=%{version} \
+     DATAHOST=%{data_host} \
      install
 
 

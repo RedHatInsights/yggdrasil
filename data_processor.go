@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"net/url"
 	"strings"
 
 	"git.sr.ht/~spc/go-log"
@@ -31,10 +32,11 @@ type DataProcessor struct {
 	sig    signalEmitter
 	db     *memdb.MemDB
 	client *HTTPClient
+	host   string
 }
 
 // NewDataProcessor creates a new data message processor.
-func NewDataProcessor(db *memdb.MemDB, certFile string, keyFile string) (*DataProcessor, error) {
+func NewDataProcessor(db *memdb.MemDB, certFile string, keyFile string, hostname string) (*DataProcessor, error) {
 	p := new(DataProcessor)
 	p.logger = log.New(log.Writer(), fmt.Sprintf("%v[%T] ", log.Prefix(), p), log.Flags(), log.CurrentLevel())
 
@@ -45,6 +47,7 @@ func NewDataProcessor(db *memdb.MemDB, certFile string, keyFile string) (*DataPr
 	p.client = client
 
 	p.db = db
+	p.host = hostname
 
 	return p, nil
 }
@@ -100,13 +103,21 @@ func (p *DataProcessor) HandleDataRecvSignal(c <-chan interface{}) {
 			worker := obj.(Worker)
 
 			if worker.detachedContent {
-				var URL string
-				if err := json.Unmarshal(dataMessage.Content, &URL); err != nil {
+				var urlString string
+				if err := json.Unmarshal(dataMessage.Content, &urlString); err != nil {
 					p.logger.Error(err)
 					return
 				}
+				URL, err := url.Parse(urlString)
+				if err != nil {
+					p.logger.Errorf("cannot parse '%v' as URL: %v", urlString, err)
+					return
+				}
+				if p.host != "" {
+					URL.Host = p.host
+				}
 				p.logger.Tracef("fetching content from %v", URL)
-				resp, err := p.client.Get(URL)
+				resp, err := p.client.Get(URL.String())
 				if err != nil {
 					p.logger.Error(err)
 					return
@@ -187,7 +198,15 @@ func (p *DataProcessor) HandleDataReturnSignal(c <-chan interface{}) {
 			worker := obj.(Worker)
 
 			if worker.detachedContent {
-				req, err := http.NewRequest(http.MethodPost, dataMessage.Directive, bytes.NewReader(dataMessage.Content))
+				URL, err := url.Parse(dataMessage.Directive)
+				if err != nil {
+					p.logger.Error(err)
+					return
+				}
+				if p.host != "" {
+					URL.Host = p.host
+				}
+				req, err := http.NewRequest(http.MethodPost, URL.String(), bytes.NewReader(dataMessage.Content))
 				if err != nil {
 					p.logger.Error(err)
 					return

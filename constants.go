@@ -17,6 +17,9 @@ var (
 
 	// TopicPrefix is used as a prefix to all MQTT topics in the client.
 	TopicPrefix string
+
+	// DataHost is used to force sending all HTTP traffic to a specific host.
+	DataHost string
 )
 
 // Installation directory prefix and paths. Values are specified by compile-time
