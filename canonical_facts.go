@@ -125,7 +125,7 @@ func GetCanonicalFacts() (*CanonicalFacts, error) {
 		return nil, err
 	}
 
-	facts.SubscriptionManagerID, err = readCert("/etc/pki/consumer/cert.pem")
+	facts.SubscriptionManagerID, err = ReadCert("/etc/pki/consumer/cert.pem")
 	if err != nil {
 		return nil, err
 	}
@@ -158,9 +158,9 @@ func readFile(filename string) (string, error) {
 	return strings.TrimSpace(string(data)), nil
 }
 
-// readCert reads the data in filename, decodes it if necessary, and returns
+// ReadCert reads the data in filename, decodes it if necessary, and returns
 // the certificate subject CN.
-func readCert(filename string) (string, error) {
+func ReadCert(filename string) (string, error) {
 	var asn1Data []byte
 	switch filepath.Ext(filename) {
 	case ".pem":

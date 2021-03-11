@@ -6,19 +6,11 @@ import (
 	"net/url"
 
 	"github.com/godbus/dbus/v5"
+	"github.com/redhatinsights/yggdrasil"
 )
 
 func getConsumerUUID() (string, error) {
-	conn, err := dbus.SystemBus()
-	if err != nil {
-		return "", err
-	}
-
-	var uuid string
-	if err := conn.Object("com.redhat.RHSM1", "/com/redhat/RHSM1/Consumer").Call("com.redhat.RHSM1.Consumer.GetUuid", dbus.Flags(0), "").Store(&uuid); err != nil {
-		return "", unpackError(err)
-	}
-	return uuid, nil
+	return yggdrasil.ReadCert("/etc/pki/consumer/cert.pem")
 }
 
 func registerPassword(username, password, serverURL string) error {

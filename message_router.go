@@ -42,7 +42,7 @@ func NewMessageRouter(db *memdb.MemDB, brokers []string, certFile, keyFile, caRo
 	m := new(MessageRouter)
 	m.logger = log.New(log.Writer(), fmt.Sprintf("%v[%T] ", log.Prefix(), m), log.Flags(), log.CurrentLevel())
 
-	consumerID, err := readCert(certFile)
+	consumerID, err := ReadCert(certFile)
 	if err != nil {
 		return nil, err
 	}
