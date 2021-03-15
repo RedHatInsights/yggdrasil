@@ -49,6 +49,12 @@ func main() {
 			Hidden: true,
 			Usage:  "Use `FILE` as the root CA",
 		},
+		altsrc.NewStringFlag(&cli.StringFlag{
+			Name:   "topic-prefix",
+			Value:  yggdrasil.TopicPrefix,
+			Hidden: true,
+			Usage:  "Use `PREFIX` as the MQTT topic prefix",
+		}),
 		altsrc.NewStringSliceFlag(&cli.StringSliceFlag{
 			Name:  "broker",
 			Usage: "Connect to the broker specified in `URI`",
@@ -93,6 +99,11 @@ func main() {
 			fmt.Println(data)
 			return nil
 		}
+
+		if c.String("topic-prefix") != "" {
+			yggdrasil.TopicPrefix = c.String("topic-prefix")
+		}
+
 		level, err := log.ParseLevel(c.String("log-level"))
 		if err != nil {
 			return cli.NewExitError(err, 1)
