@@ -44,11 +44,11 @@ func main() {
 			Name:  "key-file",
 			Usage: "Use `FILE` as the client's private key",
 		}),
-		&cli.StringFlag{
+		altsrc.NewStringFlag(&cli.StringFlag{
 			Name:   "ca-root",
 			Hidden: true,
 			Usage:  "Use `FILE` as the root CA",
-		},
+		}),
 		altsrc.NewStringFlag(&cli.StringFlag{
 			Name:   "topic-prefix",
 			Value:  yggdrasil.TopicPrefix,
