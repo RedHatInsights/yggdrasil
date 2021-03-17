@@ -24,6 +24,10 @@ const (
 	// topic. The value emitted on the channel is the "MessageID" in the form of
 	// a UUIDv4-formatted string.
 	SignalDataRecv = "data-recv"
+
+	// SignalClientConnect is emitted when the MQTT client is successfully
+	// connected. The value emitted on the channel is a bool.
+	SignalClientConnect = "client-connect"
 )
 
 // A MessageRouter receives messages over an MQTT topic and emits events when
@@ -122,6 +126,11 @@ func (m *MessageRouter) ConnectClient() error {
 	for _, url := range options.Servers() {
 		m.logger.Tracef("connected to broker %v", url)
 	}
+
+	m.sig.emit(SignalClientConnect, true)
+	m.logger.Debugf("emitted signal: \"%v\"", SignalClientConnect)
+	m.logger.Tracef("emitted value: %#v", true)
+
 	return nil
 }
 
@@ -217,7 +226,7 @@ func (m *MessageRouter) SubscribeAndRoute() error {
 			}
 		case CommandNameReconnect:
 			m.client.Disconnect(500)
-			if err := m.ConnectPublishSubscribeAndRoute(); err != nil {
+			if err := m.PublishSubscribeAndRoute(); err != nil {
 				m.logger.Error(err)
 			}
 		}
@@ -238,14 +247,10 @@ func (m *MessageRouter) SubscribeAndRoute() error {
 	return nil
 }
 
-// ConnectPublishSubscribeAndRoute connects to the MQTT client, publishes a
+// PublishSubscribeAndRoute connects to the MQTT client, publishes a
 // connection-status message, subscribes to the control and data topics, and
 // sets up a message handler to route data messages to workers.
-func (m *MessageRouter) ConnectPublishSubscribeAndRoute() error {
-	if err := m.ConnectClient(); err != nil {
-		return err
-	}
-
+func (m *MessageRouter) PublishSubscribeAndRoute() error {
 	// Publish a throwaway message in case the topic does not exist; this is a
 	// workaround for the Akamai MQTT broker implementation.
 	if err := m.publishData(0, false, []byte{}); err != nil {
