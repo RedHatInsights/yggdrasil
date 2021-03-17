@@ -2,6 +2,8 @@
 
 * _MQTT broker_: `mosquitto` is extremely easy to set up.
 * _HTTP server_
+* Development package dependencies are listed as `BuildRequires:` in the `yggdrasil.spec.rpkg` file.
+  * NOTE: These are the packages names are listed as they exist in [Fedora Linux](https://getfedora.org/), [CentOS Stream](https://centos.org/), and [Red Hat Enterprise Linux](https://www.redhat.com/en/technologies/linux-platforms/enterprise-linux). Similar package names for other distros may vary.
 
 # Getting Started
 
