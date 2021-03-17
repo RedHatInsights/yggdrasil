@@ -3,15 +3,11 @@ name: Lint
 on: pull_request
 
 jobs:
-  lint:
-    name: Lint code
+  lint-commits:
+    name: Lint commits
     runs-on: ubuntu-latest
     steps:
-      - name: Set up Go 1.14
-        uses: actions/setup-go@v2
-        with:
-          go-version: 1.14.x
-      - name: Checkout code
+      - name: Check out code
         uses: actions/checkout@v2
         with:
           fetch-depth: 0
@@ -25,3 +21,11 @@ jobs:
       - run: go mod download
       - name: Run commitsar
         uses: aevea/commitsar@v0.16.0
+  lint-code:
+    name: Lint code
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v2
+      - name: Run golangci-lint
+        uses: golangci/golangci-lint-action@v2.5.1
