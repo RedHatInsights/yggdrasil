@@ -169,11 +169,13 @@ func main() {
 
 		// ProcessManager goroutine
 		sigDispatcherListen := dispatcher.Connect(yggdrasil.SignalDispatcherListen)
-		go func(c <-chan interface{}) {
+		sigClientConnect := messageRouter.Connect(yggdrasil.SignalClientConnect)
+		go func(dispatcherListenSig <-chan interface{}, clientConnectSig <-chan interface{}) {
 			logger := log.New(os.Stderr, fmt.Sprintf("%v[process_manager_routine] ", log.Prefix()), log.Flags(), log.CurrentLevel())
 			logger.Trace("init")
 
-			<-c
+			<-dispatcherListenSig
+			<-clientConnectSig
 
 			if localErr := processManager.KillAllOrphans(); localErr != nil {
 				err = localErr
@@ -192,7 +194,7 @@ func main() {
 				err = localErr
 				quit <- syscall.SIGTERM
 			}
-		}(sigDispatcherListen)
+		}(sigDispatcherListen, sigClientConnect)
 
 		// Dispatcher goroutine
 		go func() {
@@ -212,9 +214,15 @@ func main() {
 			logger := log.New(os.Stderr, fmt.Sprintf("%v[message_router_routine] ", log.Prefix()), log.Flags(), log.CurrentLevel())
 			logger.Trace("init")
 
+			if localErr := messageRouter.ConnectClient(); err != nil {
+				err = localErr
+				quit <- syscall.SIGTERM
+				return
+			}
+
 			<-c
 
-			if localError := messageRouter.ConnectPublishSubscribeAndRoute(); localError != nil {
+			if localError := messageRouter.PublishSubscribeAndRoute(); localError != nil {
 				err = localError
 				quit <- syscall.SIGTERM
 				return
