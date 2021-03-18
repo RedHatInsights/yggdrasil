@@ -111,6 +111,8 @@ func main() {
 		log.SetLevel(level)
 		log.SetPrefix(fmt.Sprintf("[%v] ", app.Name))
 
+		log.Infof("starting %v version %v", app.Name, app.Version)
+
 		quit := make(chan os.Signal, 1)
 		signal.Notify(quit, syscall.SIGTERM, syscall.SIGINT)
 
