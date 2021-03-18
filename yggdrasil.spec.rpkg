@@ -50,7 +50,8 @@ make PREFIX=%{_prefix} \
      LONGNAME=%{long_name} \
      PKGNAME=%{pkg_name} \
      BRANDNAME=%{brand_name} \
-     TOPICPREFIX=%{topic_prefix}
+     TOPICPREFIX=%{topic_prefix} \
+     VERSION=%{version}
 
 
 %install
@@ -63,6 +64,7 @@ make PREFIX=%{_prefix} \
      PKGNAME=%{pkg_name} \
      BRANDNAME=%{brand_name} \
      TOPICPREFIX=%{topic_prefix} \
+     VERSION=%{version} \
      install
 
 
