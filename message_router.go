@@ -101,7 +101,9 @@ func NewMessageRouter(db *memdb.MemDB, brokers []string, certFile, keyFile, caRo
 		return nil, err
 	}
 	opts.SetBinaryWill(fmt.Sprintf("%v/%v/control/out", TopicPrefix, consumerID), data, 1, false)
-
+	opts.SetDefaultPublishHandler(func(client mqtt.Client, msg mqtt.Message) {
+		m.logger.Errorf("error: unhandled message: %v", string(msg.Payload()))
+	})
 	opts.SetCleanSession(true)
 
 	m.client = mqtt.NewClient(opts)
