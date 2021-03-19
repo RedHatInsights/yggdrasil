@@ -28,6 +28,11 @@ const (
 	// SignalClientConnect is emitted when the MQTT client is successfully
 	// connected. The value emitted on the channel is a bool.
 	SignalClientConnect = "client-connect"
+
+	// SignalTopicSubscribe is emitted when the MQTT client successfully
+	// subscribes to its data and control topics. The value emitted on the
+	// channel is a bool.
+	SignalTopicSubscribe = "topic-subscribe"
 )
 
 // A MessageRouter receives messages over an MQTT topic and emits events when
@@ -264,6 +269,10 @@ func (m *MessageRouter) SubscribeAndRoute() error {
 	if err != nil {
 		return err
 	}
+
+	m.sig.emit(SignalTopicSubscribe, true)
+	m.logger.Debugf("emitted signal: \"%v\"", SignalTopicSubscribe)
+	m.logger.Tracef("emitted value: %#v", true)
 
 	return nil
 }
