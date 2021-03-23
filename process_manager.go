@@ -168,7 +168,11 @@ func (p *ProcessManager) StartProcess(file string, delay time.Duration) {
 	p.logger.Tracef("emitted value: %#v", process)
 
 	tx := p.db.Txn(true)
-	tx.Insert(tableNameProcess, process)
+	if err := tx.Insert(tableNameProcess, process); err != nil {
+		p.logger.Error(err)
+		tx.Abort()
+		return
+	}
 	tx.Commit()
 
 	go p.WaitProcess(process)
