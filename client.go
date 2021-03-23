@@ -13,7 +13,7 @@ type authType string
 
 const (
 	authTypeBasic authType = "basic"
-	authTypeCert           = "cert"
+	authTypeCert  authType = "cert"
 )
 
 // HTTPClient is a specialized HTTP client, preconfigured to authenticate using
@@ -94,7 +94,6 @@ func NewHTTPClientCertAuth(certFile, keyFile, userAgent string) (*HTTPClient, er
 		return nil, err
 	}
 	tlsConfig.Certificates = []tls.Certificate{cert}
-	tlsConfig.BuildNameToCertificate()
 
 	// Recreate the default transport with a custom tls.Config
 	client.Transport = &http.Transport{
