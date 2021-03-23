@@ -106,17 +106,17 @@ func main() {
 
 		level, err := log.ParseLevel(c.String("log-level"))
 		if err != nil {
-			return cli.NewExitError(err, 1)
+			return cli.Exit(err, 1)
 		}
 		log.SetLevel(level)
 		log.SetPrefix(fmt.Sprintf("[%v] ", app.Name))
 
 		quit := make(chan os.Signal, 1)
-		signal.Notify(quit, syscall.SIGTERM, syscall.SIGINT, syscall.SIGKILL)
+		signal.Notify(quit, syscall.SIGTERM, syscall.SIGINT)
 
 		db, err := yggdrasil.NewDatastore()
 		if err != nil {
-			return cli.NewExitError(err, 1)
+			return cli.Exit(err, 1)
 		}
 
 		dispatcherSocketAddr := fmt.Sprintf("@yggd-dispatcher-%v", randomString(6))
@@ -126,22 +126,22 @@ func main() {
 		}
 		processManager, err := yggdrasil.NewProcessManager(db, workerEnv)
 		if err != nil {
-			return cli.NewExitError(err, 1)
+			return cli.Exit(err, 1)
 		}
 
 		dispatcher, err := yggdrasil.NewDispatcher(db)
 		if err != nil {
-			return cli.NewExitError(err, 1)
+			return cli.Exit(err, 1)
 		}
 
 		messageRouter, err := yggdrasil.NewMessageRouter(db, c.StringSlice("broker"), c.String("cert-file"), c.String("key-file"), c.String("ca-root"))
 		if err != nil {
-			return cli.NewExitError(err, 1)
+			return cli.Exit(err, 1)
 		}
 
 		dataProcessor, err := yggdrasil.NewDataProcessor(db, c.String("cert-file"), c.String("key-file"))
 		if err != nil {
-			return cli.NewExitError(err, 1)
+			return cli.Exit(err, 1)
 		}
 
 		// Connect dispatcher to the processManager's "process-die" signal
@@ -232,11 +232,11 @@ func main() {
 		<-quit
 
 		if err := processManager.KillAllWorkers(); err != nil {
-			return cli.NewExitError(err, 1)
+			return cli.Exit(err, 1)
 		}
 
 		if err != nil {
-			return cli.NewExitError(err, 1)
+			return cli.Exit(err, 1)
 		}
 
 		return nil
