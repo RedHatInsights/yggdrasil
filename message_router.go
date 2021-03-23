@@ -367,6 +367,7 @@ func (m *MessageRouter) HandleDataConsumeSignal(c <-chan interface{}) {
 // a new ConnectionStatus message.
 func (m *MessageRouter) HandleWorkerUnregisterSignal(c <-chan interface{}) {
 	for range c {
+		m.logger.Debug("HandleWorkerUnregisterSignal")
 		if err := m.PublishConnectionStatus(); err != nil {
 			m.logger.Error(err)
 		}
@@ -377,6 +378,7 @@ func (m *MessageRouter) HandleWorkerUnregisterSignal(c <-chan interface{}) {
 // a new ConnectionStatus message.
 func (m *MessageRouter) HandleWorkerRegisterSignal(c <-chan interface{}) {
 	for range c {
+		m.logger.Debug("HandleWorkerRegisterSignal")
 		if err := m.PublishConnectionStatus(); err != nil {
 			m.logger.Error(err)
 		}
