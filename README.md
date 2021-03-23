@@ -173,7 +173,7 @@ calling `WatchForProcesses`.
 
 ### `./cmd/ygg`
 
-`ygg` is a specialized RHSM client. When run with the `register` subcommand, it
+`ygg` is a specialized RHSM client. When run with the `connect` subcommand, it
 attempts to register with RHSM over D-Bus. If registration is successful, it
 activates the `yggd` systemd service.
 
