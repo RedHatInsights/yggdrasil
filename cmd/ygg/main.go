@@ -78,7 +78,7 @@ func main() {
 			},
 			Usage:       "Connects the system to cloud.redhat.com",
 			UsageText:   fmt.Sprintf("%v connect [command options]", app.Name),
-			Description: fmt.Sprintf("The connect command connects the system to Red Hat Subscription Manager and cloud.redhat.com and activates the %v daemon that enables cloud.redhat.com to interact with the system. For details visit: http://rd.ht/connector", yggdrasil.BrandName),
+			Description: fmt.Sprintf("The connect command connects the system to Red Hat Subscription Manager and cloud.redhat.com and activates the %v daemon that enables cloud.redhat.com to interact with the system. For details visit: https://red.ht/connector", yggdrasil.BrandName),
 			Action: func(c *cli.Context) error {
 				username := c.String("username")
 				password := c.String("password")
@@ -144,7 +144,7 @@ func main() {
 				s.Stop()
 				fmt.Printf(successPrefix+" Activated the %v daemon\n", yggdrasil.BrandName)
 
-				fmt.Printf("\nSee all your connected systems: http://red.ht/connector\n")
+				fmt.Printf("\nSee all your connected systems: https://red.ht/connector\n")
 
 				return nil
 			},
@@ -174,7 +174,7 @@ func main() {
 				}
 				s.Stop()
 
-				fmt.Printf("\nSee all your connected systems: http://red.ht/connector\n")
+				fmt.Printf("\nSee all your connected systems: https://red.ht/connector\n")
 
 				return nil
 			},
@@ -282,7 +282,7 @@ func main() {
 					fmt.Printf(failPrefix+" The %v daemon is inactive\n", yggdrasil.BrandName)
 				}
 
-				fmt.Printf("\nSee all your connected systems: http://red.ht/connector\n")
+				fmt.Printf("\nSee all your connected systems: https://red.ht/connector\n")
 
 				return nil
 			},
