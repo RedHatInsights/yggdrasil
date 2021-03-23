@@ -1,0 +1,11 @@
+# Build results
+/ygg
+/ygg-USAGE.md
+/ygg.1.gz
+/ygg.bash
+/yggd
+/data/pkgconfig/yggdrasil.pc
+/data/systemd/yggd.service
+/yggd-USAGE.md
+/yggd.1.gz
+/yggd.bash
