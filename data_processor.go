@@ -55,6 +55,11 @@ func (p *DataProcessor) Connect(name string) <-chan interface{} {
 	return p.sig.connect(name, 1)
 }
 
+// Close closes all channels that have been assigned to signal listeners.
+func (p *DataProcessor) Close() {
+	p.sig.close()
+}
+
 // HandleDataRecvSignal receives values on the channel, unpacks the data,
 // replaces the content with the contents of the URL if necessary, and emits
 // the data on the "data-process" signal.

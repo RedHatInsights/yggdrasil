@@ -73,6 +73,11 @@ func (p *ProcessManager) Connect(name string) <-chan interface{} {
 	return p.sig.connect(name, 1)
 }
 
+// Close closes all channels that have been assigned to signal listeners.
+func (p *ProcessManager) Close() {
+	p.sig.close()
+}
+
 // StartProcess executes file. The child process's stderr and stdout are
 // connected to pipes that are read in two goroutines. If the log level is set
 // to debug or higher, the child process output is logged. Once a process is
