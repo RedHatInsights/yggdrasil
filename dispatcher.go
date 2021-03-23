@@ -130,11 +130,11 @@ func (d *Dispatcher) Register(ctx context.Context, r *pb.RegistrationRequest) (*
 		return nil, err
 	}
 
+	tx.Commit()
+
 	d.sig.emit(SignalWorkerRegister, w)
 	d.logger.Debugf("emitted signal \"%v\"", SignalWorkerRegister)
 	d.logger.Tracef("emitted value: %#v", w)
-
-	tx.Commit()
 
 	return &pb.RegistrationResponse{
 		Registered: true,
