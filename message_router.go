@@ -117,6 +117,11 @@ func (m *MessageRouter) Connect(name string) <-chan interface{} {
 	return m.sig.connect(name, 1)
 }
 
+// Close closes all channels that have been assigned to signal listeners.
+func (m *MessageRouter) Close() {
+	m.sig.close()
+}
+
 // ConnectClient connects to the MQTT broker.
 func (m *MessageRouter) ConnectClient() error {
 	if token := m.client.Connect(); token.Wait() && token.Error() != nil {

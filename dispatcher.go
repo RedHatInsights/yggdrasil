@@ -73,6 +73,11 @@ func (d *Dispatcher) Connect(name string) <-chan interface{} {
 	return d.sig.connect(name, 1)
 }
 
+// Close closes all channels that have been assigned to signal listeners.
+func (d *Dispatcher) Close() {
+	d.sig.close()
+}
+
 // ListenAndServe opens a UNIX domain socket, registers a Dispatcher service
 // with grpc and accepts incoming connections on the domain socket.
 func (d *Dispatcher) ListenAndServe(socketAddr string) error {
