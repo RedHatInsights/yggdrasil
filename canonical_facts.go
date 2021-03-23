@@ -32,63 +32,63 @@ func CanonicalFactsFromMap(m map[string]interface{}) (*CanonicalFacts, error) {
 	var facts CanonicalFacts
 
 	if val, ok := m["insights_id"]; ok {
-		switch val.(type) {
+		switch val := val.(type) {
 		case string:
-			facts.InsightsID = val.(string)
+			facts.InsightsID = val
 		default:
 			return nil, &InvalidValueTypeError{key: "insights_id", val: val}
 		}
 	}
 
 	if val, ok := m["machine_id"]; ok {
-		switch val.(type) {
+		switch val := val.(type) {
 		case string:
-			facts.MachineID = val.(string)
+			facts.MachineID = val
 		default:
 			return nil, &InvalidValueTypeError{key: "machine_id", val: val}
 		}
 	}
 
 	if val, ok := m["bios_uuid"]; ok {
-		switch val.(type) {
+		switch val := val.(type) {
 		case string:
-			facts.BIOSUUID = val.(string)
+			facts.BIOSUUID = val
 		default:
 			return nil, &InvalidValueTypeError{key: "bios_uuid", val: val}
 		}
 	}
 
 	if val, ok := m["subscription_manager_id"]; ok {
-		switch val.(type) {
+		switch val := val.(type) {
 		case string:
-			facts.SubscriptionManagerID = val.(string)
+			facts.SubscriptionManagerID = val
 		default:
 			return nil, &InvalidValueTypeError{key: "subscription_manager_id", val: val}
 		}
 	}
 
 	if val, ok := m["ip_addresses"]; ok {
-		switch val.(type) {
+		switch val := val.(type) {
 		case []string:
-			facts.IPAddresses = val.([]string)
+			facts.IPAddresses = val
 		default:
 			return nil, &InvalidValueTypeError{key: "ip_addresses", val: val}
 		}
 	}
 
 	if val, ok := m["fqdn"]; ok {
-		switch val.(type) {
+		switch val := val.(type) {
 		case string:
-			facts.FQDN = val.(string)
+			facts.FQDN = val
 		default:
 			return nil, &InvalidValueTypeError{key: "fqdn", val: val}
 		}
 	}
 
 	if val, ok := m["mac_addresses"]; ok {
-		switch val.(type) {
+		switch val := val.(type) {
 		case []string:
-			facts.MACAddresses = val.([]string)
+			facts.MACAddresses = val
 		default:
 			return nil, &InvalidValueTypeError{key: "mac_addresses", val: val}
 		}
@@ -206,9 +206,9 @@ func collectIPAddresses() ([]string, error) {
 			return nil, err
 		}
 		for _, addr := range addrs {
-			switch addr.(type) {
+			switch addr := addr.(type) {
 			case *net.IPNet:
-				netAddr := addr.(*net.IPNet)
+				netAddr := addr
 				if netAddr.IP.To4() == nil {
 					continue
 				}
