@@ -188,7 +188,7 @@ func (p *ProcessManager) WaitProcess(process *Process) {
 	}
 
 	var delay time.Duration
-	timeAlive := time.Now().Sub(process.startedAt)
+	timeAlive := time.Since(process.startedAt)
 	if timeAlive < 1*time.Second {
 		p.rw.Lock()
 		p.delayStart[process.file] += 5 * time.Second
