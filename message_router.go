@@ -410,14 +410,14 @@ func (m *MessageRouter) subscribeData(handler func(mqtt.Client, mqtt.Message)) e
 	topic := fmt.Sprintf("%v/%v/data/in", TopicPrefix, m.consumerID)
 	m.logger.Debugf("subscribeData(%v)", topic)
 
-	return m.subscribe(topic, 2, handler)
+	return m.subscribe(topic, 0, handler)
 }
 
 func (m *MessageRouter) subscribeControl(handler func(mqtt.Client, mqtt.Message)) error {
 	topic := fmt.Sprintf("%v/%v/control/in", TopicPrefix, m.consumerID)
 	m.logger.Debugf("subscribeControl(%v)", topic)
 
-	return m.subscribe(topic, 2, handler)
+	return m.subscribe(topic, 1, handler)
 }
 
 func (m *MessageRouter) subscribe(topic string, qos byte, handler func(mqtt.Client, mqtt.Message)) error {
