@@ -297,10 +297,13 @@ func (p *ProcessManager) KillAllWorkers() error {
 
 	for obj := all.Next(); obj != nil; obj = all.Next() {
 		process := obj.(*Process)
-		p.StopProcess(process)
+		if err := p.StopProcess(process); err != nil {
+			p.logger.Error(err)
+		}
 
 		tx := p.db.Txn(true)
 		if err := tx.Delete(tableNameProcess, process); err != nil {
+			tx.Abort()
 			return err
 		}
 		tx.Commit()
