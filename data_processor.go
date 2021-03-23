@@ -183,6 +183,10 @@ func (p *DataProcessor) HandleDataReturnSignal(c <-chan interface{}) {
 
 			if worker.detachedContent {
 				req, err := http.NewRequest(http.MethodPost, dataMessage.Directive, bytes.NewReader(dataMessage.Content))
+				if err != nil {
+					p.logger.Error(err)
+					return
+				}
 
 				for k, v := range dataMessage.Metadata {
 					req.Header.Add(k, strings.TrimSpace(v))
