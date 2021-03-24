@@ -110,6 +110,7 @@ func NewMessageRouter(db *memdb.MemDB, brokers []string, certFile, keyFile, caRo
 		m.logger.Errorf("error: unhandled message: %v", string(msg.Payload()))
 	})
 	opts.SetCleanSession(true)
+	opts.SetOrderMatters(false)
 
 	m.client = mqtt.NewClient(opts)
 
