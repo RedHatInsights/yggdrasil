@@ -241,7 +241,13 @@ func (m *MessageRouter) SubscribeAndRoute() error {
 			}
 		case CommandNameReconnect:
 			m.client.Disconnect(500)
-			if err := m.PublishSubscribeAndRoute(); err != nil {
+			if err := m.ConnectClient(); err != nil {
+				m.logger.Error(err)
+			}
+			if err := m.PublishConnectionStatus(); err != nil {
+				m.logger.Error(err)
+			}
+			if err := m.SubscribeAndRoute(); err != nil {
 				m.logger.Error(err)
 			}
 		}
@@ -256,21 +262,6 @@ func (m *MessageRouter) SubscribeAndRoute() error {
 		m.handleDataMessage(msg.Payload())
 	})
 	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-// PublishSubscribeAndRoute connects to the MQTT client, publishes a
-// connection-status message, subscribes to the control and data topics, and
-// sets up a message handler to route data messages to workers.
-func (m *MessageRouter) PublishSubscribeAndRoute() error {
-	if err := m.PublishConnectionStatus(); err != nil {
-		return err
-	}
-
-	if err := m.SubscribeAndRoute(); err != nil {
 		return err
 	}
 
