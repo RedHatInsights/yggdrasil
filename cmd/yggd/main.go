@@ -219,7 +219,7 @@ func main() {
 			logger := log.New(os.Stderr, fmt.Sprintf("%v[message_router_routine] ", log.Prefix()), log.Flags(), log.CurrentLevel())
 			logger.Trace("init")
 
-			if localErr := messageRouter.ConnectClient(); err != nil {
+			if localErr := messageRouter.ConnectClient(); localErr != nil {
 				err = localErr
 				quit <- syscall.SIGTERM
 				return
@@ -227,8 +227,14 @@ func main() {
 
 			<-c
 
-			if localError := messageRouter.PublishSubscribeAndRoute(); localError != nil {
-				err = localError
+			if localErr := messageRouter.PublishConnectionStatus(); localErr != nil {
+				err = localErr
+				quit <- syscall.SIGTERM
+				return
+			}
+
+			if localErr := messageRouter.SubscribeAndRoute(); localErr != nil {
+				err = localErr
 				quit <- syscall.SIGTERM
 				return
 			}
