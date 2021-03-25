@@ -132,6 +132,14 @@ func (m *MessageRouter) ConnectClient() error {
 		m.logger.Tracef("connected to broker %v", url)
 	}
 
+	go func() {
+		// Publish a throwaway message in case the topic does not exist; this is a
+		// workaround for the Akamai MQTT broker implementation.
+		if err := m.publishData(0, false, []byte{}); err != nil {
+			m.logger.Error(err)
+		}
+	}()
+
 	m.sig.emit(SignalClientConnect, true)
 	m.logger.Debugf("emitted signal: \"%v\"", SignalClientConnect)
 	m.logger.Tracef("emitted value: %#v", true)
@@ -256,12 +264,6 @@ func (m *MessageRouter) SubscribeAndRoute() error {
 // connection-status message, subscribes to the control and data topics, and
 // sets up a message handler to route data messages to workers.
 func (m *MessageRouter) PublishSubscribeAndRoute() error {
-	// Publish a throwaway message in case the topic does not exist; this is a
-	// workaround for the Akamai MQTT broker implementation.
-	if err := m.publishData(0, false, []byte{}); err != nil {
-		return err
-	}
-
 	if err := m.PublishConnectionStatus(); err != nil {
 		return err
 	}
