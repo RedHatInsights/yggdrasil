@@ -156,7 +156,7 @@ func (m *MessageRouter) ConnectClient() error {
 }
 
 // PublishConnectionStatus constructs a ConnectionStatus message and publishes
-// it as a retained message to the client status topic.
+// it to the client status topic.
 func (m *MessageRouter) PublishConnectionStatus() error {
 	facts, err := GetCanonicalFacts()
 	if err != nil {
