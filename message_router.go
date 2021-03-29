@@ -257,7 +257,7 @@ func (m *MessageRouter) SubscribeAndRoute() error {
 	err = m.subscribeData(func(_ mqtt.Client, msg mqtt.Message) {
 		m.logger.Debugf("subscribeDataMsgHandler(%+v)", msg)
 
-		m.handleDataMessage(msg.Payload())
+		go m.handleDataMessage(msg.Payload())
 	})
 	if err != nil {
 		return err
