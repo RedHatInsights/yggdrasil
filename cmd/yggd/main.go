@@ -150,12 +150,6 @@ func main() {
 		sigProcessDie := processManager.Connect(yggdrasil.SignalProcessDie)
 		go dispatcher.HandleProcessDieSignal(sigProcessDie)
 
-		// Connect messageRouter to the dispatcher's "worker-unregister" signal
-		go messageRouter.HandleWorkerUnregisterSignal(dispatcher.Connect(yggdrasil.SignalWorkerUnregister))
-
-		// Connect messageRouter to the dispatcher's "worker-register" signal
-		go messageRouter.HandleWorkerRegisterSignal(dispatcher.Connect(yggdrasil.SignalWorkerRegister))
-
 		// Connect dataProcessor to the messageRouter's "data-recv" signal
 		sigMessageRecv := messageRouter.Connect(yggdrasil.SignalDataRecv)
 		go dataProcessor.HandleDataRecvSignal(sigMessageRecv)
@@ -214,17 +208,11 @@ func main() {
 		}()
 
 		// MessageRouter goroutine
-		go func() {
+		go func(c <-chan interface{}) {
 			logger := log.New(os.Stderr, fmt.Sprintf("%v[message_router_routine] ", log.Prefix()), log.Flags(), log.CurrentLevel())
 			logger.Trace("init")
 
 			if localErr := messageRouter.ConnectClient(); localErr != nil {
-				err = localErr
-				quit <- syscall.SIGTERM
-				return
-			}
-
-			if localErr := messageRouter.PublishConnectionStatus(); localErr != nil {
 				err = localErr
 				quit <- syscall.SIGTERM
 				return
@@ -235,7 +223,21 @@ func main() {
 				quit <- syscall.SIGTERM
 				return
 			}
-		}()
+
+			<-c
+
+			if localErr := messageRouter.PublishConnectionStatus(); localErr != nil {
+				err = localErr
+				quit <- syscall.SIGTERM
+				return
+			}
+
+			// Connect messageRouter to the dispatcher's "worker-unregister" signal
+			go messageRouter.HandleWorkerUnregisterSignal(dispatcher.Connect(yggdrasil.SignalWorkerUnregister))
+
+			// Connect messageRouter to the dispatcher's "worker-register" signal
+			go messageRouter.HandleWorkerRegisterSignal(dispatcher.Connect(yggdrasil.SignalWorkerRegister))
+		}(processManager.Connect(yggdrasil.SignalProcessBootstrap))
 
 		<-quit
 
