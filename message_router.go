@@ -207,7 +207,7 @@ func (m *MessageRouter) SubscribeAndRoute() error {
 	var err error
 
 	err = m.subscribeControl(func(_ mqtt.Client, msg mqtt.Message) {
-		m.logger.Debugf("subscribeControlMsgHandler(%v)", msg.MessageID())
+		m.logger.Debugf("subscribeControlMsgHandler(%+v)", msg)
 
 		var cmd Command
 
@@ -255,7 +255,7 @@ func (m *MessageRouter) SubscribeAndRoute() error {
 	}
 
 	err = m.subscribeData(func(_ mqtt.Client, msg mqtt.Message) {
-		m.logger.Debugf("subscribeDataMsgHandler(%v)", msg.MessageID())
+		m.logger.Debugf("subscribeDataMsgHandler(%+v)", msg)
 
 		m.handleDataMessage(msg.Payload())
 	})
