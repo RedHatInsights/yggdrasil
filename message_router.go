@@ -140,13 +140,9 @@ func (m *MessageRouter) ConnectClient() error {
 		m.logger.Tracef("connected to broker %v", url)
 	}
 
-	go func() {
-		// Publish a throwaway message in case the topic does not exist; this is a
-		// workaround for the Akamai MQTT broker implementation.
-		if err := m.publishData(0, false, []byte{}); err != nil {
-			m.logger.Error(err)
-		}
-	}()
+	// Publish a throwaway message in case the topic does not exist; this is a
+	// workaround for the Akamai MQTT broker implementation.
+	go m.publishData(0, false, []byte{})
 
 	m.sig.emit(SignalClientConnect, true)
 	m.logger.Debugf("emitted signal: \"%v\"", SignalClientConnect)
@@ -194,9 +190,7 @@ func (m *MessageRouter) PublishConnectionStatus() error {
 	if err != nil {
 		return err
 	}
-	if err := m.publishControl(1, false, data); err != nil {
-		return err
-	}
+	go m.publishControl(1, false, data)
 
 	m.sig.emit(SignalMessageSend, msg)
 	m.logger.Debugf("emitted signal: \"%v\"", SignalMessageSend)
@@ -242,9 +236,7 @@ func (m *MessageRouter) SubscribeAndRoute() error {
 				m.logger.Error(err)
 				return
 			}
-			if err := m.publishControl(0, false, data); err != nil {
-				m.logger.Error(err)
-			}
+			go m.publishControl(1, false, data)
 		case CommandNameReconnect:
 			m.client.Disconnect(500)
 			if err := m.ConnectClient(); err != nil {
@@ -324,11 +316,7 @@ func (m *MessageRouter) HandleDataConsumeSignal(c <-chan interface{}) {
 						return
 					}
 
-					if err := m.publishData(0, false, data); err != nil {
-						m.logger.Error(err)
-						return
-					}
-					m.logger.Tracef("published %#v to data topic", string(data))
+					go m.publishData(0, false, data)
 				}
 			}
 
@@ -430,20 +418,18 @@ func (m *MessageRouter) subscribe(topic string, qos byte, handler func(mqtt.Clie
 	return nil
 }
 
-func (m *MessageRouter) publishData(qos byte, retained bool, payload []byte) error {
-	return m.publish(fmt.Sprintf("%v/%v/data/out", TopicPrefix, m.consumerID), qos, retained, payload)
+func (m *MessageRouter) publishData(qos byte, retained bool, payload []byte) {
+	m.publish(fmt.Sprintf("%v/%v/data/out", TopicPrefix, m.consumerID), qos, retained, payload)
 }
 
-func (m *MessageRouter) publishControl(qos byte, retained bool, payload []byte) error {
-	return m.publish(fmt.Sprintf("%v/%v/control/out", TopicPrefix, m.consumerID), qos, retained, payload)
+func (m *MessageRouter) publishControl(qos byte, retained bool, payload []byte) {
+	m.publish(fmt.Sprintf("%v/%v/control/out", TopicPrefix, m.consumerID), qos, retained, payload)
 }
 
-func (m *MessageRouter) publish(topic string, qos byte, retained bool, payload []byte) error {
+func (m *MessageRouter) publish(topic string, qos byte, retained bool, payload []byte) {
 	m.logger.Debugf("publish(%v, %v, %v, %T)", topic, qos, retained, payload)
 	m.logger.Tracef("published payload: %#v", string(payload))
 	if token := m.client.Publish(topic, qos, retained, payload); token.Wait() && token.Error() != nil {
-		return token.Error()
+		m.logger.Error(token.Error())
 	}
-
-	return nil
 }
