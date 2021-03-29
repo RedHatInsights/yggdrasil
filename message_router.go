@@ -111,6 +111,21 @@ func NewMessageRouter(db *memdb.MemDB, brokers []string, certFile, keyFile, caRo
 	})
 	opts.SetCleanSession(true)
 	opts.SetOrderMatters(false)
+	opts.SetConnectionLostHandler(func(c mqtt.Client, e error) {
+		m.logger.Errorf("error: connection lost unexpectedly: %v", e)
+		go func() {
+			m.logger.Debug("reconnecting...")
+			if err := m.ConnectClient(); err != nil {
+				m.logger.Error(err)
+			}
+			if err := m.SubscribeAndRoute(); err != nil {
+				m.logger.Error(err)
+			}
+			if err := m.PublishConnectionStatus(); err != nil {
+				m.logger.Error(err)
+			}
+		}()
+	})
 
 	m.client = mqtt.NewClient(opts)
 
