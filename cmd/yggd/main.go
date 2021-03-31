@@ -115,6 +115,9 @@ func main() {
 		}
 		log.SetLevel(level)
 		log.SetPrefix(fmt.Sprintf("[%v] ", app.Name))
+		if log.CurrentLevel() >= log.LevelDebug {
+			log.SetFlags(log.LstdFlags | log.Llongfile)
+		}
 
 		log.Infof("starting %v version %v", app.Name, app.Version)
 
