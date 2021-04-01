@@ -206,6 +206,7 @@ func main() {
 			Flags: []cli.Flag{
 				&cli.StringFlag{
 					Name:    "format",
+					Usage:   `specify output format ("table", "json")`,
 					Aliases: []string{"f"},
 					Value:   "table",
 				},
