@@ -3,7 +3,9 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/url"
+	"os"
 
 	"github.com/godbus/dbus/v5"
 )
@@ -22,6 +24,12 @@ func getConsumerUUID() (string, error) {
 }
 
 func registerPassword(username, password, serverURL string) error {
+	if serverURL != "" {
+		if err := configureRHSM(serverURL); err != nil {
+			return fmt.Errorf("cannot configure RHSM: %w", err)
+		}
+	}
+
 	conn, err := dbus.SystemBus()
 	if err != nil {
 		return err
@@ -53,18 +61,7 @@ func registerPassword(username, password, serverURL string) error {
 		return err
 	}
 
-	connectionOptions := make(map[string]string)
-	if serverURL != "" {
-		URL, err := url.Parse(serverURL)
-		if err != nil {
-			return err
-		}
-		connectionOptions["host"] = URL.Hostname()
-		connectionOptions["port"] = URL.Port()
-		connectionOptions["handler"] = URL.EscapedPath()
-	}
-
-	if err := privConn.Object("com.redhat.RHSM1", "/com/redhat/RHSM1/Register").Call("com.redhat.RHSM1.Register.Register", dbus.Flags(0), "", username, password, map[string]string{}, connectionOptions, "").Err; err != nil {
+	if err := privConn.Object("com.redhat.RHSM1", "/com/redhat/RHSM1/Register").Call("com.redhat.RHSM1.Register.Register", dbus.Flags(0), "", username, password, map[string]string{}, map[string]string{}, "").Err; err != nil {
 		return unpackError(err)
 	}
 
@@ -72,6 +69,12 @@ func registerPassword(username, password, serverURL string) error {
 }
 
 func registerActivationKey(orgID string, activationKeys []string, serverURL string) error {
+	if serverURL != "" {
+		if err := configureRHSM(serverURL); err != nil {
+			return fmt.Errorf("cannot configure RHSM: %w", err)
+		}
+	}
+
 	conn, err := dbus.SystemBus()
 	if err != nil {
 		return err
@@ -103,18 +106,7 @@ func registerActivationKey(orgID string, activationKeys []string, serverURL stri
 		return err
 	}
 
-	connectionOptions := make(map[string]string)
-	if serverURL != "" {
-		URL, err := url.Parse(serverURL)
-		if err != nil {
-			return err
-		}
-		connectionOptions["host"] = URL.Hostname()
-		connectionOptions["port"] = URL.Port()
-		connectionOptions["handler"] = URL.EscapedPath()
-	}
-
-	if err := privConn.Object("com.redhat.RHSM1", "/com/redhat/RHSM1/Register").Call("com.redhat.RHSM1.Register.RegisterWithActivationKeys", dbus.Flags(0), orgID, activationKeys, map[string]string{}, connectionOptions, "").Err; err != nil {
+	if err := privConn.Object("com.redhat.RHSM1", "/com/redhat/RHSM1/Register").Call("com.redhat.RHSM1.Register.RegisterWithActivationKeys", dbus.Flags(0), orgID, activationKeys, map[string]string{}, map[string]string{}, "").Err; err != nil {
 		return unpackError(err)
 	}
 
@@ -162,4 +154,69 @@ func unpackError(err error) error {
 	default:
 		return err
 	}
+}
+
+func configureRHSM(serverURL string) error {
+	if _, err := os.Stat("/etc/rhsm/rhsm.conf.orig"); os.IsNotExist(err) {
+		src, err := os.Open("/etc/rhsm/rhsm.conf")
+		if err != nil {
+			return fmt.Errorf("cannot open file for reading: %w", err)
+		}
+		defer src.Close()
+
+		dst, err := os.Create("/etc/rhsm/rhsm.conf.orig")
+		if err != nil {
+			return fmt.Errorf("cannot open file for writing: %w", err)
+		}
+		defer dst.Close()
+
+		if _, err := io.Copy(dst, src); err != nil {
+			return fmt.Errorf("cannot backup rhsm.conf: %w", err)
+		}
+		src.Close()
+		dst.Close()
+	}
+
+	URL, err := url.Parse(serverURL)
+	if err != nil {
+		return fmt.Errorf("cannot parse URL: %w", err)
+	}
+
+	conn, err := dbus.SystemBus()
+	if err != nil {
+		return fmt.Errorf("cannot connect to system D-Bus: %w", err)
+	}
+
+	config := conn.Object("com.redhat.RHSM1", "/com/redhat/RHSM1/Config")
+
+	// If the scheme is empty, attempt to set the server.hostname based on the
+	// path component alone. This enables the --server argument to accept just a
+	// host name without a full URI.
+	if URL.Scheme == "" {
+		if URL.Path != "" {
+			if err := config.Call("com.redhat.RHSM1.Config.Set", 0, "server.hostname", URL.Path, "").Err; err != nil {
+				return unpackError(err)
+			}
+		}
+	} else {
+		if URL.Hostname() != "" {
+			if err := config.Call("com.redhat.RHSM1.Config.Set", 0, "server.hostname", URL.Hostname(), "").Err; err != nil {
+				return unpackError(err)
+			}
+		}
+
+		if URL.Port() != "" {
+			if err := config.Call("com.redhat.RHSM1.Config.Set", 0, "server.port", URL.Port(), "").Err; err != nil {
+				return unpackError(err)
+			}
+		}
+
+		if URL.Path != "" {
+			if err := config.Call("com.redhat.RHSM1.Config.Set", 0, "server.prefix", URL.Path, "").Err; err != nil {
+				return unpackError(err)
+			}
+		}
+	}
+
+	return nil
 }
