@@ -48,7 +48,7 @@ func (s *echoServer) Send(ctx context.Context, d *pb.Data) (*pb.Receipt, error) 
 
 		// Call "Send"
 		if _, err := c.Send(ctx, data); err != nil {
-			log.Fatal(err)
+			log.Error(err)
 		}
 	}()
 
