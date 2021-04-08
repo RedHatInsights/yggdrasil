@@ -84,7 +84,9 @@ func main() {
 			if err != nil {
 				return err
 			}
-			return altsrc.ApplyInputSourceValues(c, inputSource, app.Flags)
+			if err := altsrc.ApplyInputSourceValues(c, inputSource, app.Flags); err != nil {
+				return err
+			}
 		}
 		return nil
 	}
@@ -104,6 +106,12 @@ func main() {
 			}
 			fmt.Println(data)
 			return nil
+		}
+
+		for _, f := range []string{"cert-file", "key-file"} {
+			if c.String(f) == "" {
+				return cli.Exit(fmt.Errorf("required flag '%v' not set", f), 1)
+			}
 		}
 
 		if c.String("topic-prefix") != "" {
