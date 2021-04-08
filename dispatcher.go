@@ -153,6 +153,10 @@ func (d *Dispatcher) Send(ctx context.Context, r *pb.Data) (*pb.Receipt, error) 
 		err error
 	)
 
+	if r.GetMessageId() == "" {
+		return nil, fmt.Errorf("cannot accept message with empty message-id field")
+	}
+
 	tx = d.db.Txn(false)
 	obj, err = tx.First(tableNameData, indexNameID, r.GetMessageId())
 	if err != nil {
