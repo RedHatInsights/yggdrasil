@@ -182,61 +182,53 @@ func (p *DataProcessor) HandleDataReturnSignal(c <-chan interface{}) {
 			dataMessage := obj.(Data)
 
 			tx = p.db.Txn(false)
-			obj, err = tx.First(tableNameData, indexNameID, dataMessage.ResponseTo)
+			obj, err = tx.First(tableNameWorker, indexNameHandler, dataMessage.Directive)
 			if err != nil {
 				p.logger.Error(err)
 				return
 			}
-			originalMessage := obj.(Data)
-
-			tx = p.db.Txn(false)
-			obj, err = tx.First(tableNameWorker, indexNameHandler, originalMessage.Directive)
-			if err != nil {
-				p.logger.Error(err)
-				return
-			}
-			worker := obj.(Worker)
-
-			if worker.detachedContent {
+			if obj != nil {
 				URL, err := url.Parse(dataMessage.Directive)
 				if err != nil {
 					p.logger.Error(err)
 					return
 				}
-				if p.host != "" {
-					URL.Host = p.host
-				}
-				req, err := http.NewRequest(http.MethodPost, URL.String(), bytes.NewReader(dataMessage.Content))
-				if err != nil {
-					p.logger.Error(err)
-					return
-				}
+				if URL.Scheme != "" {
+					if p.host != "" {
+						URL.Host = p.host
+					}
+					req, err := http.NewRequest(http.MethodPost, URL.String(), bytes.NewReader(dataMessage.Content))
+					if err != nil {
+						p.logger.Error(err)
+						return
+					}
 
-				for k, v := range dataMessage.Metadata {
-					req.Header.Add(k, strings.TrimSpace(v))
-				}
-				p.logger.Tracef("created HTTP request: %#v", req)
+					for k, v := range dataMessage.Metadata {
+						req.Header.Add(k, strings.TrimSpace(v))
+					}
+					p.logger.Tracef("created HTTP request: %#v", req)
 
-				resp, err := p.client.Do(req)
-				if err != nil {
-					p.logger.Error(err)
-					return
-				}
-				defer resp.Body.Close()
+					resp, err := p.client.Do(req)
+					if err != nil {
+						p.logger.Error(err)
+						return
+					}
+					defer resp.Body.Close()
 
-				data, err := ioutil.ReadAll(resp.Body)
-				if err != nil {
-					p.logger.Error(err)
-					return
-				}
+					data, err := ioutil.ReadAll(resp.Body)
+					if err != nil {
+						p.logger.Error(err)
+						return
+					}
 
-				switch {
-				case resp.StatusCode >= 400:
-					p.logger.Error(&APIResponseError{Code: resp.StatusCode, body: strings.TrimSpace(string(data))})
-					return
-				default:
-					p.logger.Infof("received HTTP response body: %v", strings.TrimSpace(string(data)))
-					p.logger.Tracef("received HTTP response: %#v", resp)
+					switch {
+					case resp.StatusCode >= 400:
+						p.logger.Error(&APIResponseError{Code: resp.StatusCode, body: strings.TrimSpace(string(data))})
+						return
+					default:
+						p.logger.Infof("received HTTP response body: %v", strings.TrimSpace(string(data)))
+						p.logger.Tracef("received HTTP response: %#v", resp)
+					}
 				}
 			}
 

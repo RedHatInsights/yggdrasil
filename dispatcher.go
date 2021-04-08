@@ -292,6 +292,13 @@ func (d *Dispatcher) HandleDataProcessSignal(c <-chan interface{}) {
 				return
 			}
 
+			tx = d.db.Txn(true)
+			if err := tx.Delete(tableNameData, dataMessage); err != nil {
+				d.logger.Error(err)
+				return
+			}
+			tx.Commit()
+
 			d.sig.emit(SignalDataDispatch, dataMessage.MessageID)
 			d.logger.Debugf("emitted signal \"%v\"", SignalDataDispatch)
 			d.logger.Tracef("emitted value: %#v", dataMessage.MessageID)
