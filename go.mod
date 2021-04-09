@@ -3,7 +3,7 @@ module github.com/redhatinsights/yggdrasil
 go 1.13
 
 require (
-	git.sr.ht/~spc/go-log v0.0.0-20201023160325-a0ff5c6cd86b
+	git.sr.ht/~spc/go-log v0.0.0-20210409014304-ce6a6f3602dc
 	github.com/briandowns/spinner v1.12.0
 	github.com/coreos/go-systemd/v22 v22.1.0
 	github.com/cpuguy83/go-md2man/v2 v2.0.0 // indirect
