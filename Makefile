@@ -155,6 +155,7 @@ dist:
 		--exclude=.git \
 		--exclude=.vscode \
 		--exclude=.github \
+		--exclude=.gitignore \
 		--transform s/^\./$(PKGNAME)-$(VERSION)/ \
 		. && mv /tmp/$(PKGNAME)-$(VERSION).tar.gz .
 	rm -rf ./vendor
