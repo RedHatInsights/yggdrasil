@@ -1,6 +1,8 @@
 cloud.google.com/go v0.26.0/go.mod h1:aQUYkXzVsufM+DwF1aE+0xfcU+56JwCaLick0ClmMTw=
 git.sr.ht/~spc/go-log v0.0.0-20201023160325-a0ff5c6cd86b h1:vy0WIbDtJBccHi3MLC7FotVVt7ut97Txx6+6KfnyIOo=
 git.sr.ht/~spc/go-log v0.0.0-20201023160325-a0ff5c6cd86b/go.mod h1:IKiYUc0lWbZO4uSV0kWNzJSFnABNdrybpPWo46CGgFM=
+git.sr.ht/~spc/go-log v0.0.0-20210409014304-ce6a6f3602dc h1:jrsDG/OBvZz/ToHTMIsWXTQ0L1N7A8XGx77aifPethE=
+git.sr.ht/~spc/go-log v0.0.0-20210409014304-ce6a6f3602dc/go.mod h1:IKiYUc0lWbZO4uSV0kWNzJSFnABNdrybpPWo46CGgFM=
 github.com/BurntSushi/toml v0.3.1 h1:WXkYYl6Yr3qBf1K79EBnL4mak0OimBfB0XUf9Vl28OQ=
 github.com/BurntSushi/toml v0.3.1/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03qcyfWMU=
 github.com/briandowns/spinner v1.12.0 h1:72O0PzqGJb6G3KgrcIOtL/JAGGZ5ptOMCn9cUHmqsmw=
