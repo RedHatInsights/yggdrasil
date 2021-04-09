@@ -187,7 +187,7 @@ func (p *DataProcessor) HandleDataReturnSignal(c <-chan interface{}) {
 				p.logger.Error(err)
 				return
 			}
-			if obj != nil {
+			if obj == nil {
 				URL, err := url.Parse(dataMessage.Directive)
 				if err != nil {
 					p.logger.Error(err)
