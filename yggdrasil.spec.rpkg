@@ -18,8 +18,8 @@
 %endif
 
 Name:    {{{ git_dir_name }}}
-Version: {{{ git_dir_version }}}
-Release: 1%{?dist}
+Version: {{{ git describe --tags --abbrev=0 | tr -d '\n' }}}
+Release: 0.{{{ printf "%s.%s.g%s" $(git rev-list $(git describe --tags --abbrev=0 | tr -d '\n')..HEAD --count | tr -d '\n') $(git rev-parse --abbrev-ref HEAD | tr '/' '-' | tr -d '\n') $(git rev-parse --short HEAD | tr -d '\n') }}}%{?dist}
 Summary: Message dispatch agent for cloud-connected systems
 License: GPLv3
 URL: https://github.com/redhatinsights/yggdrasil
