@@ -11,7 +11,7 @@ srpm: RELEASE = $(shell printf "0.%s.git.%s" $(shell git rev-list $(shell git de
 srpm: PKGNAME = $(SHORTNAME)
 
 ifeq ($(shell git rev-parse --abbrev-ref HEAD), main)
-sprm: VERSION = $(shell git describe --tags --abbrev=0 | awk -F. '{printf("%d.%d.%d", $1, $2, $3+1)}')
+srpm: VERSION = $(shell git describe --tags --abbrev=0 | awk -F. '{printf("%d.%d.%d", $1, $2, $3+1)}')
 endif
 
 ifeq ($(shell basename $(PWD)), rhc)
