@@ -120,9 +120,12 @@ func GetCanonicalFacts() (*CanonicalFacts, error) {
 		return nil, err
 	}
 
-	facts.BIOSUUID, err = readFile("/sys/devices/virtual/dmi/id/product_uuid")
-	if err != nil {
-		return nil, err
+	if _, err := os.Stat("/sys/devices/virtual/dmi/id/product_uuid"); !os.IsNotExist(err) {
+		BIOSUUID, err := readFile("/sys/devices/virtual/dmi/id/product_uuid")
+		if err != nil {
+			return nil, err
+		}
+		facts.BIOSUUID = BIOSUUID
 	}
 
 	facts.SubscriptionManagerID, err = readCert("/etc/pki/consumer/cert.pem")
