@@ -8,7 +8,7 @@
 
 Name:    @LONGNAME@
 Version: @VERSION@
-Release: @RELEASE@%{?dist}
+Release: @RELEASE@
 Summary: Message dispatch agent for cloud-connected systems
 License: GPLv3
 URL: https://github.com/redhatinsights/yggdrasil
