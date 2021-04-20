@@ -111,23 +111,33 @@ func NewMessageRouter(db *memdb.MemDB, brokers []string, certFile, keyFile, caRo
 	})
 	opts.SetCleanSession(true)
 	opts.SetOrderMatters(false)
+	opts.SetOnConnectHandler(func(c mqtt.Client) {
+		options := c.OptionsReader()
+		for _, url := range options.Servers() {
+			m.logger.Tracef("connected to broker %v", url)
+		}
+
+		// Publish a throwaway message in case the topic does not exist; this is a
+		// workaround for the Akamai MQTT broker implementation.
+		go m.publishData(0, false, []byte{})
+
+		m.sig.emit(SignalClientConnect, true)
+		m.logger.Debugf("emitted signal: \"%v\"", SignalClientConnect)
+		m.logger.Tracef("emitted value: %#v", true)
+
+		if err := m.SubscribeAndRoute(); err != nil {
+			m.logger.Error(err)
+			return
+		}
+
+		if err := m.PublishConnectionStatus(); err != nil {
+			m.logger.Error(err)
+			return
+		}
+
+	})
 	opts.SetConnectionLostHandler(func(c mqtt.Client, e error) {
 		m.logger.Errorf("error: connection lost unexpectedly: %v", e)
-		go func() {
-			m.logger.Debug("reconnecting...")
-			if err := m.ConnectClient(); err != nil {
-				m.logger.Error(err)
-				return
-			}
-			if err := m.SubscribeAndRoute(); err != nil {
-				m.logger.Error(err)
-				return
-			}
-			if err := m.PublishConnectionStatus(); err != nil {
-				m.logger.Error(err)
-				return
-			}
-		}()
 	})
 
 	m.client = mqtt.NewClient(opts)
@@ -153,18 +163,6 @@ func (m *MessageRouter) ConnectClient() error {
 	if token := m.client.Connect(); token.Wait() && token.Error() != nil {
 		return token.Error()
 	}
-	options := m.client.OptionsReader()
-	for _, url := range options.Servers() {
-		m.logger.Tracef("connected to broker %v", url)
-	}
-
-	// Publish a throwaway message in case the topic does not exist; this is a
-	// workaround for the Akamai MQTT broker implementation.
-	go m.publishData(0, false, []byte{})
-
-	m.sig.emit(SignalClientConnect, true)
-	m.logger.Debugf("emitted signal: \"%v\"", SignalClientConnect)
-	m.logger.Tracef("emitted value: %#v", true)
 
 	return nil
 }

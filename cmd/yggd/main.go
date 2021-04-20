@@ -236,19 +236,7 @@ func main() {
 				return
 			}
 
-			if localErr := messageRouter.SubscribeAndRoute(); localErr != nil {
-				err = localErr
-				quit <- syscall.SIGTERM
-				return
-			}
-
 			<-c
-
-			if localErr := messageRouter.PublishConnectionStatus(); localErr != nil {
-				err = localErr
-				quit <- syscall.SIGTERM
-				return
-			}
 
 			// Connect messageRouter to the dispatcher's "worker-unregister" signal
 			go messageRouter.HandleWorkerUnregisterSignal(dispatcher.Connect(yggdrasil.SignalWorkerUnregister))
