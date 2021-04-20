@@ -117,12 +117,15 @@ func NewMessageRouter(db *memdb.MemDB, brokers []string, certFile, keyFile, caRo
 			m.logger.Debug("reconnecting...")
 			if err := m.ConnectClient(); err != nil {
 				m.logger.Error(err)
+				return
 			}
 			if err := m.SubscribeAndRoute(); err != nil {
 				m.logger.Error(err)
+				return
 			}
 			if err := m.PublishConnectionStatus(); err != nil {
 				m.logger.Error(err)
+				return
 			}
 		}()
 	})
