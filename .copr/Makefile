@@ -6,13 +6,9 @@ SRCRPMDIR := $(shell rpmbuild -E %_srcrpmdir)
 srpm: SHORTNAME = $(shell basename $(PWD))
 srpm: LONGNAME = $(SHORTNAME)
 srpm: BRANDNAME = $(SHORTNAME)
-srpm: VERSION = $(shell git describe --tags --abbrev=0)
+srpm: VERSION := $(shell echo $(VERSION) | awk -F. '{printf("%d.%d.%d", $$1, $$2, $$3+1)}')
 srpm: RELEASE = $(shell printf "0.%s.git.%s" $(shell git rev-list $(shell git describe --tags --abbrev=0 | tr -d '\n')..HEAD --count | tr -d '\n') $(shell git rev-parse --short HEAD | tr -d '\n'))
 srpm: PKGNAME = $(SHORTNAME)
-
-ifeq ($(shell git rev-parse --abbrev-ref HEAD), main)
-srpm: VERSION = $(shell git describe --tags --abbrev=0 | awk -F. '{printf("%d.%d.%d", $1, $2, $3+1)}')
-endif
 
 ifeq ($(shell basename $(PWD)), rhc)
 srpm: TOPICPREFIX = redhat/insights
