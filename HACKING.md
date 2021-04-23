@@ -2,8 +2,13 @@
 
 * _MQTT broker_: `mosquitto` is extremely easy to set up.
 * _HTTP server_
-* Development package dependencies are listed as `BuildRequires:` in the `yggdrasil.spec.rpkg` file.
-  * NOTE: These are the packages names are listed as they exist in [Fedora Linux](https://getfedora.org/), [CentOS Stream](https://centos.org/), and [Red Hat Enterprise Linux](https://www.redhat.com/en/technologies/linux-platforms/enterprise-linux). Similar package names for other distros may vary.
+* Development package dependencies are listed as `BuildRequires:` in the
+  `yggdrasil.spec.in` file.
+  * NOTE: These are the packages names are listed as they exist in [Fedora
+    Linux](https://getfedora.org/), [CentOS Stream](https://centos.org/), and
+    [Red Hat Enterprise
+    Linux](https://www.redhat.com/en/technologies/linux-platforms/enterprise-linux).
+    Similar package names for other distros may vary.
 
 # Getting Started
 
@@ -56,10 +61,11 @@ mosquitto_pub --host 127.0.0.1 --port 1883 --topic "yggdrasil/${CONSUMER_ID}/con
 
 # Call Graphs
 
-Call graphs can be generated to provide a high-level overview of the interactions
-between packages.
+Call graphs can be generated to provide a high-level overview of the
+interactions between packages.
 
-For basic call graphs, install `go-callvis` (`go get -u github.com/ofabry/go-callvis`) and run:
+For basic call graphs, install `go-callvis` (`go get -u
+github.com/ofabry/go-callvis`) and run:
 
 ```bash
 # Call graph of the main function of yggd, up to calls into the yggdrasil package
@@ -89,6 +95,8 @@ callgraph -algo pta -format digraph ./cmd/ygg | grep github.com/redhatinsights/y
 
 # Code Guidelines
 
+* Commits follow the [Conventional Commits](https://www.conventionalcommits.org)
+  pattern.
 * Communicate errors through return values, not logging. Library functions in
   particular should follow this guideline. You never know under which condition
   a library function will be called, so excessive logging should be avoided.
