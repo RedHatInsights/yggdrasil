@@ -11,7 +11,6 @@ require (
 	github.com/godbus/dbus/v5 v5.0.3
 	github.com/google/go-cmp v0.5.2
 	github.com/google/uuid v1.1.2
-	github.com/hashicorp/go-memdb v1.3.0
 	github.com/rjeczalik/notify v0.9.2
 	github.com/urfave/cli/v2 v2.3.0
 	golang.org/x/crypto v0.0.0-20200622213623-75b288015ac9

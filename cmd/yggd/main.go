@@ -1,18 +1,33 @@
 package main
 
 import (
+	"crypto/sha256"
+	"crypto/tls"
+	"crypto/x509"
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
+	"net"
 	"os"
 	"os/signal"
 	"path/filepath"
+	"strings"
+	"sync/atomic"
 	"syscall"
+	"time"
 
 	"git.sr.ht/~spc/go-log"
+	mqtt "github.com/eclipse/paho.mqtt.golang"
+	"github.com/google/uuid"
 	"github.com/redhatinsights/yggdrasil"
 	internal "github.com/redhatinsights/yggdrasil/internal"
+	pb "github.com/redhatinsights/yggdrasil/protocol"
 	"github.com/urfave/cli/v2"
 	"github.com/urfave/cli/v2/altsrc"
+	"google.golang.org/grpc"
 )
+
+var ClientID string = ""
 
 func main() {
 	app := cli.NewApp()
@@ -84,9 +99,7 @@ func main() {
 			if err != nil {
 				return err
 			}
-			if err := altsrc.ApplyInputSourceValues(c, inputSource, app.Flags); err != nil {
-				return err
-			}
+			return altsrc.ApplyInputSourceValues(c, inputSource, app.Flags)
 		}
 		return nil
 	}
@@ -108,151 +121,216 @@ func main() {
 			return nil
 		}
 
-		for _, f := range []string{"cert-file", "key-file"} {
-			if c.String(f) == "" {
-				return cli.Exit(fmt.Errorf("required flag '%v' not set", f), 1)
-			}
-		}
-
+		// Set TopicPrefix globally if the config option is non-zero
 		if c.String("topic-prefix") != "" {
 			yggdrasil.TopicPrefix = c.String("topic-prefix")
 		}
 
+		// Set up a channel to receive the TERM or INT signal over and clean up
+		// before quitting.
+		quit := make(chan os.Signal, 1)
+		signal.Notify(quit, syscall.SIGTERM, syscall.SIGINT)
+
+		// Set up logging
 		level, err := log.ParseLevel(c.String("log-level"))
 		if err != nil {
 			return cli.Exit(err, 1)
 		}
 		log.SetLevel(level)
 		log.SetPrefix(fmt.Sprintf("[%v] ", app.Name))
-
-		if level >= log.LevelDebug {
+		if log.CurrentLevel() >= log.LevelDebug {
 			log.SetFlags(log.LstdFlags | log.Llongfile)
 		}
 
 		log.Infof("starting %v version %v", app.Name, app.Version)
 
-		quit := make(chan os.Signal, 1)
-		signal.Notify(quit, syscall.SIGTERM, syscall.SIGINT)
+		log.Trace("attempting to kill any orphaned workers")
+		if err := killWorkers(); err != nil {
+			return cli.Exit(fmt.Errorf("cannot kill workers: %w", err), 1)
+		}
 
-		db, err := yggdrasil.NewDatastore()
+		ClientID, err = parseCertCN(c.String("cert-file"))
 		if err != nil {
-			return cli.Exit(err, 1)
+			return cli.Exit(fmt.Errorf("cannot parse certificate: %w", err), 1)
 		}
 
-		dispatcherSocketAddr := fmt.Sprintf("@yggd-dispatcher-%v", randomString(6))
+		socketAddr := fmt.Sprintf("@yggd-dispatcher-%v", randomString(6))
 
-		workerEnv := []string{
-			fmt.Sprintf("YGG_SOCKET_ADDR=unix:%v", dispatcherSocketAddr),
-		}
-		processManager, err := yggdrasil.NewProcessManager(db, workerEnv)
+		// Create gRPC dispatcher service
+		d := newDispatcher()
+		client, err := yggdrasil.NewHTTPClientCertAuth(c.String("cert-file"), c.String("key-file"), fmt.Sprintf("%v/%v", app.Name, app.Version))
 		if err != nil {
-			return cli.Exit(err, 1)
+			return cli.Exit(fmt.Errorf("cannot create HTTP client: %w", err), 1)
 		}
+		d.client = client
+		s := grpc.NewServer()
+		pb.RegisterDispatcherServer(s, d)
 
-		dispatcher, err := yggdrasil.NewDispatcher(db)
+		l, err := net.Listen("unix", socketAddr)
 		if err != nil {
-			return cli.Exit(err, 1)
+			return cli.Exit(fmt.Errorf("cannot listen to socket: %w", err), 1)
 		}
-
-		messageRouter, err := yggdrasil.NewMessageRouter(db, c.StringSlice("broker"), c.String("cert-file"), c.String("key-file"), c.String("ca-root"))
-		if err != nil {
-			return cli.Exit(err, 1)
-		}
-
-		dataProcessor, err := yggdrasil.NewDataProcessor(db, c.String("cert-file"), c.String("key-file"), c.String("data-host"))
-		if err != nil {
-			return cli.Exit(err, 1)
-		}
-
-		// Connect dispatcher to the processManager's "process-die" signal
-		sigProcessDie := processManager.Connect(yggdrasil.SignalProcessDie)
-		go dispatcher.HandleProcessDieSignal(sigProcessDie)
-
-		// Connect dataProcessor to the messageRouter's "data-recv" signal
-		sigMessageRecv := messageRouter.Connect(yggdrasil.SignalDataRecv)
-		go dataProcessor.HandleDataRecvSignal(sigMessageRecv)
-
-		// Connect dispatcher to the dataProcessor's "data-process" signal
-		go dispatcher.HandleDataProcessSignal(dataProcessor.Connect(yggdrasil.SignalDataProcess))
-
-		// Connect dataProcessor to the dispatcher's "data-return" signal
-		go dataProcessor.HandleDataReturnSignal(dispatcher.Connect(yggdrasil.SignalDataReturn))
-
-		// Connect messageRouter to the dataProcessor's "data-consume" signal
-		go messageRouter.HandleDataConsumeSignal(dataProcessor.Connect(yggdrasil.SignalDataConsume))
-
-		// ProcessManager goroutine
-		sigDispatcherListen := dispatcher.Connect(yggdrasil.SignalDispatcherListen)
-		sigTopicSubscribe := messageRouter.Connect(yggdrasil.SignalTopicSubscribe)
-		go func(dispatcherListenSig <-chan interface{}, topicSubscribeSig <-chan interface{}) {
-			logger := log.New(os.Stderr, fmt.Sprintf("%v[process_manager_routine] ", log.Prefix()), log.Flags(), log.CurrentLevel())
-			logger.Trace("init")
-
-			<-dispatcherListenSig
-			<-topicSubscribeSig
-
-			if localErr := processManager.KillAllOrphans(); localErr != nil {
-				err = localErr
-				quit <- syscall.SIGTERM
-				return
-			}
-
-			p := filepath.Join(yggdrasil.LibexecDir, yggdrasil.LongName)
-			if localErr := os.MkdirAll(p, 0755); localErr != nil {
-				err = localErr
-				quit <- syscall.SIGTERM
-			}
-			if localErr := processManager.BootstrapWorkers(p); localErr != nil {
-				err = localErr
-				quit <- syscall.SIGTERM
-			}
-
-			if localErr := processManager.WatchForProcesses(p); localErr != nil {
-				err = localErr
-				quit <- syscall.SIGTERM
-			}
-		}(sigDispatcherListen, sigTopicSubscribe)
-
-		// Dispatcher goroutine
 		go func() {
-			logger := log.New(os.Stderr, fmt.Sprintf("%v[dispatcher_routine] ", log.Prefix()), log.Flags(), log.CurrentLevel())
-			logger.Trace("init")
-
-			if localErr := dispatcher.ListenAndServe(dispatcherSocketAddr); localErr != nil {
-				logger.Trace(localErr)
-				err = localErr
-				quit <- syscall.SIGTERM
+			log.Infof("listening on socket: %v", socketAddr)
+			if err := s.Serve(l); err != nil {
+				log.Errorf("cannot start server: %v", err)
 			}
 		}()
 
-		// MessageRouter goroutine
-		go func(c <-chan interface{}) {
-			logger := log.New(os.Stderr, fmt.Sprintf("%v[message_router_routine] ", log.Prefix()), log.Flags(), log.CurrentLevel())
-			logger.Trace("init")
+		// Create and configure MQTT client
+		mqttClientOpts := mqtt.NewClientOptions()
+		for _, broker := range c.StringSlice("broker") {
+			mqttClientOpts.AddBroker(broker)
+		}
+		mqttClientOpts.SetClientID(ClientID)
+		if c.String("cert-file") != "" && c.String("key-file") != "" {
+			tlsConfig := &tls.Config{}
 
-			if localErr := messageRouter.ConnectClient(); localErr != nil {
-				err = localErr
-				quit <- syscall.SIGTERM
-				return
+			if c.String("ca-root") != "" {
+				pool := x509.NewCertPool()
+
+				data, err := ioutil.ReadFile(c.String("ca-root"))
+				if err != nil {
+					return cli.Exit(fmt.Errorf("cannot read certificate: %w", err), 1)
+				}
+				pool.AppendCertsFromPEM(data)
+				tlsConfig.RootCAs = pool
 			}
 
-			<-c
+			cert, err := tls.LoadX509KeyPair(c.String("cert-file"), c.String("key-file"))
+			if err != nil {
+				return cli.Exit(fmt.Errorf("cannot read certificate: %w", err), 1)
+			}
+			tlsConfig.Certificates = []tls.Certificate{cert}
 
-			// Connect messageRouter to the dispatcher's "worker-unregister" signal
-			go messageRouter.HandleWorkerUnregisterSignal(dispatcher.Connect(yggdrasil.SignalWorkerUnregister))
+			mqttClientOpts.SetTLSConfig(tlsConfig)
+		}
+		mqttClientOpts.SetCleanSession(true)
+		mqttClientOpts.SetOnConnectHandler(func(client mqtt.Client) {
+			opts := client.OptionsReader()
+			for _, url := range opts.Servers() {
+				log.Tracef("connected to broker: %v", url)
+			}
 
-			// Connect messageRouter to the dispatcher's "worker-register" signal
-			go messageRouter.HandleWorkerRegisterSignal(dispatcher.Connect(yggdrasil.SignalWorkerRegister))
-		}(processManager.Connect(yggdrasil.SignalProcessBootstrap))
+			// Publish a throwaway message in case the topic does not exist;
+			// this is a workaround for the Akamai MQTT broker implementation.
+			go func() {
+				topic := fmt.Sprintf("%v/%v/data/out", yggdrasil.TopicPrefix, ClientID)
+				client.Publish(topic, 0, false, []byte{})
+			}()
+
+			var topic string
+
+			topic = fmt.Sprintf("%v/%v/data/in", yggdrasil.TopicPrefix, ClientID)
+			client.Subscribe(topic, 1, func(c mqtt.Client, m mqtt.Message) {
+				go handleDataMessage(c, m, d.sendQ)
+			})
+			log.Tracef("subscribed to topic: %v", topic)
+
+			topic = fmt.Sprintf("%v/%v/control/in", yggdrasil.TopicPrefix, ClientID)
+			client.Subscribe(topic, 1, func(c mqtt.Client, m mqtt.Message) {
+				go handleControlMessage(c, m)
+			})
+			log.Tracef("subscribed to topic: %v", topic)
+
+			go publishConnectionStatus(client, map[string]map[string]string{})
+		})
+		mqttClientOpts.SetDefaultPublishHandler(func(c mqtt.Client, m mqtt.Message) {
+			log.Errorf("unhandled message: %v", string(m.Payload()))
+		})
+		mqttClientOpts.SetConnectionLostHandler(func(c mqtt.Client, e error) {
+			log.Errorf("connection lost unexpectedly: %v", e)
+		})
+
+		data, err := json.Marshal(&yggdrasil.ConnectionStatus{
+			Type:      yggdrasil.MessageTypeConnectionStatus,
+			MessageID: uuid.New().String(),
+			Version:   1,
+			Sent:      time.Now(),
+			Content: struct {
+				CanonicalFacts yggdrasil.CanonicalFacts     "json:\"canonical_facts\""
+				Dispatchers    map[string]map[string]string "json:\"dispatchers\""
+				State          yggdrasil.ConnectionState    "json:\"state\""
+			}{
+				State: yggdrasil.ConnectionStateOffline,
+			},
+		})
+		if err != nil {
+			return cli.Exit(fmt.Errorf("cannot marshal message to JSON: %w", err), 1)
+		}
+		mqttClientOpts.SetBinaryWill(fmt.Sprintf("%v/%v/control/out", yggdrasil.TopicPrefix, ClientID), data, 1, false)
+
+		mqttClient := mqtt.NewClient(mqttClientOpts)
+		if token := mqttClient.Connect(); token.Wait() && token.Error() != nil {
+			return cli.Exit(fmt.Errorf("cannot connect to broker: %w", token.Error()), 1)
+		}
+
+		// Start a goroutine that receives values on the 'dispatchers' channel
+		// and publishes "connection-status" messages to MQTT.
+		var prevDispatchersHash atomic.Value
+		go func() {
+			for dispatchers := range d.dispatchers {
+				data, err := json.Marshal(dispatchers)
+				if err != nil {
+					log.Errorf("cannot marshal dispatcher map to JSON: %v", err)
+					continue
+				}
+
+				// Create a checksum of the dispatchers map. If it's identical
+				// to the previous checksum, skip publishing a connection-status
+				// message.
+				sum := fmt.Sprintf("%x", sha256.Sum256(data))
+				oldSum := prevDispatchersHash.Load()
+				if oldSum != nil {
+					if sum == oldSum.(string) {
+						continue
+					}
+				}
+				prevDispatchersHash.Store(sum)
+				go publishConnectionStatus(mqttClient, dispatchers)
+			}
+		}()
+
+		// Start a goroutine that receives yggdrasil.Data values on a 'send'
+		// channel and dispatches them to worker processes.
+		go d.sendData()
+
+		// Start a goroutine that receives yggdrasil.Data values on a 'recv'
+		// channel and publish them to MQTT.
+		go publishReceivedData(mqttClient, d.recvQ)
+
+		// Locate and start worker child processes.
+		workerPath := filepath.Join(yggdrasil.LibexecDir, yggdrasil.LongName)
+		if err := os.MkdirAll(workerPath, 0755); err != nil {
+			return cli.Exit(fmt.Errorf("cannot create directory: %w", err), 1)
+		}
+
+		fileInfos, err := ioutil.ReadDir(workerPath)
+		if err != nil {
+			return cli.Exit(fmt.Errorf("cannot read contents of directory: %w", err), 1)
+		}
+
+		env := []string{
+			"YGG_SOCKET_ADDR=unix:" + socketAddr,
+		}
+		for _, info := range fileInfos {
+			if strings.HasSuffix(info.Name(), "worker") {
+				log.Debugf("starting worker: %v", info.Name())
+				go startProcess(filepath.Join(workerPath, info.Name()), env, 0, d.deadWorkers)
+			}
+		}
+		// Start a goroutine that watches the worker directory for added or
+		// deleted files. Any "worker" files it detects are started up.
+		go watchWorkerDir(workerPath, env, d.deadWorkers)
+
+		// Start a goroutine that receives handler values on a channel and
+		// removes the worker registration entry.
+		go d.unregisterWorker()
 
 		<-quit
 
-		if err := processManager.KillAllWorkers(); err != nil {
-			return cli.Exit(err, 1)
-		}
-
-		if err != nil {
-			return cli.Exit(err, 1)
+		if err := killWorkers(); err != nil {
+			return cli.Exit(fmt.Errorf("cannot kill workers: %w", err), 1)
 		}
 
 		return nil
