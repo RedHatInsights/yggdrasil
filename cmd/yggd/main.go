@@ -312,6 +312,7 @@ func main() {
 
 		env := []string{
 			"YGG_SOCKET_ADDR=unix:" + socketAddr,
+			"PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
 		}
 		for _, info := range fileInfos {
 			if strings.HasSuffix(info.Name(), "worker") {
