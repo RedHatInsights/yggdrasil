@@ -143,6 +143,7 @@ func main() {
 
 		workerEnv := []string{
 			fmt.Sprintf("YGG_SOCKET_ADDR=unix:%v", dispatcherSocketAddr),
+			"PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
 		}
 		processManager, err := yggdrasil.NewProcessManager(db, workerEnv)
 		if err != nil {
