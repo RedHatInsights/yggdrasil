@@ -80,28 +80,6 @@ func main() {
 			UsageText:   fmt.Sprintf("%v connect [command options]", app.Name),
 			Description: fmt.Sprintf("The connect command connects the system to Red Hat Subscription Manager and cloud.redhat.com and activates the %v daemon that enables cloud.redhat.com to interact with the system. For details visit: https://red.ht/connector", yggdrasil.BrandName),
 			Action: func(c *cli.Context) error {
-				username := c.String("username")
-				password := c.String("password")
-
-				if c.String("organization") == "" {
-					if username == "" {
-						password = ""
-						scanner := bufio.NewScanner(os.Stdin)
-						fmt.Print("Username: ")
-						_ = scanner.Scan()
-						username = strings.TrimSpace(scanner.Text())
-					}
-					if password == "" {
-						fmt.Print("Password: ")
-						data, err := terminal.ReadPassword(int(os.Stdin.Fd()))
-						if err != nil {
-							return cli.Exit(err, 1)
-						}
-						password = string(data)
-						fmt.Printf("\n\n")
-					}
-				}
-
 				hostname, err := os.Hostname()
 				if err != nil {
 					return cli.Exit(err, 1)
@@ -115,6 +93,28 @@ func main() {
 				}
 
 				if uuid == "" {
+					username := c.String("username")
+					password := c.String("password")
+
+					if c.String("organization") == "" {
+						if username == "" {
+							password = ""
+							scanner := bufio.NewScanner(os.Stdin)
+							fmt.Print("Username: ")
+							_ = scanner.Scan()
+							username = strings.TrimSpace(scanner.Text())
+						}
+						if password == "" {
+							fmt.Print("Password: ")
+							data, err := terminal.ReadPassword(int(os.Stdin.Fd()))
+							if err != nil {
+								return cli.Exit(err, 1)
+							}
+							password = string(data)
+							fmt.Printf("\n\n")
+						}
+					}
+
 					s := spinner.New(spinner.CharSets[9], 100*time.Millisecond)
 					s.Suffix = " Connecting to Red Hat Subscription Manager..."
 					s.Start()
