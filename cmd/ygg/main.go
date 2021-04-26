@@ -88,7 +88,7 @@ func main() {
 						password = ""
 						scanner := bufio.NewScanner(os.Stdin)
 						fmt.Print("Username: ")
-						scanner.Scan()
+						_ = scanner.Scan()
 						username = strings.TrimSpace(scanner.Text())
 					}
 					if password == "" {
