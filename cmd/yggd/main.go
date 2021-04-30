@@ -86,6 +86,12 @@ func main() {
 			Usage: "Force all HTTP traffic over `HOST`",
 			Value: yggdrasil.DataHost,
 		}),
+		&cli.StringFlag{
+			Name:   "socket-addr",
+			Usage:  "Force yggd to listen on `SOCKET`",
+			Value:  fmt.Sprintf("@yggd-dispatcher-%v", randomString(6)),
+			Hidden: true,
+		},
 	}
 
 	// This BeforeFunc will load flag values from a config file only if the
@@ -152,8 +158,6 @@ func main() {
 			return cli.Exit(fmt.Errorf("cannot parse certificate: %w", err), 1)
 		}
 
-		socketAddr := fmt.Sprintf("@yggd-dispatcher-%v", randomString(6))
-
 		// Read certificates, create a TLS config, and initialize HTTP client
 		certData, err := ioutil.ReadFile(c.String("cert-file"))
 		if err != nil {
@@ -182,12 +186,12 @@ func main() {
 		s := grpc.NewServer()
 		pb.RegisterDispatcherServer(s, d)
 
-		l, err := net.Listen("unix", socketAddr)
+		l, err := net.Listen("unix", c.String("socket-addr"))
 		if err != nil {
 			return cli.Exit(fmt.Errorf("cannot listen to socket: %w", err), 1)
 		}
 		go func() {
-			log.Infof("listening on socket: %v", socketAddr)
+			log.Infof("listening on socket: %v", c.String("socket-addr"))
 			if err := s.Serve(l); err != nil {
 				log.Errorf("cannot start server: %v", err)
 			}
@@ -306,7 +310,7 @@ func main() {
 		}
 
 		env := []string{
-			"YGG_SOCKET_ADDR=unix:" + socketAddr,
+			"YGG_SOCKET_ADDR=unix:" + c.String("socket-addr"),
 			"PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
 		}
 		for _, info := range fileInfos {
