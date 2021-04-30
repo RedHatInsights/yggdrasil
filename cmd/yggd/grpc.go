@@ -31,7 +31,6 @@ type dispatcher struct {
 	deadWorkers chan int
 	workers     map[string]worker
 	pidHandlers map[int]string
-	client      *yggdrasil.HTTPClient
 }
 
 func newDispatcher() *dispatcher {
@@ -99,7 +98,7 @@ func (d *dispatcher) Send(ctx context.Context, r *pb.Data) (*pb.Receipt, error) 
 		if yggdrasil.DataHost != "" {
 			URL.Host = yggdrasil.DataHost
 		}
-		if err := post(d.client, URL.String(), data.Metadata, data.Content); err != nil {
+		if err := post(URL.String(), data.Metadata, data.Content); err != nil {
 			e := fmt.Errorf("cannot post detached message content: %w", err)
 			log.Error(e)
 			return nil, e
@@ -137,7 +136,7 @@ func (d *dispatcher) sendData() {
 				if yggdrasil.DataHost != "" {
 					URL.Host = yggdrasil.DataHost
 				}
-				content, err := get(d.client, URL.String())
+				content, err := get(URL.String())
 				if err != nil {
 					log.Errorf("cannot get detached message content: %v", err)
 					return

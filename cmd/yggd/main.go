@@ -2,8 +2,6 @@ package main
 
 import (
 	"crypto/sha256"
-	"crypto/tls"
-	"crypto/x509"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -60,7 +58,7 @@ func main() {
 			Name:  "key-file",
 			Usage: "Use `FILE` as the client's private key",
 		}),
-		altsrc.NewStringFlag(&cli.StringFlag{
+		altsrc.NewStringSliceFlag(&cli.StringSliceFlag{
 			Name:   "ca-root",
 			Hidden: true,
 			Usage:  "Use `FILE` as the root CA",
@@ -156,13 +154,31 @@ func main() {
 
 		socketAddr := fmt.Sprintf("@yggd-dispatcher-%v", randomString(6))
 
+		// Read certificates, create a TLS config, and initialize HTTP client
+		certData, err := ioutil.ReadFile(c.String("cert-file"))
+		if err != nil {
+			return cli.Exit(fmt.Errorf("cannot read certificate file: %v", err), 1)
+		}
+		keyData, err := ioutil.ReadFile(c.String("key-file"))
+		if err != nil {
+			return cli.Exit(fmt.Errorf("cannot read key file: %w", err), 1)
+		}
+		rootCAs := make([][]byte, 0)
+		for _, file := range c.StringSlice("ca-root") {
+			data, err := ioutil.ReadFile(file)
+			if err != nil {
+				return cli.Exit(fmt.Errorf("cannot read certificate authority: %v", err), 1)
+			}
+			rootCAs = append(rootCAs, data)
+		}
+		tlsConfig, err := newTLSConfig(certData, keyData, rootCAs)
+		if err != nil {
+			return cli.Exit(fmt.Errorf("cannot create TLS config: %w", err), 1)
+		}
+		initHTTPClient(tlsConfig, fmt.Sprintf("%v/%v", app.Name, app.Version))
+
 		// Create gRPC dispatcher service
 		d := newDispatcher()
-		client, err := yggdrasil.NewHTTPClientCertAuth(c.String("cert-file"), c.String("key-file"), fmt.Sprintf("%v/%v", app.Name, app.Version))
-		if err != nil {
-			return cli.Exit(fmt.Errorf("cannot create HTTP client: %w", err), 1)
-		}
-		d.client = client
 		s := grpc.NewServer()
 		pb.RegisterDispatcherServer(s, d)
 
@@ -183,28 +199,7 @@ func main() {
 			mqttClientOpts.AddBroker(broker)
 		}
 		mqttClientOpts.SetClientID(ClientID)
-		if c.String("cert-file") != "" && c.String("key-file") != "" {
-			tlsConfig := &tls.Config{}
-
-			if c.String("ca-root") != "" {
-				pool := x509.NewCertPool()
-
-				data, err := ioutil.ReadFile(c.String("ca-root"))
-				if err != nil {
-					return cli.Exit(fmt.Errorf("cannot read certificate: %w", err), 1)
-				}
-				pool.AppendCertsFromPEM(data)
-				tlsConfig.RootCAs = pool
-			}
-
-			cert, err := tls.LoadX509KeyPair(c.String("cert-file"), c.String("key-file"))
-			if err != nil {
-				return cli.Exit(fmt.Errorf("cannot read certificate: %w", err), 1)
-			}
-			tlsConfig.Certificates = []tls.Certificate{cert}
-
-			mqttClientOpts.SetTLSConfig(tlsConfig)
-		}
+		mqttClientOpts.SetTLSConfig(tlsConfig)
 		mqttClientOpts.SetCleanSession(true)
 		mqttClientOpts.SetOnConnectHandler(func(client mqtt.Client) {
 			opts := client.OptionsReader()
