@@ -36,7 +36,7 @@ func TestHandleDataMessage(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			m, err := NewMessageRouter(db, []string{}, "", "", "")
+			m, err := NewMessageRouter(db, []string{}, "", "")
 			if err != nil {
 				t.Fatal(err)
 			}

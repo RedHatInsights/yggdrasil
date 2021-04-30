@@ -155,12 +155,12 @@ func main() {
 			return cli.Exit(err, 1)
 		}
 
-		messageRouter, err := yggdrasil.NewMessageRouter(db, c.StringSlice("broker"), c.String("cert-file"), c.String("key-file"), c.String("ca-root"))
+		messageRouter, err := yggdrasil.NewMessageRouter(db, c.StringSlice("broker"), c.String("cert-file"), c.String("key-file"))
 		if err != nil {
 			return cli.Exit(err, 1)
 		}
 
-		dataProcessor, err := yggdrasil.NewDataProcessor(db, c.String("cert-file"), c.String("key-file"), c.String("data-host"))
+		dataProcessor, err := yggdrasil.NewDataProcessor(db, c.String("cert-file"), c.String("key-file"), c.String("data-host"), c.String("ca-root"))
 		if err != nil {
 			return cli.Exit(err, 1)
 		}

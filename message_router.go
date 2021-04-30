@@ -2,10 +2,8 @@ package yggdrasil
 
 import (
 	"crypto/tls"
-	"crypto/x509"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"time"
 
 	"git.sr.ht/~spc/go-log"
@@ -47,7 +45,7 @@ type MessageRouter struct {
 
 // NewMessageRouter creates a new router, configured with an MQTT client for
 // communcation with remote services.
-func NewMessageRouter(db *memdb.MemDB, brokers []string, certFile, keyFile, caRoot string) (*MessageRouter, error) {
+func NewMessageRouter(db *memdb.MemDB, brokers []string, certFile, keyFile string) (*MessageRouter, error) {
 	m := new(MessageRouter)
 	m.logger = log.New(log.Writer(), fmt.Sprintf("%v[%T] ", log.Prefix(), m), log.Flags(), log.CurrentLevel())
 
@@ -66,17 +64,6 @@ func NewMessageRouter(db *memdb.MemDB, brokers []string, certFile, keyFile, caRo
 
 	if certFile != "" && keyFile != "" {
 		tlsConfig := &tls.Config{}
-
-		if caRoot != "" {
-			pool := x509.NewCertPool()
-
-			data, err := ioutil.ReadFile(caRoot)
-			if err != nil {
-				return nil, err
-			}
-			pool.AppendCertsFromPEM(data)
-			tlsConfig.RootCAs = pool
-		}
 
 		cert, err := tls.LoadX509KeyPair(certFile, keyFile)
 		if err != nil {

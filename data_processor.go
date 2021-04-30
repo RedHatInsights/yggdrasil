@@ -36,11 +36,11 @@ type DataProcessor struct {
 }
 
 // NewDataProcessor creates a new data message processor.
-func NewDataProcessor(db *memdb.MemDB, certFile string, keyFile string, hostname string) (*DataProcessor, error) {
+func NewDataProcessor(db *memdb.MemDB, certFile string, keyFile string, hostname string, caRoot string) (*DataProcessor, error) {
 	p := new(DataProcessor)
 	p.logger = log.New(log.Writer(), fmt.Sprintf("%v[%T] ", log.Prefix(), p), log.Flags(), log.CurrentLevel())
 
-	client, err := NewHTTPClientCertAuth(certFile, keyFile, "")
+	client, err := NewHTTPClientCertAuth(certFile, keyFile, "", caRoot)
 	if err != nil {
 		return nil, err
 	}

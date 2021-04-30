@@ -2,8 +2,10 @@ package yggdrasil
 
 import (
 	"crypto/tls"
+	"crypto/x509"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"net"
 	"net/http"
 	"time"
@@ -47,7 +49,8 @@ func NewClient(name, baseURL, authMode, username, password, certFile, keyFile, c
 		client, err = NewHTTPClientCertAuth(
 			certFile,
 			keyFile,
-			userAgent)
+			userAgent,
+			caRoot)
 		if err != nil {
 			return nil, err
 		}
@@ -75,7 +78,7 @@ func NewHTTPClientBasicAuth(username, password, userAgent string) (*HTTPClient, 
 
 // NewHTTPClientCertAuth creates a client configured for certificate authentication
 // with the given CA root, and certificate key-pair.
-func NewHTTPClientCertAuth(certFile, keyFile, userAgent string) (*HTTPClient, error) {
+func NewHTTPClientCertAuth(certFile, keyFile, userAgent, caRoot string) (*HTTPClient, error) {
 	if userAgent == "" {
 		userAgent = fmt.Sprintf("%v/%v", LongName, Version)
 	}
@@ -94,6 +97,19 @@ func NewHTTPClientCertAuth(certFile, keyFile, userAgent string) (*HTTPClient, er
 		return nil, err
 	}
 	tlsConfig.Certificates = []tls.Certificate{cert}
+
+	if caRoot != "" {
+		pool, err := x509.SystemCertPool()
+		if err != nil {
+			return nil, err
+		}
+		data, err := ioutil.ReadFile(caRoot)
+		if err != nil {
+			return nil, err
+		}
+		pool.AppendCertsFromPEM(data)
+		tlsConfig.RootCAs = pool
+	}
 
 	// Recreate the default transport with a custom tls.Config
 	client.Transport = &http.Transport{
