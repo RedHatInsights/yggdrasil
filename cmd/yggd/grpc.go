@@ -48,7 +48,7 @@ func (d *dispatcher) Register(ctx context.Context, r *pb.RegistrationRequest) (*
 	d.RLock()
 	if _, prs := d.workers[r.GetHandler()]; prs {
 		d.RUnlock()
-		log.Error("worker failed to register for handler %v")
+		log.Errorf("worker failed to register for handler %v")
 		return &pb.RegistrationResponse{Registered: false}, nil
 	}
 	d.RUnlock()
@@ -105,6 +105,7 @@ func (d *dispatcher) Send(ctx context.Context, r *pb.Data) (*pb.Receipt, error) 
 		}
 	}
 	log.Debugf("received message %v", data.MessageID)
+	log.Tracef("message: %+v", data.Content)
 
 	return &pb.Receipt{}, nil
 }
@@ -164,7 +165,8 @@ func (d *dispatcher) sendData() {
 			}
 			_, err = c.Send(ctx, &msg)
 			if err != nil {
-				log.Errorf("cannot send message: %v", err)
+				log.Errorf("cannot send message %v: %v", data.MessageID, err)
+				log.Tracef("message: %+v", data)
 				return
 			}
 			log.Debugf("dispatched message %v to worker %v", msg.MessageId, data.Directive)
