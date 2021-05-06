@@ -35,6 +35,9 @@ func get(url string) ([]byte, error) {
 	}
 	req.Header.Add("User-Agent", userAgent)
 
+	log.Debugf("sending HTTP request: %v %v", req.Method, req.URL)
+	log.Tracef("request: %v", req)
+
 	resp, err := client.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("cannot download from URL: %w", err)
@@ -45,11 +48,11 @@ func get(url string) ([]byte, error) {
 	if err != nil {
 		return nil, fmt.Errorf("cannot read response body: %w", err)
 	}
+	log.Debugf("received HTTP %v: %v", resp.Status, strings.TrimSpace(string(data)))
 
 	if resp.StatusCode >= 400 {
 		return nil, &yggdrasil.APIResponseError{Code: resp.StatusCode, Body: strings.TrimSpace(string(data))}
 	}
-	log.Debugf("received HTTP %v: %v", resp.Status, string(data))
 
 	return data, nil
 }
@@ -65,6 +68,9 @@ func post(url string, headers map[string]string, body []byte) error {
 	}
 	req.Header.Add("User-Agent", userAgent)
 
+	log.Debugf("sending HTTP request: %v %v", req.Method, req.URL)
+	log.Tracef("request: %v", req)
+
 	resp, err := client.Do(req)
 	if err != nil {
 		return fmt.Errorf("cannot post to URL: %w", err)
@@ -75,11 +81,11 @@ func post(url string, headers map[string]string, body []byte) error {
 	if err != nil {
 		return fmt.Errorf("cannot read response body: %w", err)
 	}
+	log.Debugf("received HTTP %v: %v", resp.Status, strings.TrimSpace(string(data)))
 
 	if resp.StatusCode >= 400 {
 		return &yggdrasil.APIResponseError{Code: resp.StatusCode, Body: strings.TrimSpace(string(data))}
 	}
-	log.Debugf("received HTTP %v: %v", resp.Status, string(data))
 
 	return nil
 }
