@@ -130,6 +130,11 @@ func main() {
 			yggdrasil.TopicPrefix = c.String("topic-prefix")
 		}
 
+		// Set DataHost globally if the config option is non-zero
+		if c.String("data-host") != "" {
+			yggdrasil.DataHost = c.String("data-host")
+		}
+
 		// Set up a channel to receive the TERM or INT signal over and clean up
 		// before quitting.
 		quit := make(chan os.Signal, 1)
