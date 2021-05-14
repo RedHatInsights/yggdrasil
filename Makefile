@@ -95,7 +95,7 @@ data: $(DATA)
 	go run $(BUILDFLAGS) -ldflags "$(LDFLAGS)" ./cmd/$(patsubst %.1,%,$@) --generate-man-page > $@
 
 %.1.gz: %.1
-	gzip -k $^
+	gzip -c $^ > $@.tmp && mv $@.tmp $@
 
 %-USAGE.md: $(GOSRC)
 	go run $(BUILDFLAGS) -ldflags "$(LDFLAGS)" ./cmd/$(patsubst %-USAGE.md,%,$@) --generate-markdown > $@
