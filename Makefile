@@ -1,12 +1,3 @@
-SHELL := bash
-.ONESHELL:
-.SHELLFLAGS := -eu -o pipefail -c
-.DELETE_ON_ERROR:
-MAKEFLAGS += --warn-undefined-variables
-MAKEFLAGS += --no-builtin-rules
-.POSIX:
-.SUFFIXES:
-
 # Project variables
 
 # Used as a prefix to binary names. Cannot contain spaces.
