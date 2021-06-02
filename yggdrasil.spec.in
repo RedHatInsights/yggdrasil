@@ -4,6 +4,10 @@
 # the package.
 
 %define debug_package %{nil}
+%if 0%{?rhel} == 7
+%enable_gotoolset112
+%global go_arches x86_64 s390x ppc64 ppc64le
+%endif
 
 
 Name:    @LONGNAME@
@@ -18,9 +22,13 @@ Source: %{name}-%{version}-%{release}.tar.gz
 ExclusiveArch: %{go_arches}
 
 BuildRequires: git
-BuildRequires: golang
 BuildRequires: dbus-devel
 BuildRequires: systemd-devel
+%if 0%{?rhel} == 7
+BuildRequires: go-toolset-1.14-golang
+%else
+BuildRequires: golang
+%endif
 
 
 %description
