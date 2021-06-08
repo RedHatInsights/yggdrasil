@@ -7,7 +7,7 @@ require (
 	github.com/briandowns/spinner v1.12.0
 	github.com/coreos/go-systemd/v22 v22.1.0
 	github.com/cpuguy83/go-md2man/v2 v2.0.0 // indirect
-	github.com/eclipse/paho.mqtt.golang v1.3.3
+	github.com/eclipse/paho.mqtt.golang v1.3.5
 	github.com/godbus/dbus/v5 v5.0.3
 	github.com/google/go-cmp v0.5.2
 	github.com/google/uuid v1.1.2
