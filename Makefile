@@ -49,7 +49,7 @@ LDFLAGS += -X 'github.com/redhatinsights/yggdrasil.LocalstateDir=$(LOCALSTATEDIR
 LDFLAGS += -X 'github.com/redhatinsights/yggdrasil.TopicPrefix=$(TOPICPREFIX)'
 LDFLAGS += -X 'github.com/redhatinsights/yggdrasil.DataHost=$(DATAHOST)'
 
-BUILDFLAGS :=
+BUILDFLAGS ?=
 ifeq ($(shell find . -name vendor), ./vendor)
 BUILDFLAGS += -mod=vendor
 endif
