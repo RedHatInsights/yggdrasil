@@ -144,7 +144,7 @@ func main() {
 				s.Stop()
 				fmt.Printf(successPrefix+" Activated the %v daemon\n", yggdrasil.BrandName)
 
-				fmt.Printf("\nSee all your connected systems: https://red.ht/connector\n")
+				fmt.Printf("\nManage your Red Hat connector systems: https://red.ht/connector\n")
 
 				return nil
 			},
@@ -174,7 +174,7 @@ func main() {
 				}
 				s.Stop()
 
-				fmt.Printf("\nSee all your connected systems: https://red.ht/connector\n")
+				fmt.Printf("\nManage your Red Hat connector systems: https://red.ht/connector\n")
 
 				return nil
 			},
@@ -283,7 +283,7 @@ func main() {
 					fmt.Printf(failPrefix+" The %v daemon is inactive\n", yggdrasil.BrandName)
 				}
 
-				fmt.Printf("\nSee all your connected systems: https://red.ht/connector\n")
+				fmt.Printf("\nManage your Red Hat connector systems: https://red.ht/connector\n")
 
 				return nil
 			},
