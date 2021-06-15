@@ -78,7 +78,7 @@ func main() {
 			},
 			Usage:       "Connects the system to cloud.redhat.com",
 			UsageText:   fmt.Sprintf("%v connect [command options]", app.Name),
-			Description: fmt.Sprintf("The connect command connects the system to Red Hat Subscription Manager and cloud.redhat.com and activates the %v daemon that enables cloud.redhat.com to interact with the system. For details visit: https://red.ht/connector", yggdrasil.BrandName),
+			Description: fmt.Sprintf("The connect command connects the system to Red Hat Subscription Management and cloud.redhat.com and activates the %v daemon that enables cloud.redhat.com to interact with the system. For details visit: https://red.ht/connector", yggdrasil.BrandName),
 			Action: func(c *cli.Context) error {
 				hostname, err := os.Hostname()
 				if err != nil {
@@ -116,7 +116,7 @@ func main() {
 					}
 
 					s := spinner.New(spinner.CharSets[9], 100*time.Millisecond)
-					s.Suffix = " Connecting to Red Hat Subscription Manager..."
+					s.Suffix = " Connecting to Red Hat Subscription Management..."
 					s.Start()
 					var err error
 					if c.String("organization") != "" {
@@ -129,9 +129,9 @@ func main() {
 						return cli.Exit(err, 1)
 					}
 					s.Stop()
-					fmt.Printf(successPrefix + " Connected to Red Hat Subscription Manager\n")
+					fmt.Printf(successPrefix + " Connected to Red Hat Subscription Management\n")
 				} else {
-					fmt.Printf(successPrefix + " This system is already connected to Red Hat Subscription Manager\n")
+					fmt.Printf(successPrefix + " This system is already connected to Red Hat Subscription Management\n")
 				}
 
 				s := spinner.New(spinner.CharSets[9], 100*time.Millisecond)
@@ -153,7 +153,7 @@ func main() {
 			Name:        "disconnect",
 			Usage:       "Disconnects the system from cloud.redhat.com",
 			UsageText:   fmt.Sprintf("%v disconnect", app.Name),
-			Description: fmt.Sprintf("The disconnect command disconnects the system from Red Hat Subscription Manager and cloud.redhat.com and deactivates the %v daemon. cloud.redhat.com will no longer be able to interact with the system.", yggdrasil.BrandName),
+			Description: fmt.Sprintf("The disconnect command disconnects the system from Red Hat Subscription Management and cloud.redhat.com and deactivates the %v daemon. cloud.redhat.com will no longer be able to interact with the system.", yggdrasil.BrandName),
 			Action: func(c *cli.Context) error {
 				hostname, err := os.Hostname()
 				if err != nil {
@@ -244,7 +244,7 @@ func main() {
 			Name:        "status",
 			Usage:       "Prints status of the system's connection to cloud.redhat.com",
 			UsageText:   fmt.Sprintf("%v status", app.Name),
-			Description: "The status command prints the state of the connection to Red Hat Subscription Manager and cloud.redhat.com.",
+			Description: "The status command prints the state of the connection to Red Hat Subscription Management and cloud.redhat.com.",
 			Action: func(c *cli.Context) error {
 				hostname, err := os.Hostname()
 				if err != nil {
@@ -258,9 +258,9 @@ func main() {
 					return cli.Exit(err, 1)
 				}
 				if uuid == "" {
-					fmt.Printf(failPrefix + " Not connected to Red Hat Subscription Manager\n")
+					fmt.Printf(failPrefix + " Not connected to Red Hat Subscription Management\n")
 				} else {
-					fmt.Printf(successPrefix + " Connected to Red Hat Subscription Manager\n")
+					fmt.Printf(successPrefix + " Connected to Red Hat Subscription Management\n")
 				}
 
 				conn, err := systemd.NewSystemConnection()
