@@ -140,6 +140,12 @@ func (m *MessageRouter) Connect(name string) <-chan interface{} {
 	return m.sig.connect(name, 1)
 }
 
+// Disconnect removes and closes the channel from the signal table under name
+// for the caller.
+func (m *MessageRouter) Disconnect(name string, ch <-chan interface{}) {
+	m.sig.disconnect(name, ch)
+}
+
 // Close closes all channels that have been assigned to signal listeners.
 func (m *MessageRouter) Close() {
 	m.sig.close()

@@ -73,6 +73,12 @@ func (d *Dispatcher) Connect(name string) <-chan interface{} {
 	return d.sig.connect(name, 1)
 }
 
+// Disconnect removes and closes the channel from the signal table under name
+// for the caller.
+func (d *Dispatcher) Disconnect(name string, ch <-chan interface{}) {
+	d.sig.disconnect(name, ch)
+}
+
 // Close closes all channels that have been assigned to signal listeners.
 func (d *Dispatcher) Close() {
 	d.sig.close()

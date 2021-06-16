@@ -23,6 +23,34 @@ func (s *signalEmitter) connect(name string, size int) <-chan interface{} {
 	return ch
 }
 
+// disconnect loops over the slice of registered listeners, searching for ch. If
+// a match is found, the channel is closed and removed from the listeners slice.
+func (s *signalEmitter) disconnect(name string, ch <-chan interface{}) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	if s.listeners == nil {
+		return
+	}
+
+	idx := -1
+	for i, _ch := range s.listeners[name] {
+		if ch == _ch {
+			idx = i
+			close(_ch)
+			break
+		}
+	}
+
+	if idx >= 0 {
+		listeners := s.listeners[name]
+		listeners[idx] = listeners[len(listeners)-1]
+		listeners[len(listeners)-1] = nil
+		listeners = listeners[:len(listeners)-1]
+		s.listeners[name] = listeners
+	}
+}
+
 // emit sends the given message to all channels registered under the given
 // signal name.
 func (s *signalEmitter) emit(name string, msg interface{}) {

@@ -73,6 +73,12 @@ func (p *ProcessManager) Connect(name string) <-chan interface{} {
 	return p.sig.connect(name, 1)
 }
 
+// Disconnect removes and closes the channel from the signal table under name
+// for the caller.
+func (p *ProcessManager) Disconnect(name string, ch <-chan interface{}) {
+	p.sig.disconnect(name, ch)
+}
+
 // Close closes all channels that have been assigned to signal listeners.
 func (p *ProcessManager) Close() {
 	p.sig.close()

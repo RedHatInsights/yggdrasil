@@ -192,6 +192,9 @@ func main() {
 			<-dispatcherListenSig
 			<-topicSubscribeSig
 
+			dispatcher.Disconnect(yggdrasil.SignalDispatcherListen, dispatcherListenSig)
+			messageRouter.Disconnect(yggdrasil.SignalTopicSubscribe, topicSubscribeSig)
+
 			if localErr := processManager.KillAllOrphans(); localErr != nil {
 				err = localErr
 				quit <- syscall.SIGTERM
@@ -238,6 +241,7 @@ func main() {
 			}
 
 			<-c
+			processManager.Disconnect(yggdrasil.SignalProcessBootstrap, c)
 
 			// Connect messageRouter to the dispatcher's "worker-unregister" signal
 			go messageRouter.HandleWorkerUnregisterSignal(dispatcher.Connect(yggdrasil.SignalWorkerUnregister))
