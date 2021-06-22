@@ -1,0 +1,14 @@
+# tags.toml
+#
+# Any key/value pairs defined here will be loaded by @SHORTNAME@d and published
+# to the broker during initialization.
+#
+# A limited number of value types are permitted as tags by @LONGNAME@.
+# Currently, strings, integers, booleans, floats, Local Date, Local Time,
+# Offset Date-Time and Local Date-Time values are supported.
+#
+# production = false
+# region = "us-east1"
+# priority = 3
+# uptime = 99.999
+# provisioned = 2006-01-02T15:04:05Z07:00

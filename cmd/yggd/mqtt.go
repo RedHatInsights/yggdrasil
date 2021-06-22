@@ -3,6 +3,8 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"os"
+	"path/filepath"
 	"strconv"
 	"time"
 
@@ -86,6 +88,24 @@ func publishConnectionStatus(c mqtt.Client, dispatchers map[string]map[string]st
 		return
 	}
 
+	tagsFilePath := filepath.Join(yggdrasil.SysconfDir, yggdrasil.LongName, "tags.toml")
+
+	var tags map[string]string
+	if _, err := os.Stat(tagsFilePath); !os.IsNotExist(err) {
+		f, err := os.Open(tagsFilePath)
+		if err != nil {
+			log.Errorf("cannot open '%v' for reading: %v", tagsFilePath, err)
+			return
+		}
+		defer f.Close()
+
+		tags, err = readTags(f)
+		if err != nil {
+			log.Errorf("cannot read tags file: %v", err)
+			return
+		}
+	}
+
 	msg := yggdrasil.ConnectionStatus{
 		Type:      yggdrasil.MessageTypeConnectionStatus,
 		MessageID: uuid.New().String(),
@@ -95,10 +115,12 @@ func publishConnectionStatus(c mqtt.Client, dispatchers map[string]map[string]st
 			CanonicalFacts yggdrasil.CanonicalFacts     "json:\"canonical_facts\""
 			Dispatchers    map[string]map[string]string "json:\"dispatchers\""
 			State          yggdrasil.ConnectionState    "json:\"state\""
+			Tags           map[string]string            "json:\"tags,omitempty\""
 		}{
 			CanonicalFacts: *facts,
 			Dispatchers:    dispatchers,
 			State:          yggdrasil.ConnectionStateOnline,
+			Tags:           tags,
 		},
 	}
 

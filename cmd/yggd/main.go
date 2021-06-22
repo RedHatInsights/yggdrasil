@@ -20,6 +20,7 @@ import (
 	"github.com/redhatinsights/yggdrasil"
 	internal "github.com/redhatinsights/yggdrasil/internal"
 	pb "github.com/redhatinsights/yggdrasil/protocol"
+	"github.com/rjeczalik/notify"
 	"github.com/urfave/cli/v2"
 	"github.com/urfave/cli/v2/altsrc"
 	"google.golang.org/grpc"
@@ -255,6 +256,7 @@ func main() {
 				CanonicalFacts yggdrasil.CanonicalFacts     "json:\"canonical_facts\""
 				Dispatchers    map[string]map[string]string "json:\"dispatchers\""
 				State          yggdrasil.ConnectionState    "json:\"state\""
+				Tags           map[string]string            "json:\"tags,omitempty\""
 			}{
 				State: yggdrasil.ConnectionStateOffline,
 			},
@@ -331,6 +333,28 @@ func main() {
 		// Start a goroutine that receives handler values on a channel and
 		// removes the worker registration entry.
 		go d.unregisterWorker()
+
+		// Start a goroutine that watches the tags file for write events and
+		// publishes connection status messages when the file changes.
+		go func() {
+			c := make(chan notify.EventInfo, 1)
+
+			fp := filepath.Join(yggdrasil.SysconfDir, yggdrasil.LongName, "tags.toml")
+
+			if err := notify.Watch(fp, c, notify.InCloseWrite, notify.InDelete); err != nil {
+				log.Errorf("cannot start watching '%v': %v", fp, err)
+				return
+			}
+			defer notify.Stop(c)
+
+			for e := range c {
+				log.Debugf("received inotify event %v", e.Event())
+				switch e.Event() {
+				case notify.InCloseWrite, notify.InDelete:
+					go publishConnectionStatus(mqttClient, d.makeDispatchersMap())
+				}
+			}
+		}()
 
 		<-quit
 

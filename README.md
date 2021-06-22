@@ -49,6 +49,15 @@ The system-wide configuration file is located at `/etc/yggdrasil/config.toml`
 (assuming `SYSCONFDIR=/etc`, as the example above). The location of the file may
 be overridden by passing the `--config` command-line argument to `yggd`.
 
+# Tags
+
+A set of tags may be defined to associate additional key/value data with a host
+when connecting to the broker. To do this, create the file
+`/etc/yggdrasil/tags.toml` (assuming `SYSCONFDIR=/etc`, as the example above).
+The contents of the file may be any number of TOML key/value pairs. However, a
+limited number of TOML values are accepted as tag values (strings, integers,
+booleans, floats, Local Date, Local Time, Offset Date-Time and Local Date-Time).
+
 # Workers
 
 `yggd` has a dispatcher/worker protocol defined in `protocol/yggdrasil.proto`.

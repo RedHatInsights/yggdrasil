@@ -60,7 +60,7 @@ make PREFIX=%{_prefix} \
 
 
 %files
-%doc README.md
+%doc README.md tags.toml
 %{_bindir}/@SHORTNAME@
 %{_sbindir}/@SHORTNAME@d
 %{_sysconfdir}/@LONGNAME@/config.toml

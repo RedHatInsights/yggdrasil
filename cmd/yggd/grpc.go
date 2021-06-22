@@ -48,7 +48,7 @@ func (d *dispatcher) Register(ctx context.Context, r *pb.RegistrationRequest) (*
 	d.RLock()
 	if _, prs := d.workers[r.GetHandler()]; prs {
 		d.RUnlock()
-		log.Errorf("worker failed to register for handler %v")
+		log.Errorf("worker failed to register for handler %v", r.GetHandler())
 		return &pb.RegistrationResponse{Registered: false}, nil
 	}
 	d.RUnlock()
@@ -189,7 +189,7 @@ func (d *dispatcher) unregisterWorker() {
 	}
 }
 
-func (d *dispatcher) sendDispatchersMap() {
+func (d *dispatcher) makeDispatchersMap() map[string]map[string]string {
 	d.RLock()
 	defer d.RUnlock()
 
@@ -197,5 +197,10 @@ func (d *dispatcher) sendDispatchersMap() {
 	for handler, worker := range d.workers {
 		dispatchers[handler] = worker.features
 	}
-	d.dispatchers <- dispatchers
+
+	return dispatchers
+}
+
+func (d *dispatcher) sendDispatchersMap() {
+	d.dispatchers <- d.makeDispatchersMap()
 }

@@ -72,6 +72,7 @@ type ConnectionStatus struct {
 		CanonicalFacts CanonicalFacts               `json:"canonical_facts"`
 		Dispatchers    map[string]map[string]string `json:"dispatchers"`
 		State          ConnectionState              `json:"state"`
+		Tags           map[string]string            `json:"tags,omitempty"`
 	} `json:"content"`
 }
 
