@@ -27,7 +27,7 @@ func main() {
 	app := cli.NewApp()
 	app.Name = yggdrasil.ShortName
 	app.Version = yggdrasil.Version
-	app.Usage = "control the system's connection to cloud.redhat.com"
+	app.Usage = "control the system's connection to " + yggdrasil.Provider
 
 	log.SetFlags(0)
 	log.SetPrefix("")
@@ -76,16 +76,16 @@ func main() {
 					Usage: "register against `URL`",
 				},
 			},
-			Usage:       "Connects the system to cloud.redhat.com",
+			Usage:       "Connects the system to " + yggdrasil.Provider,
 			UsageText:   fmt.Sprintf("%v connect [command options]", app.Name),
-			Description: fmt.Sprintf("The connect command connects the system to Red Hat Subscription Management and cloud.redhat.com and activates the %v daemon that enables cloud.redhat.com to interact with the system. For details visit: https://red.ht/connector", yggdrasil.BrandName),
+			Description: fmt.Sprintf("The connect command connects the system to Red Hat Subscription Management and %v and activates the %v daemon that enables %v to interact with the system. For details visit: https://red.ht/connector", yggdrasil.Provider, yggdrasil.BrandName, yggdrasil.Provider),
 			Action: func(c *cli.Context) error {
 				hostname, err := os.Hostname()
 				if err != nil {
 					return cli.Exit(err, 1)
 				}
 
-				fmt.Printf("Connecting %v to cloud.redhat.com.\nThis might take a few seconds.\n\n", hostname)
+				fmt.Printf("Connecting %v to %v.\nThis might take a few seconds.\n\n", hostname, yggdrasil.Provider)
 
 				uuid, err := getConsumerUUID()
 				if err != nil {
@@ -151,15 +151,15 @@ func main() {
 		},
 		{
 			Name:        "disconnect",
-			Usage:       "Disconnects the system from cloud.redhat.com",
+			Usage:       "Disconnects the system from " + yggdrasil.Provider,
 			UsageText:   fmt.Sprintf("%v disconnect", app.Name),
-			Description: fmt.Sprintf("The disconnect command disconnects the system from Red Hat Subscription Management and cloud.redhat.com and deactivates the %v daemon. cloud.redhat.com will no longer be able to interact with the system.", yggdrasil.BrandName),
+			Description: fmt.Sprintf("The disconnect command disconnects the system from Red Hat Subscription Management and %v and deactivates the %v daemon. %v will no longer be able to interact with the system.", yggdrasil.Provider, yggdrasil.BrandName, yggdrasil.Provider),
 			Action: func(c *cli.Context) error {
 				hostname, err := os.Hostname()
 				if err != nil {
 					return cli.Exit(err, 1)
 				}
-				fmt.Printf("Disconnecting %v from cloud.redhat.com.\nThis might take a few seconds.\n\n", hostname)
+				fmt.Printf("Disconnecting %v from %v.\nThis might take a few seconds.\n\n", hostname, yggdrasil.Provider)
 
 				s := spinner.New(spinner.CharSets[9], 100*time.Millisecond)
 				defer s.Stop()
@@ -184,7 +184,7 @@ func main() {
 			Hidden:      true,
 			Usage:       "Prints canonical facts about the system.",
 			UsageText:   fmt.Sprintf("%v canonical-facts", app.Name),
-			Description: "The canonical-facts command prints data that uniquely identifies the system in the cloud.redhat.com inventory service. Use only as directed for debugging purposes.",
+			Description: fmt.Sprintf("The canonical-facts command prints data that uniquely identifies the system in the %v inventory service. Use only as directed for debugging purposes.", yggdrasil.Provider),
 			Action: func(c *cli.Context) error {
 				facts, err := yggdrasil.GetCanonicalFacts()
 				if err != nil {
@@ -242,9 +242,9 @@ func main() {
 		},
 		{
 			Name:        "status",
-			Usage:       "Prints status of the system's connection to cloud.redhat.com",
+			Usage:       "Prints status of the system's connection to " + yggdrasil.Provider,
 			UsageText:   fmt.Sprintf("%v status", app.Name),
-			Description: "The status command prints the state of the connection to Red Hat Subscription Management and cloud.redhat.com.",
+			Description: fmt.Sprintf("The status command prints the state of the connection to Red Hat Subscription Management and %v.", yggdrasil.Provider),
 			Action: func(c *cli.Context) error {
 				hostname, err := os.Hostname()
 				if err != nil {

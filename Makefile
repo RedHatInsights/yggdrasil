@@ -13,6 +13,8 @@ VERSION   := 0.1.4
 TOPICPREFIX := yggdrasil
 # Used to force sending all HTTP traffic to a specific host.
 DATAHOST := 
+# Used to identify the agency providing the connection broker.
+PROVIDER :=
 
 # Installation directories
 PREFIX        ?= /usr/local
@@ -48,6 +50,7 @@ LDFLAGS += -X 'github.com/redhatinsights/yggdrasil.DocDir=$(DOCDIR)'
 LDFLAGS += -X 'github.com/redhatinsights/yggdrasil.LocalstateDir=$(LOCALSTATEDIR)'
 LDFLAGS += -X 'github.com/redhatinsights/yggdrasil.TopicPrefix=$(TOPICPREFIX)'
 LDFLAGS += -X 'github.com/redhatinsights/yggdrasil.DataHost=$(DATAHOST)'
+LDFLAGS += -X 'github.com/redhatinsights/yggdrasil.Provider=$(PROVIDER)'
 
 BUILDFLAGS ?=
 ifeq ($(shell find . -name vendor), ./vendor)
@@ -100,6 +103,7 @@ data: $(DATA)
 		-e 's,[@]PACKAGE[@],$(PACKAGE),g' \
 		-e 's,[@]TOPICPREFIX[@],$(TOPICPREFIX),g' \
 		-e 's,[@]DATAHOST[@],$(DATAHOST),g' \
+		-e 's,[@]PROVIDER[@],$(PROVIDER),g' \
 		-e 's,[@]PREFIX[@],$(PREFIX),g' \
 		-e 's,[@]BINDIR[@],$(BINDIR),g' \
 		-e 's,[@]SBINDIR[@],$(SBINDIR),g' \

@@ -13,6 +13,7 @@ srpm: PKGNAME = $(SHORTNAME)
 ifeq ($(shell basename $(PWD)), rhc)
 srpm: TOPICPREFIX = redhat/insights
 srpm: DATAHOST = cert.cloud.redhat.com
+srpm: PROVIDER = Red Hat
 else
 srpm: TOPICPREFIX = $(SHORTNAME)
 srpm: DATAHOST = ""
