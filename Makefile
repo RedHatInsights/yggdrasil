@@ -135,7 +135,6 @@ install: $(BINS) $(DATA)
 	install -D -m644 ./yggd.bash $(DESTDIR)$(DATADIR)/bash-completion/completions/$(SHORTNAME)d
 	install -D -m644 ./data/pkgconfig/yggdrasil.pc $(DESTDIR)$(PREFIX)/share/pkgconfig/$(LONGNAME).pc
 	install -d -m755 $(DESTDIR)$(LIBEXECDIR)/$(LONGNAME)
-	install -D -m644 ./doc/tags.toml $(DESTDIR)$(DOCDIR)/$(LONGNAME)/tags.toml.example
 
 .PHONY: uninstall
 uninstall:
@@ -147,7 +146,6 @@ uninstall:
 	rm -f $(DESTDIR)$(DATADIR)/bash-completion/completions/$(SHORTNAME)
 	rm -f $(DESTDIR)$(DATADIR)/bash-completion/completions/$(SHORTNAME)d
 	rm -f $(DESTDIR)$(PREFIX)/share/pkgconfig/$(LONGNAME).pc
-	rm -r $(DESTDIR)$(DOCDIR)/$(LONGNAME)/tags.toml.example
 
 .PHONY: dist
 dist:
