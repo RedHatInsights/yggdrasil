@@ -32,7 +32,7 @@ func main() {
 	app := cli.NewApp()
 	app.Name = yggdrasil.ShortName + "d"
 	app.Version = yggdrasil.Version
-	app.Usage = "connect the system to cloud.redhat.com"
+	app.Usage = "connect the system to " + yggdrasil.Provider
 
 	defaultConfigFilePath, err := yggdrasil.ConfigPath()
 	if err != nil {

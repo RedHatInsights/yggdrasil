@@ -20,6 +20,10 @@ var (
 
 	// DataHost is used to force sending all HTTP traffic to a specific host.
 	DataHost string
+
+	// Provider is used when constructing user-facing string output to identify
+	// the agency providing the connection broker.
+	Provider string
 )
 
 // Installation directory prefix and paths. Values are specified by compile-time
@@ -85,5 +89,8 @@ func init() {
 	}
 	if TopicPrefix == "" {
 		TopicPrefix = "yggdrasil"
+	}
+	if Provider == "" {
+		Provider = "the cloud"
 	}
 }
