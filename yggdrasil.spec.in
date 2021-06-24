@@ -41,7 +41,8 @@ make PREFIX=%{_prefix} \
      BRANDNAME=@BRANDNAME@ \
      TOPICPREFIX=@TOPICPREFIX@ \
      VERSION=%{version} \
-     DATAHOST=@DATAHOST@
+     DATAHOST=@DATAHOST@ \
+     PROVIDER=@PROVIDER@
 
 
 %install
@@ -56,6 +57,7 @@ make PREFIX=%{_prefix} \
      TOPICPREFIX=@TOPICPREFIX@ \
      VERSION=%{version} \
      DATAHOST=@DATAHOST@ \
+     PROVIDER=@PROVIDER@ \
      install
 
 
