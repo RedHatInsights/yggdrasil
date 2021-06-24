@@ -30,6 +30,7 @@ srpm: deps
 		-e 's,[@]PKGNAME[@],$(PKGNAME),g' \
 		-e 's,[@]TOPICPREFIX[@],$(TOPICPREFIX),g' \
 		-e 's,[@]DATAHOST[@],$(DATAHOST),g' \
+		-e 's,[@]PROVIDER[@],$(PROVIDER),g' \
 		-e 's,[@]PREFIX[@],$(PREFIX),g' \
 		-e 's,[@]BINDIR[@],$(BINDIR),g' \
 		-e 's,[@]SBINDIR[@],$(SBINDIR),g' \
