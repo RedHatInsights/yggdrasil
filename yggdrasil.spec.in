@@ -73,7 +73,7 @@ make PREFIX=%{_prefix} \
 %doc README.md
 %{_bindir}/@SHORTNAME@
 %{_sbindir}/@SHORTNAME@d
-%{_sysconfdir}/@LONGNAME@/config.toml
+%config(noreplace) %{_sysconfdir}/@LONGNAME@/config.toml
 %{_unitdir}/@SHORTNAME@d.service
 %{_datadir}/bash-completion/completions/*
 %{_mandir}/man1/*
