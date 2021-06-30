@@ -162,17 +162,21 @@ func main() {
 				fmt.Printf("Disconnecting %v from %v.\nThis might take a few seconds.\n\n", hostname, yggdrasil.Provider)
 
 				s := spinner.New(spinner.CharSets[9], 100*time.Millisecond)
-				defer s.Stop()
-				s.Suffix = " Disconnecting..."
+				s.Suffix = fmt.Sprintf(" Deactivating the %v daemon", yggdrasil.BrandName)
 				s.Start()
 				if err := deactivate(); err != nil {
 					return cli.Exit(err, 1)
 				}
+				s.Stop()
+				fmt.Printf(failPrefix+" Deactivated the %v daemon\n", yggdrasil.BrandName)
 
+				s.Suffix = " Disconnecting from Red Hat Subscription Management..."
+				s.Start()
 				if err := unregister(); err != nil {
 					return cli.Exit(err, 1)
 				}
 				s.Stop()
+				fmt.Printf(failPrefix + " Disconnected from Red Hat Subscription Management\n")
 
 				fmt.Printf("\nManage your Red Hat connector systems: https://red.ht/connector\n")
 
