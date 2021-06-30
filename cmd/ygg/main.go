@@ -28,6 +28,14 @@ func main() {
 	app.Name = yggdrasil.ShortName
 	app.Version = yggdrasil.Version
 	app.Usage = "control the system's connection to " + yggdrasil.Provider
+	app.Description = "The " + app.Name + " command controls the system's connection to " + yggdrasil.Provider + ".\n\n" +
+		"To connect the system using an activation key:\n" +
+		"\t" + app.Name + " connect --organization ID --activation-key KEY\n\n" +
+		"To connect the system using a username and password:\n" +
+		"\t" + app.Name + " connect --username USERNAME --password PASSWORD\n\n" +
+		"To disconnect the system:\n" +
+		"\t" + app.Name + " disconnect\n\n" +
+		"Run '" + app.Name + " command --help' for more details."
 
 	log.SetFlags(0)
 	log.SetPrefix("")
