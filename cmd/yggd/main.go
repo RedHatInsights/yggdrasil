@@ -2,31 +2,39 @@ package main
 
 import (
 	"crypto/sha256"
+	"crypto/tls"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
-	"net"
-	"os"
-	"os/signal"
-	"path/filepath"
-	"strings"
-	"sync/atomic"
-	"syscall"
-	"time"
-
 	"git.sr.ht/~spc/go-log"
-	mqtt "github.com/eclipse/paho.mqtt.golang"
 	"github.com/google/uuid"
 	"github.com/redhatinsights/yggdrasil"
 	internal "github.com/redhatinsights/yggdrasil/internal"
+	"github.com/redhatinsights/yggdrasil/internal/transport"
+	"github.com/redhatinsights/yggdrasil/internal/transport/mqtt"
 	pb "github.com/redhatinsights/yggdrasil/protocol"
 	"github.com/rjeczalik/notify"
 	"github.com/urfave/cli/v2"
 	"github.com/urfave/cli/v2/altsrc"
 	"google.golang.org/grpc"
+	"io/ioutil"
+	"net"
+	"os"
+	"os/signal"
+	"path/filepath"
+	"strconv"
+	"strings"
+	"sync/atomic"
+	"syscall"
+	"time"
 )
 
-var ClientID string = ""
+var ClientID = ""
+
+type TransportType string
+
+const (
+	MQTT TransportType = "mqtt"
+)
 
 func main() {
 	app := cli.NewApp()
@@ -91,6 +99,12 @@ func main() {
 			Name:   "socket-addr",
 			Usage:  "Force yggd to listen on `SOCKET`",
 			Value:  fmt.Sprintf("@yggd-dispatcher-%v", randomString(6)),
+			Hidden: true,
+		},
+		&cli.StringFlag{
+			Name:   "transport",
+			Usage:  "Force yggdrasil to use specific transport",
+			Value:  string(MQTT),
 			Hidden: true,
 		},
 	}
@@ -227,6 +241,7 @@ func main() {
 			}
 		}()
 
+<<<<<<< HEAD
 		// Create and configure MQTT client
 		mqttClientOpts := mqtt.NewClientOptions()
 		for _, broker := range c.StringSlice("broker") {
@@ -285,14 +300,15 @@ func main() {
 				State: yggdrasil.ConnectionStateOffline,
 			},
 		})
+=======
+		controlPlaneTransport, err := createTransport(c, tlsConfig, d)
+>>>>>>> 9aaf24d (Abstract the control plane transport away)
 		if err != nil {
-			return cli.Exit(fmt.Errorf("cannot marshal message to JSON: %w", err), 1)
+			return cli.Exit(err.Error(), 1)
 		}
-		mqttClientOpts.SetBinaryWill(fmt.Sprintf("%v/%v/control/out", yggdrasil.TopicPrefix, ClientID), data, 1, false)
-
-		mqttClient := mqtt.NewClient(mqttClientOpts)
-		if token := mqttClient.Connect(); token.Wait() && token.Error() != nil {
-			return cli.Exit(fmt.Errorf("cannot connect to broker: %w", token.Error()), 1)
+		err = controlPlaneTransport.Start()
+		if err != nil {
+			return cli.Exit(err, 1)
 		}
 
 		// Start a goroutine that receives values on the 'dispatchers' channel
@@ -317,7 +333,7 @@ func main() {
 					}
 				}
 				prevDispatchersHash.Store(sum)
-				go publishConnectionStatus(mqttClient, dispatchers)
+				go transport.PublishConnectionStatus(controlPlaneTransport, dispatchers)
 			}
 		}()
 
@@ -327,7 +343,7 @@ func main() {
 
 		// Start a goroutine that receives yggdrasil.Data values on a 'recv'
 		// channel and publish them to MQTT.
-		go publishReceivedData(mqttClient, d.recvQ)
+		go transport.PublishReceivedData(controlPlaneTransport, d.recvQ)
 
 		// Locate and start worker child processes.
 		workerPath := filepath.Join(yggdrasil.LibexecDir, yggdrasil.LongName)
@@ -375,7 +391,7 @@ func main() {
 				log.Debugf("received inotify event %v", e.Event())
 				switch e.Event() {
 				case notify.InCloseWrite, notify.InDelete:
-					go publishConnectionStatus(mqttClient, d.makeDispatchersMap())
+					go transport.PublishConnectionStatus(controlPlaneTransport, d.makeDispatchersMap())
 				}
 			}
 		}()
@@ -393,5 +409,64 @@ func main() {
 
 	if err := app.Run(os.Args); err != nil {
 		log.Fatal(err)
+	}
+}
+
+func createTransport(c *cli.Context, tlsConfig *tls.Config, d *dispatcher) (transport.Transport, error) {
+	dataHandler := createDataHandler(d)
+	controlMessageHandler := handleControlMessage
+
+	transportType := TransportType(c.String("transport"))
+	switch transportType {
+	case MQTT:
+		brokers := c.StringSlice("broker")
+		return mqtt.NewMQTTTransport(ClientID, brokers, tlsConfig, controlMessageHandler, dataHandler)
+	default:
+		return nil, fmt.Errorf("unrecognized transport type: %v", transportType)
+	}
+}
+
+func handleControlMessage(cmd yggdrasil.Command, t transport.Transport) {
+	log.Tracef("Control message: %v", cmd)
+	switch cmd.Content.Command {
+	case yggdrasil.CommandNamePing:
+		event := yggdrasil.Event{
+			Type:       yggdrasil.MessageTypeEvent,
+			MessageID:  uuid.New().String(),
+			ResponseTo: cmd.MessageID,
+			Version:    1,
+			Sent:       time.Now(),
+			Content:    string(yggdrasil.EventNamePong),
+		}
+
+		err := t.SendControl(event)
+		if err != nil {
+			log.Error(err)
+		}
+	case yggdrasil.CommandNameDisconnect:
+		log.Info("disconnecting...")
+		t.Disconnect(500)
+	case yggdrasil.CommandNameReconnect:
+		log.Info("reconnecting...")
+		t.Disconnect(500)
+		delay, err := strconv.ParseInt(cmd.Content.Arguments["delay"], 10, 64)
+		if err != nil {
+			log.Errorf("cannot parse data to int: %v", err)
+			return
+		}
+		time.Sleep(time.Duration(delay) * time.Second)
+
+		if err := t.Start(); err != nil {
+			log.Errorf("cannot reconnect to broker: %v", err)
+			return
+		}
+	default:
+		log.Warnf("unknown command: %v", cmd.Content.Command)
+	}
+}
+
+func createDataHandler(d *dispatcher) func(data yggdrasil.Data) {
+	return func(data yggdrasil.Data) {
+		d.sendQ <- data
 	}
 }

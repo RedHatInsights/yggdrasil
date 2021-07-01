@@ -1,4 +1,4 @@
-package main
+package tags
 
 import (
 	"io"
@@ -42,7 +42,7 @@ func TestReadTags(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-			got, err := readTags(test.input)
+			got, err := ReadTags(test.input)
 
 			if test.wantError != nil {
 				if !cmp.Equal(err, test.wantError, cmpopts.EquateErrors()) {

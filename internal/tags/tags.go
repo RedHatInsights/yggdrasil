@@ -1,10 +1,9 @@
-package main
+package tags
 
 import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"os"
 	"reflect"
 	"strconv"
 	"time"
@@ -24,9 +23,9 @@ func (e *errorTag) Is(o error) bool {
 	return reflect.TypeOf(e) == reflect.TypeOf(o)
 }
 
-// readTags reads from its input, unmarshalling the TOML-encoded value to a map.
+// ReadTags reads from its input, unmarshalling the TOML-encoded value to a map.
 // It then parses the map values into a map of string values.
-func readTags(in io.Reader) (map[string]string, error) {
+func ReadTags(in io.Reader) (map[string]string, error) {
 	data, err := ioutil.ReadAll(in)
 	if err != nil {
 		return nil, fmt.Errorf("cannot read input: %w", err)
@@ -57,20 +56,5 @@ func readTags(in io.Reader) (map[string]string, error) {
 		}
 	}
 
-	return tags, nil
-}
-
-// readTagsFile reads tag data from file.
-func readTagsFile(file string) (map[string]string, error) {
-	f, err := os.Open(file)
-	if err != nil {
-		return nil, fmt.Errorf("cannot open '%v' for reading: %w", file, err)
-	}
-	defer f.Close()
-
-	tags, err := readTags(f)
-	if err != nil {
-		return nil, fmt.Errorf("cannot read tags file: %w", err)
-	}
 	return tags, nil
 }

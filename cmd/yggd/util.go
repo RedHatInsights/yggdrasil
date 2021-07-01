@@ -89,16 +89,3 @@ func setClientID(data []byte, file string) error {
 	return nil
 
 }
-
-// getClientID reads data from the client ID file.
-func getClientID(file string) ([]byte, error) {
-	if _, err := os.Stat(file); os.IsNotExist(err) {
-		return nil, nil
-	}
-	data, err := ioutil.ReadFile(file)
-	if err != nil {
-		return nil, fmt.Errorf("cannot read file: %w", err)
-	}
-
-	return data, nil
-}
