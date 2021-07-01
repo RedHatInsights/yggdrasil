@@ -1,4 +1,4 @@
-package yggdrasil
+package internal
 
 import (
 	"fmt"
