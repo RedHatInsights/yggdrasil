@@ -4,8 +4,8 @@ import (
 	"github.com/redhatinsights/yggdrasil"
 )
 
-type CommandHandler func(command yggdrasil.Command, t Transport)
-type DataHandler func(data yggdrasil.Data)
+type CommandHandler func(command []byte, t Transport)
+type DataHandler func(data []byte)
 
 type Transport interface {
 	Start() error

@@ -9,7 +9,9 @@ import (
 	"github.com/google/uuid"
 	"github.com/redhatinsights/yggdrasil"
 	internal "github.com/redhatinsights/yggdrasil/internal"
+	http2 "github.com/redhatinsights/yggdrasil/internal/clients/http"
 	"github.com/redhatinsights/yggdrasil/internal/transport"
+	"github.com/redhatinsights/yggdrasil/internal/transport/http"
 	"github.com/redhatinsights/yggdrasil/internal/transport/mqtt"
 	pb "github.com/redhatinsights/yggdrasil/protocol"
 	"github.com/rjeczalik/notify"
@@ -34,6 +36,7 @@ type TransportType string
 
 const (
 	MQTT TransportType = "mqtt"
+	HTTP TransportType = "http"
 )
 
 func main() {
@@ -105,6 +108,12 @@ func main() {
 			Name:   "transport",
 			Usage:  "Force yggdrasil to use specific transport",
 			Value:  string(MQTT),
+			Hidden: true,
+		},
+		&cli.StringFlag{
+			Name:   "http-server",
+			Usage:  "HTTP server to use for HTTP transport",
+			Value:  "localhost:8888",
 			Hidden: true,
 		},
 	}
@@ -223,10 +232,10 @@ func main() {
 		if err != nil {
 			return cli.Exit(fmt.Errorf("cannot create TLS config: %w", err), 1)
 		}
-		initHTTPClient(tlsConfig, fmt.Sprintf("%v/%v", app.Name, app.Version))
+		httpClient := http2.NewHTTPClient(tlsConfig, getUserAgent(app))
 
 		// Create gRPC dispatcher service
-		d := newDispatcher()
+		d := newDispatcher(httpClient)
 		s := grpc.NewServer()
 		pb.RegisterDispatcherServer(s, d)
 
@@ -412,6 +421,10 @@ func main() {
 	}
 }
 
+func getUserAgent(app *cli.App) string {
+	return fmt.Sprintf("%v/%v", app.Name, app.Version)
+}
+
 func createTransport(c *cli.Context, tlsConfig *tls.Config, d *dispatcher) (transport.Transport, error) {
 	dataHandler := createDataHandler(d)
 	controlMessageHandler := handleControlMessage
@@ -421,13 +434,25 @@ func createTransport(c *cli.Context, tlsConfig *tls.Config, d *dispatcher) (tran
 	case MQTT:
 		brokers := c.StringSlice("broker")
 		return mqtt.NewMQTTTransport(ClientID, brokers, tlsConfig, controlMessageHandler, dataHandler)
+	case HTTP:
+		server := c.String("http-server")
+		return http.NewHTTPTransport(ClientID, server, tlsConfig, getUserAgent(c.App), time.Second*5, controlMessageHandler, dataHandler)
 	default:
 		return nil, fmt.Errorf("unrecognized transport type: %v", transportType)
 	}
 }
 
-func handleControlMessage(cmd yggdrasil.Command, t transport.Transport) {
+func handleControlMessage(msg []byte, t transport.Transport) {
+	var cmd yggdrasil.Command
+	if err := json.Unmarshal(msg, &cmd); err != nil {
+		log.Errorf("cannot unmarshal control message: %v", err)
+		return
+	}
+
+	log.Debugf("received message %v", cmd.MessageID)
+	log.Tracef("command: %+v", cmd)
 	log.Tracef("Control message: %v", cmd)
+
 	switch cmd.Content.Command {
 	case yggdrasil.CommandNamePing:
 		event := yggdrasil.Event{
@@ -465,8 +490,14 @@ func handleControlMessage(cmd yggdrasil.Command, t transport.Transport) {
 	}
 }
 
-func createDataHandler(d *dispatcher) func(data yggdrasil.Data) {
-	return func(data yggdrasil.Data) {
+func createDataHandler(d *dispatcher) func(msg []byte) {
+	return func(msg []byte) {
+		var data yggdrasil.Data
+		if err := json.Unmarshal(msg, &data); err != nil {
+			log.Errorf("cannot unmarshal data message: %v", err)
+			return
+		}
+		log.Tracef("message: %+v", data)
 		d.sendQ <- data
 	}
 }

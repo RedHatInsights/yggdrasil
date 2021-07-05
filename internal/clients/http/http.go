@@ -1,4 +1,4 @@
-package main
+package http
 
 import (
 	"bytes"
@@ -12,33 +12,35 @@ import (
 	"github.com/redhatinsights/yggdrasil"
 )
 
-var (
+type Client struct {
 	client    *http.Client
 	userAgent string
-)
+}
 
-// initHTTPClient initializes the HTTP Client that is used by the get and post
-// functions.
-func initHTTPClient(config *tls.Config, ua string) {
-	client = &http.Client{
+// NewHTTPClient initializes the HTTP Client
+func NewHTTPClient(config *tls.Config, ua string) *Client{
+	client := &http.Client{
 		Transport: http.DefaultTransport.(*http.Transport).Clone(),
 	}
 	client.Transport.(*http.Transport).TLSClientConfig = config
 
-	userAgent = ua
+	return &Client{
+		client: client,
+		userAgent: ua,
+	}
 }
 
-func get(url string) ([]byte, error) {
+func (c *Client) Get(url string) ([]byte, error) {
 	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
 		return nil, fmt.Errorf("cannot create HTTP request: %w", err)
 	}
-	req.Header.Add("User-Agent", userAgent)
+	req.Header.Add("User-Agent", c.userAgent)
 
 	log.Debugf("sending HTTP request: %v %v", req.Method, req.URL)
 	log.Tracef("request: %v", req)
 
-	resp, err := client.Do(req)
+	resp, err := c.client.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("cannot download from URL: %w", err)
 	}
@@ -57,7 +59,7 @@ func get(url string) ([]byte, error) {
 	return data, nil
 }
 
-func post(url string, headers map[string]string, body []byte) error {
+func (c *Client) Post(url string, headers map[string]string, body []byte) error {
 	req, err := http.NewRequest(http.MethodPost, url, bytes.NewReader(body))
 	if err != nil {
 		return fmt.Errorf("cannot create HTTP request: %w", err)
@@ -66,12 +68,12 @@ func post(url string, headers map[string]string, body []byte) error {
 	for k, v := range headers {
 		req.Header.Add(k, strings.TrimSpace(v))
 	}
-	req.Header.Add("User-Agent", userAgent)
+	req.Header.Add("User-Agent", c.userAgent)
 
 	log.Debugf("sending HTTP request: %v %v", req.Method, req.URL)
 	log.Tracef("request: %v", req)
 
-	resp, err := client.Do(req)
+	resp, err := c.client.Do(req)
 	if err != nil {
 		return fmt.Errorf("cannot post to URL: %w", err)
 	}

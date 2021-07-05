@@ -128,30 +128,13 @@ func (t *Transport) SendControl(ctrlMsg interface{}) error {
 }
 
 func (t *Transport) handleDataMessage(msg mqtt.Message, handler transport.DataHandler) {
-	log.Debugf("received a message on topic %v", msg.Topic())
-
-	var data yggdrasil.Data
-	if err := json.Unmarshal(msg.Payload(), &data); err != nil {
-		log.Errorf("cannot unmarshal data message: %v", err)
-		return
-	}
-	log.Tracef("message: %+v", data)
-
-	handler(data)
+	log.Debugf("received a message %s on topic %v", msg.MessageID(), msg.Topic())
+	handler(msg.Payload())
 }
 
 func (t *Transport) handleControlMessage(msg mqtt.Message, handler transport.CommandHandler) {
-	log.Debugf("received a message on topic %v", msg.Topic())
-
-	var cmd yggdrasil.Command
-	if err := json.Unmarshal(msg.Payload(), &cmd); err != nil {
-		log.Errorf("cannot unmarshal control message: %v", err)
-		return
-	}
-
-	log.Debugf("received message %v", cmd.MessageID)
-	log.Tracef("command: %+v", cmd)
-	handler(cmd, t)
+	log.Debugf("received a message %s on topic %v", msg.MessageID(), msg.Topic())
+	handler(msg.Payload(), t)
 }
 
 func (t *Transport) Disconnect(quiesce uint) {

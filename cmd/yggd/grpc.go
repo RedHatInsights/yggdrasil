@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/redhatinsights/yggdrasil/internal/clients/http"
 	"net/url"
 	"sync"
 	"time"
@@ -31,9 +32,10 @@ type dispatcher struct {
 	deadWorkers chan int
 	workers     map[string]worker
 	pidHandlers map[int]string
+	httpClient  *http.Client
 }
 
-func newDispatcher() *dispatcher {
+func newDispatcher(httpClient *http.Client) *dispatcher {
 	return &dispatcher{
 		dispatchers: make(chan map[string]map[string]string),
 		sendQ:       make(chan yggdrasil.Data),
@@ -41,6 +43,7 @@ func newDispatcher() *dispatcher {
 		deadWorkers: make(chan int),
 		workers:     make(map[string]worker),
 		pidHandlers: make(map[int]string),
+		httpClient: httpClient,
 	}
 }
 
@@ -98,7 +101,7 @@ func (d *dispatcher) Send(ctx context.Context, r *pb.Data) (*pb.Receipt, error) 
 		if yggdrasil.DataHost != "" {
 			URL.Host = yggdrasil.DataHost
 		}
-		if err := post(URL.String(), data.Metadata, data.Content); err != nil {
+		if err := d.httpClient.Post(URL.String(), data.Metadata, data.Content); err != nil {
 			e := fmt.Errorf("cannot post detached message content: %w", err)
 			log.Error(e)
 			return nil, e
@@ -137,7 +140,8 @@ func (d *dispatcher) sendData() {
 				if yggdrasil.DataHost != "" {
 					URL.Host = yggdrasil.DataHost
 				}
-				content, err := get(URL.String())
+
+				content, err := d.httpClient.Get(URL.String())
 				if err != nil {
 					log.Errorf("cannot get detached message content: %v", err)
 					return
