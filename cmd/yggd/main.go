@@ -5,6 +5,17 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
+	"net"
+	"os"
+	"os/signal"
+	"path/filepath"
+	"strconv"
+	"strings"
+	"sync/atomic"
+	"syscall"
+	"time"
+
 	"git.sr.ht/~spc/go-log"
 	"github.com/google/uuid"
 	"github.com/redhatinsights/yggdrasil"
@@ -18,25 +29,19 @@ import (
 	"github.com/urfave/cli/v2"
 	"github.com/urfave/cli/v2/altsrc"
 	"google.golang.org/grpc"
-	"io/ioutil"
-	"net"
-	"os"
-	"os/signal"
-	"path/filepath"
-	"strconv"
-	"strings"
-	"sync/atomic"
-	"syscall"
-	"time"
 )
 
 var ClientID = ""
 
 type TransportType string
+type ClientIDSource string
 
 const (
 	MQTT TransportType = "mqtt"
 	HTTP TransportType = "http"
+
+	CertCN    ClientIDSource = "cert-cn"
+	MachineID ClientIDSource = "machine-id"
 )
 
 func main() {
@@ -116,6 +121,12 @@ func main() {
 			Value:  "localhost:8888",
 			Hidden: true,
 		},
+		&cli.StringFlag{
+			Name:   "client-id-source",
+			Usage:  "Source of the client-id used to connect to remote servers. Possible values: cert-cn, machine-id",
+			Value:  "cert-cn",
+			Hidden: true,
+		},
 	}
 
 	// This BeforeFunc will load flag values from a config file only if the
@@ -182,30 +193,10 @@ func main() {
 			return cli.Exit(fmt.Errorf("cannot kill workers: %w", err), 1)
 		}
 
-		clientIDFile := filepath.Join(yggdrasil.LocalstateDir, yggdrasil.LongName, "client-id")
-		if c.String("cert-file") != "" {
-			CN, err := parseCertCN(c.String("cert-file"))
-			if err != nil {
-				return cli.Exit(fmt.Errorf("cannot parse certificate: %w", err), 1)
-			}
-			if err := setClientID([]byte(CN), clientIDFile); err != nil {
-				return cli.Exit(fmt.Errorf("cannot set client-id to CN: %w", err), 1)
-			}
-		}
-
-		clientID, err := getClientID(clientIDFile)
+		ClientID, err = getClientID(c)
 		if err != nil {
-			return cli.Exit(fmt.Errorf("cannot get client-id: %w", err), 1)
+			return cli.Exit(err, 1)
 		}
-		if len(clientID) == 0 {
-			data, err := createClientID(clientIDFile)
-			if err != nil {
-				return cli.Exit(fmt.Errorf("cannot create client-id: %w", err), 1)
-			}
-			clientID = data
-		}
-
-		ClientID = string(clientID)
 
 		// Read certificates, create a TLS config, and initialize HTTP client
 		var certData, keyData []byte
@@ -250,68 +241,7 @@ func main() {
 			}
 		}()
 
-<<<<<<< HEAD
-		// Create and configure MQTT client
-		mqttClientOpts := mqtt.NewClientOptions()
-		for _, broker := range c.StringSlice("broker") {
-			mqttClientOpts.AddBroker(broker)
-		}
-		mqttClientOpts.SetClientID(ClientID)
-		mqttClientOpts.SetTLSConfig(tlsConfig)
-		mqttClientOpts.SetCleanSession(true)
-		mqttClientOpts.SetOnConnectHandler(func(client mqtt.Client) {
-			opts := client.OptionsReader()
-			for _, url := range opts.Servers() {
-				log.Tracef("connected to broker: %v", url)
-			}
-
-			// Publish a throwaway message in case the topic does not exist;
-			// this is a workaround for the Akamai MQTT broker implementation.
-			go func() {
-				topic := fmt.Sprintf("%v/%v/data/out", yggdrasil.TopicPrefix, ClientID)
-				client.Publish(topic, 0, false, []byte{})
-			}()
-
-			var topic string
-
-			topic = fmt.Sprintf("%v/%v/data/in", yggdrasil.TopicPrefix, ClientID)
-			client.Subscribe(topic, 1, func(c mqtt.Client, m mqtt.Message) {
-				go handleDataMessage(c, m, d.sendQ)
-			})
-			log.Tracef("subscribed to topic: %v", topic)
-
-			topic = fmt.Sprintf("%v/%v/control/in", yggdrasil.TopicPrefix, ClientID)
-			client.Subscribe(topic, 1, func(c mqtt.Client, m mqtt.Message) {
-				go handleControlMessage(c, m)
-			})
-			log.Tracef("subscribed to topic: %v", topic)
-
-			go publishConnectionStatus(client, d.makeDispatchersMap())
-		})
-		mqttClientOpts.SetDefaultPublishHandler(func(c mqtt.Client, m mqtt.Message) {
-			log.Errorf("unhandled message: %v", string(m.Payload()))
-		})
-		mqttClientOpts.SetConnectionLostHandler(func(c mqtt.Client, e error) {
-			log.Errorf("connection lost unexpectedly: %v", e)
-		})
-
-		data, err := json.Marshal(&yggdrasil.ConnectionStatus{
-			Type:      yggdrasil.MessageTypeConnectionStatus,
-			MessageID: uuid.New().String(),
-			Version:   1,
-			Sent:      time.Now(),
-			Content: struct {
-				CanonicalFacts yggdrasil.CanonicalFacts     "json:\"canonical_facts\""
-				Dispatchers    map[string]map[string]string "json:\"dispatchers\""
-				State          yggdrasil.ConnectionState    "json:\"state\""
-				Tags           map[string]string            "json:\"tags,omitempty\""
-			}{
-				State: yggdrasil.ConnectionStateOffline,
-			},
-		})
-=======
 		controlPlaneTransport, err := createTransport(c, tlsConfig, d)
->>>>>>> 9aaf24d (Abstract the control plane transport away)
 		if err != nil {
 			return cli.Exit(err.Error(), 1)
 		}
@@ -500,4 +430,48 @@ func createDataHandler(d *dispatcher) func(msg []byte) {
 		log.Tracef("message: %+v", data)
 		d.sendQ <- data
 	}
+}
+
+func getClientID(c *cli.Context) (string, error) {
+	source := ClientIDSource(c.String("client-id-source"))
+	switch source {
+	case CertCN:
+		return getCNID(c)
+	case MachineID:
+		facts, err := yggdrasil.GetCanonicalFacts()
+		if err != nil {
+			return "", err
+		}
+		return facts.MachineID, nil
+	default:
+		return "", fmt.Errorf("unsupported client ID source: %v", source)
+	}
+}
+
+func getCNID(c *cli.Context) (string, error) {
+	clientIDFile := filepath.Join(yggdrasil.LocalstateDir, yggdrasil.LongName, "client-id")
+	if c.String("cert-file") != "" {
+		CN, err := parseCertCN(c.String("cert-file"))
+		if err != nil {
+			return "", fmt.Errorf("cannot parse certificate: %w", err)
+		}
+		if err := setClientID([]byte(CN), clientIDFile); err != nil {
+			return "", fmt.Errorf("cannot set client-id to CN: %w", err)
+		}
+	}
+
+	clientID, err := parseCertCN(c.String("cert-file"))
+	if err != nil {
+		return "", fmt.Errorf("cannot parse certificate: %w", err)
+	}
+
+	if len(clientID) == 0 {
+		data, err := createClientID(clientIDFile)
+		if err != nil {
+			return "", fmt.Errorf("cannot create client-id: %w", err)
+		}
+		clientID = string(data)
+	}
+
+	return clientID, nil
 }
