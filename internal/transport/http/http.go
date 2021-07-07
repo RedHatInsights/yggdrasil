@@ -4,11 +4,12 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
+	"time"
+
 	"git.sr.ht/~spc/go-log"
 	"github.com/redhatinsights/yggdrasil"
 	"github.com/redhatinsights/yggdrasil/internal/clients/http"
 	"github.com/redhatinsights/yggdrasil/internal/transport"
-	"time"
 )
 
 type Transport struct {
@@ -18,6 +19,7 @@ type Transport struct {
 	controlHandler  transport.CommandHandler
 	dataHandler     transport.DataHandler
 	pollingInterval time.Duration
+	killSwitch      chan struct{}
 }
 
 func NewHTTPTransport(ClientID string, server string, tlsConfig *tls.Config, userAgent string,
@@ -34,29 +36,40 @@ func NewHTTPTransport(ClientID string, server string, tlsConfig *tls.Config, use
 }
 
 func (t Transport) Start() error {
+	t.killSwitch = make(chan struct{})
 	go func() {
 		for {
-			payload, err := t.HttpClient.Get(t.getUrl("in", "control"))
-			if err != nil {
-				log.Errorf("Error while getting work: %v", err)
+			select {
+			case <-t.killSwitch:
+				return
+			default:
+				payload, err := t.HttpClient.Get(t.getUrl("in", "control"))
+				if err != nil {
+					log.Errorf("Error while getting work: %v", err)
+				}
+				if payload != nil && len(payload) > 0 {
+					t.controlHandler(payload, t)
+				}
+				time.Sleep(t.pollingInterval)
 			}
-			if payload != nil && len(payload) > 0 {
-				t.controlHandler(payload, t)
-			}
-			time.Sleep(t.pollingInterval)
 		}
 	}()
 
 	go func() {
 		for {
-			payload, err := t.HttpClient.Get(t.getUrl("in", "data"))
-			if err != nil {
-				log.Errorf("Error while getting work: %v", err)
+			select {
+			case <-t.killSwitch:
+				return
+			default:
+				payload, err := t.HttpClient.Get(t.getUrl("in", "data"))
+				if err != nil {
+					log.Errorf("Error while getting work: %v", err)
+				}
+				if payload != nil && len(payload) > 0 {
+					t.dataHandler(payload)
+				}
+				time.Sleep(t.pollingInterval)
 			}
-			if payload != nil && len(payload) > 0 {
-				t.dataHandler(payload)
-			}
-			time.Sleep(t.pollingInterval)
 		}
 	}()
 
@@ -72,7 +85,8 @@ func (t Transport) SendControl(ctrlMsg interface{}) error {
 }
 
 func (t Transport) Disconnect(quiesce uint) {
-	//NOOP
+	time.Sleep(time.Millisecond * time.Duration(quiesce))
+	t.killSwitch <- struct{}{}
 }
 
 func (t Transport) send(message interface{}, channel string) error {
