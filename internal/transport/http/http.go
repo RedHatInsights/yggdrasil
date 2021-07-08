@@ -4,6 +4,7 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
+	"sync/atomic"
 	"time"
 
 	"git.sr.ht/~spc/go-log"
@@ -19,12 +20,14 @@ type Transport struct {
 	controlHandler  transport.CommandHandler
 	dataHandler     transport.DataHandler
 	pollingInterval time.Duration
-	killSwitch      chan struct{}
+	disconnected    atomic.Value
 }
 
 func NewHTTPTransport(ClientID string, server string, tlsConfig *tls.Config, userAgent string,
 	pollingInterval time.Duration, controlHandler transport.CommandHandler,
 	dataHandler transport.DataHandler) (*Transport, error) {
+	disconnected := atomic.Value{}
+	disconnected.Store(false)
 	return &Transport{
 		Server:          server,
 		ClientID:        ClientID,
@@ -32,64 +35,64 @@ func NewHTTPTransport(ClientID string, server string, tlsConfig *tls.Config, use
 		controlHandler:  controlHandler,
 		dataHandler:     dataHandler,
 		pollingInterval: pollingInterval,
+		disconnected:    disconnected,
 	}, nil
 }
 
-func (t Transport) Start() error {
-	t.killSwitch = make(chan struct{})
+func (t *Transport) Start() error {
+	t.disconnected.Store(false)
 	go func() {
 		for {
-			select {
-			case <-t.killSwitch:
+			if t.disconnected.Load().(bool) {
 				return
-			default:
-				payload, err := t.HttpClient.Get(t.getUrl("in", "control"))
-				if err != nil {
-					log.Errorf("Error while getting work: %v", err)
-				}
-				if payload != nil && len(payload) > 0 {
-					t.controlHandler(payload, t)
-				}
-				time.Sleep(t.pollingInterval)
 			}
+			payload, err := t.HttpClient.Get(t.getUrl("in", "control"))
+			if err != nil {
+				log.Errorf("Error while getting work: %v", err)
+			}
+			if payload != nil && len(payload) > 0 {
+				t.controlHandler(payload, t)
+			}
+			time.Sleep(t.pollingInterval)
 		}
 	}()
 
 	go func() {
 		for {
-			select {
-			case <-t.killSwitch:
+			if t.disconnected.Load().(bool) {
 				return
-			default:
-				payload, err := t.HttpClient.Get(t.getUrl("in", "data"))
-				if err != nil {
-					log.Errorf("Error while getting work: %v", err)
-				}
-				if payload != nil && len(payload) > 0 {
-					t.dataHandler(payload)
-				}
-				time.Sleep(t.pollingInterval)
 			}
+			payload, err := t.HttpClient.Get(t.getUrl("in", "data"))
+			if err != nil {
+				log.Errorf("Error while getting work: %v", err)
+			}
+			if payload != nil && len(payload) > 0 {
+				t.dataHandler(payload)
+			}
+			time.Sleep(t.pollingInterval)
 		}
 	}()
 
 	return nil
 }
 
-func (t Transport) SendData(data yggdrasil.Data) error {
+func (t *Transport) SendData(data yggdrasil.Data) error {
 	return t.send(data, "data")
 }
 
-func (t Transport) SendControl(ctrlMsg interface{}) error {
+func (t *Transport) SendControl(ctrlMsg interface{}) error {
 	return t.send(ctrlMsg, "control")
 }
 
-func (t Transport) Disconnect(quiesce uint) {
+func (t *Transport) Disconnect(quiesce uint) {
 	time.Sleep(time.Millisecond * time.Duration(quiesce))
-	t.killSwitch <- struct{}{}
+	t.disconnected.Store(true)
 }
 
-func (t Transport) send(message interface{}, channel string) error {
+func (t *Transport) send(message interface{}, channel string) error {
+	if t.disconnected.Load().(bool) {
+		return nil
+	}
 	url := t.getUrl("out", channel)
 	dataBytes, err := json.Marshal(message)
 	if err != nil {
@@ -102,6 +105,6 @@ func (t Transport) send(message interface{}, channel string) error {
 	return t.HttpClient.Post(url, headers, dataBytes)
 }
 
-func (t Transport) getUrl(direction string, channel string) string {
+func (t *Transport) getUrl(direction string, channel string) string {
 	return fmt.Sprintf("http://%s/api/k4e-management/v1/%s/%s/%s", t.Server, channel, t.ClientID, direction)
 }
