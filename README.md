@@ -2,14 +2,8 @@
 
 # yggdrasil
 
-yggdrasil is pair of utilities that register systems with RHSM and establishes
-a receiving queue for instructions to be sent to the system via a broker.
-
-## `./cmd/ygg`
-
-`ygg` is a specialized RHSM client. When run with the `connect` subcommand, it
-attempts to register with RHSM over D-Bus. If registration is successful, it
-activates the `yggd` systemd service.
+yggdrasil is a client daemon that establishes a receiving queue for instructions
+to be sent to the system via a broker.
 
 ## `./cmd/yggd`
 
@@ -31,13 +25,19 @@ sudo make ${MAKE_FLAGS} install
 In order to run `yggd`, a system must first be registered with an RHSM provider.
 The simplest way to do this is to create a free [Red Hat Developer
 account](https://developers.redhat.com/register). On a Red Hat Enterprise Linux
-system, run `ygg connect`, using the developer account username and password.
+system, run `subscription-manager register`, using the developer account
+username and password.
 
 ```
-sudo ygg connect --username j_developer@company.com --password sw0rdf1sh
+sudo subscription-manager register --username j_developer@company.com --password sw0rdf1sh
 ```
 
-This will register the system with RHSM and activate the `yggd` systemd service.
+This will register the system with RHSM. `yggd` can then be activated using
+`systemctl`.
+
+```
+sudo systemctl enable --now yggd
+```
 
 # Configuration
 

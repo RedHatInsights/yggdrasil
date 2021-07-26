@@ -66,12 +66,9 @@ ifeq ($(shell find . -name vendor), ./vendor)
 BUILDFLAGS += -mod=vendor
 endif
 
-BINS = yggd ygg
-DATA = ygg.bash \
-	   ygg.1.gz \
-	   yggd.bash \
+BINS = yggd
+DATA = yggd.bash \
 	   yggd.1.gz \
-	   ygg-USAGE.md \
 	   yggd-USAGE.md \
 	   data/systemd/yggd.service \
 	   data/pkgconfig/yggdrasil.pc \
@@ -130,12 +127,9 @@ install: $(BINS) $(DATA)
 	pkg-config --modversion dbus-1 || exit 1
 	pkg-config --modversion systemd || exit 1
 	install -D -m755 ./yggd $(DESTDIR)$(SBINDIR)/$(SHORTNAME)d
-	install -D -m755 ./ygg $(DESTDIR)$(BINDIR)/$(SHORTNAME)
 	[[ -e $(DESTDIR)$(SYSCONFDIR)/$(LONGNAME)/config.toml ]] || install -D -m644 ./data/yggdrasil/config.toml $(DESTDIR)$(SYSCONFDIR)/$(LONGNAME)/config.toml
 	install -D -m644 ./data/systemd/yggd.service $(DESTDIR)$(SYSTEMD_SYSTEM_UNIT_DIR)/$(SHORTNAME)d.service
-	install -D -m644 ./ygg.1.gz $(DESTDIR)$(MANDIR)/man1/$(SHORTNAME).1.gz
 	install -D -m644 ./yggd.1.gz $(DESTDIR)$(MANDIR)/man1/$(SHORTNAME)d.1.gz
-	install -D -m644 ./ygg.bash $(DESTDIR)$(DATADIR)/bash-completion/completions/$(SHORTNAME)
 	install -D -m644 ./yggd.bash $(DESTDIR)$(DATADIR)/bash-completion/completions/$(SHORTNAME)d
 	install -D -m644 ./data/pkgconfig/yggdrasil.pc $(DESTDIR)$(PREFIX)/share/pkgconfig/$(LONGNAME).pc
 	install -d -m755 $(DESTDIR)$(LIBEXECDIR)/$(LONGNAME)
@@ -143,11 +137,8 @@ install: $(BINS) $(DATA)
 .PHONY: uninstall
 uninstall:
 	rm -f $(DESTDIR)$(SBINDIR)/$(SHORTNAME)d
-	rm -f $(DESTDIR)$(BINDIR)/$(SHORTNAME)
 	rm -r $(DESTDIR)$(SYSTEMD_SYSTEM_UNIT_DIR)/$(SHORTNAME)d.service
-	rm -f $(DESTDIR)$(MANDIR)/man1/$(SHORTNAME).1.gz
 	rm -f $(DESTDIR)$(MANDIR)/man1/$(SHORTNAME)d.1.gz
-	rm -f $(DESTDIR)$(DATADIR)/bash-completion/completions/$(SHORTNAME)
 	rm -f $(DESTDIR)$(DATADIR)/bash-completion/completions/$(SHORTNAME)d
 	rm -f $(DESTDIR)$(PREFIX)/share/pkgconfig/$(LONGNAME).pc
 
