@@ -62,6 +62,7 @@ LDFLAGS += -X 'github.com/redhatinsights/yggdrasil.DataHost=$(DATAHOST)'
 LDFLAGS += -X 'github.com/redhatinsights/yggdrasil.Provider=$(PROVIDER)'
 
 BUILDFLAGS ?=
+BUILDFLAGS += -buildmode=pie
 ifeq ($(shell find . -name vendor), ./vendor)
 BUILDFLAGS += -mod=vendor
 endif
