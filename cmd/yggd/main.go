@@ -9,7 +9,6 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
-	"strings"
 	"sync/atomic"
 	"syscall"
 	"time"
@@ -313,7 +312,7 @@ func main() {
 		go client.ReceiveData()
 
 		// Locate and start worker child processes.
-		workerPath := filepath.Join(yggdrasil.LibexecDir, yggdrasil.LongName)
+		workerPath := filepath.Join(yggdrasil.SysconfDir, yggdrasil.LongName, "workers")
 		if err := os.MkdirAll(workerPath, 0755); err != nil {
 			return cli.Exit(fmt.Errorf("cannot create directory: %w", err), 1)
 		}
@@ -331,10 +330,13 @@ func main() {
 			"YGG_CLIENT_ID=" + ClientID,
 		}
 		for _, info := range fileInfos {
-			if strings.HasSuffix(info.Name(), "worker") {
-				log.Debugf("starting worker: %v", info.Name())
-				go startProcess(filepath.Join(workerPath, info.Name()), env, 0, d.deadWorkers)
+			log.Debugf("starting worker: %v", info.Name())
+			config, err := loadWorkerConfig(filepath.Join(workerPath, info.Name()))
+			if err != nil {
+				log.Errorf("cannot load worker config: %v", err)
+				continue
 			}
+			go startProcess(config.Exec, env, 0, d.deadWorkers)
 		}
 		// Start a goroutine that watches the worker directory for added or
 		// deleted files. Any "worker" files it detects are started up.
