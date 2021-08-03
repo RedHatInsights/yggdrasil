@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/url"
-	"sync"
 	"time"
 
 	"github.com/redhatinsights/yggdrasil/internal/http"
@@ -26,12 +25,11 @@ type worker struct {
 
 type dispatcher struct {
 	pb.UnimplementedDispatcherServer
-	sync.RWMutex
 	dispatchers chan map[string]map[string]string
 	sendQ       chan yggdrasil.Data
 	recvQ       chan yggdrasil.Data
 	deadWorkers chan int
-	workers     map[string]worker
+	reg         registry
 	pidHandlers map[int]string
 	httpClient  *http.Client
 }
@@ -42,20 +40,17 @@ func newDispatcher(httpClient *http.Client) *dispatcher {
 		sendQ:       make(chan yggdrasil.Data),
 		recvQ:       make(chan yggdrasil.Data),
 		deadWorkers: make(chan int),
-		workers:     make(map[string]worker),
+		reg:         registry{},
 		pidHandlers: make(map[int]string),
 		httpClient:  httpClient,
 	}
 }
 
 func (d *dispatcher) Register(ctx context.Context, r *pb.RegistrationRequest) (*pb.RegistrationResponse, error) {
-	d.RLock()
-	if _, prs := d.workers[r.GetHandler()]; prs {
-		d.RUnlock()
+	if d.reg.get(r.GetHandler()) != nil {
 		log.Errorf("worker failed to register for handler %v", r.GetHandler())
 		return &pb.RegistrationResponse{Registered: false}, nil
 	}
-	d.RUnlock()
 
 	w := worker{
 		pid:             int(r.GetPid()),
@@ -65,10 +60,10 @@ func (d *dispatcher) Register(ctx context.Context, r *pb.RegistrationRequest) (*
 		detachedContent: r.GetDetachedContent(),
 	}
 
-	d.Lock()
-	d.workers[r.GetHandler()] = w
+	if err := d.reg.set(r.GetHandler(), &w); err != nil {
+		return &pb.RegistrationResponse{Registered: false}, nil
+	}
 	d.pidHandlers[int(r.GetPid())] = r.GetHandler()
-	d.Unlock()
 
 	log.Infof("worker registered: %+v", w)
 
@@ -114,15 +109,19 @@ func (d *dispatcher) Send(ctx context.Context, r *pb.Data) (*pb.Receipt, error) 
 	return &pb.Receipt{}, nil
 }
 
+// DisconnectWorkers sends a RECEIVED_DISCONNECT event message to all registered
+// workers.
 func (d *dispatcher) DisconnectWorkers() {
-	for _, w := range d.workers {
+	for _, w := range d.reg.all() {
 		if err := d.disconnectWorker(w); err != nil {
 			log.Errorf("cannot disconnect worker %v: %v", w, err)
 		}
 	}
 }
 
-func (d *dispatcher) disconnectWorker(w worker) error {
+// disconnectWorker creates and sends a RECEIVED_DISCONNECT event message to
+// worker w.
+func (d *dispatcher) disconnectWorker(w *worker) error {
 	conn, err := grpc.Dial("unix:"+w.addr, grpc.WithInsecure())
 	if err != nil {
 		log.Errorf("cannot dial socket: %v", err)
@@ -148,11 +147,9 @@ func (d *dispatcher) disconnectWorker(w worker) error {
 func (d *dispatcher) sendData() {
 	for data := range d.sendQ {
 		f := func() {
-			d.RLock()
-			w, prs := d.workers[data.Directive]
-			d.RUnlock()
+			w := d.reg.get(data.Directive)
 
-			if !prs {
+			if w == nil {
 				log.Warnf("cannot route message to directive: %v", data.Directive)
 				return
 			}
@@ -213,11 +210,9 @@ func (d *dispatcher) sendData() {
 
 func (d *dispatcher) unregisterWorker() {
 	for pid := range d.deadWorkers {
-		d.Lock()
 		handler := d.pidHandlers[pid]
 		delete(d.pidHandlers, pid)
-		delete(d.workers, handler)
-		d.Unlock()
+		d.reg.del(handler)
 		log.Infof("unregistered worker: %v", handler)
 
 		d.sendDispatchersMap()
@@ -225,11 +220,8 @@ func (d *dispatcher) unregisterWorker() {
 }
 
 func (d *dispatcher) makeDispatchersMap() map[string]map[string]string {
-	d.RLock()
-	defer d.RUnlock()
-
 	dispatchers := make(map[string]map[string]string)
-	for handler, worker := range d.workers {
+	for handler, worker := range d.reg.all() {
 		dispatchers[handler] = worker.features
 	}
 
