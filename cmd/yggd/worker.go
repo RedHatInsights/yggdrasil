@@ -9,9 +9,28 @@ import (
 	"strings"
 
 	"git.sr.ht/~spc/go-log"
+	"github.com/pelletier/go-toml"
 	"github.com/redhatinsights/yggdrasil"
 	"github.com/rjeczalik/notify"
 )
+
+type workerConfig struct {
+	Exec string `toml:"exec"`
+}
+
+func loadWorkerConfig(file string) (*workerConfig, error) {
+	data, err := ioutil.ReadFile(file)
+	if err != nil {
+		return nil, fmt.Errorf("cannot read file: %w", err)
+	}
+
+	var config workerConfig
+	if err := toml.Unmarshal(data, &config); err != nil {
+		return nil, fmt.Errorf("cannot load config: %w", err)
+	}
+
+	return &config, nil
+}
 
 func killWorker(pidFile string) error {
 	data, err := ioutil.ReadFile(pidFile)
@@ -68,10 +87,19 @@ func watchWorkerDir(dir string, env []string, died chan int) {
 		case notify.InCloseWrite, notify.InMovedTo:
 			if strings.HasSuffix(e.Path(), "worker") {
 				log.Tracef("new worker detected: %v", e.Path())
-				go startProcess(e.Path(), env, 0, died)
+				config, err := loadWorkerConfig(e.Path())
+				if err != nil {
+					log.Errorf("cannot load worker config: %v", err)
+				}
+				go startProcess(config.Exec, env, 0, died)
 			}
 		case notify.InDelete, notify.InMovedFrom:
-			workerName := filepath.Base(e.Path())
+			config, err := loadWorkerConfig(e.Path())
+			if err != nil {
+				log.Errorf("cannot load worker config: %v", err)
+				continue
+			}
+			workerName := filepath.Base(config.Exec)
 			pidFilePath := filepath.Join(yggdrasil.LocalstateDir, "run", yggdrasil.LongName, "workers", workerName+".pid")
 
 			if err := killWorker(pidFilePath); err != nil {
