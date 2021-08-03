@@ -82,10 +82,10 @@ func startProcess(file string, env []string, delay time.Duration, died chan int)
 		return
 	}
 
-	go watchProcess(cmd, delay, died)
+	go waitProcess(cmd, delay, died)
 }
 
-func watchProcess(cmd *exec.Cmd, delay time.Duration, died chan int) {
+func waitProcess(cmd *exec.Cmd, delay time.Duration, died chan int) {
 	log.Debugf("watching process: %v", cmd.Process.Pid)
 
 	state, err := cmd.Process.Wait()
