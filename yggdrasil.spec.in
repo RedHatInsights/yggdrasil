@@ -35,6 +35,7 @@ a receiving queue for instructions to be sent to the system via a broker.
 make PREFIX=%{_prefix} \
      SYSCONFDIR=%{_sysconfdir} \
      LOCALSTATEDIR=%{_localstatedir} \
+     LIBEXECDIR=%{_libexecdir} \
      SHORTNAME=@SHORTNAME@ \
      LONGNAME=@LONGNAME@ \
      PKGNAME=@PKGNAME@ \
@@ -49,6 +50,7 @@ make PREFIX=%{_prefix} \
 make PREFIX=%{_prefix} \
      SYSCONFDIR=%{_sysconfdir} \
      LOCALSTATEDIR=%{_localstatedir} \
+     LIBEXECDIR=%{_libexecdir} \
      DESTDIR=%{buildroot} \
      SHORTNAME=@SHORTNAME@ \
      LONGNAME=@LONGNAME@ \
