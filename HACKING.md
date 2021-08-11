@@ -100,3 +100,7 @@ callgraph -algo pta -format digraph ./cmd/ygg | grep github.com/redhatinsights/y
 * Communicate errors through return values, not logging. Library functions in
   particular should follow this guideline. You never know under which condition
   a library function will be called, so excessive logging should be avoided.
+
+# Contact Us
+
+Chat on IRC: #yggd on [Libera](https://libera.chat).
