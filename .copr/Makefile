@@ -2,6 +2,8 @@ include Makefile
 
 SOURCEDIR := $(shell rpmbuild -E %_sourcedir)
 SRCRPMDIR := $(shell rpmbuild -E %_srcrpmdir)
+$(shell mkdir -p $(SOURCEDIR))
+$(shell mkdir -p $(SRCRPMDIR))
 
 srpm: SHORTNAME = $(shell basename $(PWD))
 srpm: LONGNAME = $(SHORTNAME)

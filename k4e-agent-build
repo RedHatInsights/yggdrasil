@@ -1,0 +1,5 @@
+sudo GOPROXY=proxy.golang.org,direct PWD=$PWD spec=$PWD outdir=$PWD make -f .copr/Makefile srpm
+sudo rm -rf /root/rpmbuild/*
+rpm -ihv `ls -ltr yggdrasil-*.src.rpm | tail -n 1 | awk '{print $NF}'`
+rpmbuild -bb ~/rpmbuild/SPECS/yggdrasil.spec
+mv `ls -ltr ~/rpmbuild/RPMS/x86_64/yggdrasil*.rpm | tail -n 1 | awk '{print $NF}'` $PWD

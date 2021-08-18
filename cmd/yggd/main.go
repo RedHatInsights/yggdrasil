@@ -109,24 +109,24 @@ func main() {
 			Value:  fmt.Sprintf("@yggd-dispatcher-%v", randomString(6)),
 			Hidden: true,
 		},
-		&cli.StringFlag{
+		altsrc.NewStringFlag(&cli.StringFlag{
 			Name:   "transport",
 			Usage:  "Force yggdrasil to use specific transport",
 			Value:  string(MQTT),
 			Hidden: true,
-		},
-		&cli.StringFlag{
+		}),
+		altsrc.NewStringFlag(&cli.StringFlag{
 			Name:   "http-server",
 			Usage:  "HTTP server to use for HTTP transport",
 			Value:  "localhost:8888",
 			Hidden: true,
-		},
-		&cli.StringFlag{
+		}),
+		altsrc.NewStringFlag(&cli.StringFlag{
 			Name:   "client-id-source",
 			Usage:  "Source of the client-id used to connect to remote servers. Possible values: cert-cn, machine-id",
 			Value:  "cert-cn",
 			Hidden: true,
-		},
+		}),
 	}
 
 	// This BeforeFunc will load flag values from a config file only if the
