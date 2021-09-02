@@ -16,6 +16,9 @@ service Dispatcher {
 service Worker {
     // Send is called by the dispatcher to send data to a worker.
     rpc Send (Data) returns (Receipt) {}
+
+    // Disconnect is called by an operator to handle device deregistration gracefully
+    rpc Disconnect (Empty) returns (DisconnectResponse) {}
 }
 
 // An Empty message.
@@ -67,3 +70,6 @@ message Data {
 
 // A Receipt message is sent as a successful response to a Send method.
 message Receipt {}
+
+// A DisconnectResponse message is sent as a successful response to a Disconnect method.
+message DisconnectResponse {}
