@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"crypto/sha256"
 	"crypto/tls"
 	"encoding/json"
@@ -359,7 +360,7 @@ func getUserAgent(app *cli.App) string {
 
 func createTransport(c *cli.Context, tlsConfig *tls.Config, d *dispatcher) (transport.Transport, error) {
 	dataHandler := createDataHandler(d)
-	controlMessageHandler := handleControlMessage
+	controlMessageHandler := createControlMessageHandler(d)
 
 	transportType := TransportType(c.String("transport"))
 	switch transportType {
@@ -374,52 +375,78 @@ func createTransport(c *cli.Context, tlsConfig *tls.Config, d *dispatcher) (tran
 	}
 }
 
-func handleControlMessage(msg []byte, t transport.Transport) {
-	var cmd yggdrasil.Command
-	if err := json.Unmarshal(msg, &cmd); err != nil {
-		log.Errorf("cannot unmarshal control message: %v", err)
-		return
-	}
-
-	log.Debugf("received message %v", cmd.MessageID)
-	log.Tracef("command: %+v", cmd)
-	log.Tracef("Control message: %v", cmd)
-
-	switch cmd.Content.Command {
-	case yggdrasil.CommandNamePing:
-		event := yggdrasil.Event{
-			Type:       yggdrasil.MessageTypeEvent,
-			MessageID:  uuid.New().String(),
-			ResponseTo: cmd.MessageID,
-			Version:    1,
-			Sent:       time.Now(),
-			Content:    string(yggdrasil.EventNamePong),
-		}
-
-		err := t.SendControl(event)
-		if err != nil {
-			log.Error(err)
-		}
-	case yggdrasil.CommandNameDisconnect:
-		log.Info("disconnecting...")
-		t.Disconnect(500)
-	case yggdrasil.CommandNameReconnect:
-		log.Info("reconnecting...")
-		t.Disconnect(500)
-		delay, err := strconv.ParseInt(cmd.Content.Arguments["delay"], 10, 64)
-		if err != nil {
-			log.Errorf("cannot parse data to int: %v", err)
+func createControlMessageHandler(d *dispatcher) func(msg []byte, t transport.Transport) {
+	return func(msg []byte, t transport.Transport){
+		var cmd yggdrasil.Command
+		if err := json.Unmarshal(msg, &cmd); err != nil {
+			log.Errorf("cannot unmarshal control message: %v", err)
 			return
 		}
-		time.Sleep(time.Duration(delay) * time.Second)
 
-		if err := t.Start(); err != nil {
-			log.Errorf("cannot reconnect to broker: %v", err)
-			return
+		log.Debugf("received message %v", cmd.MessageID)
+		log.Tracef("command: %+v", cmd)
+		log.Tracef("Control message: %v", cmd)
+
+		switch cmd.Content.Command {
+		case yggdrasil.CommandNamePing:
+			event := yggdrasil.Event{
+				Type:       yggdrasil.MessageTypeEvent,
+				MessageID:  uuid.New().String(),
+				ResponseTo: cmd.MessageID,
+				Version:    1,
+				Sent:       time.Now(),
+				Content:    string(yggdrasil.EventNamePong),
+			}
+
+			err := t.SendControl(event)
+			if err != nil {
+				log.Error(err)
+			}
+		case yggdrasil.CommandNameDisconnect:
+			log.Info("disconnecting...")
+			for _, w := range d.workers {
+				disconnectWorker(w)
+			}
+			t.Disconnect(500)
+
+		case yggdrasil.CommandNameReconnect:
+			log.Info("reconnecting...")
+			t.Disconnect(500)
+			delay, err := strconv.ParseInt(cmd.Content.Arguments["delay"], 10, 64)
+			if err != nil {
+				log.Errorf("cannot parse data to int: %v", err)
+				return
+			}
+			time.Sleep(time.Duration(delay) * time.Second)
+
+			if err := t.Start(); err != nil {
+				log.Errorf("cannot reconnect to broker: %v", err)
+				return
+			}
+		default:
+			log.Warnf("unknown command: %v", cmd.Content.Command)
 		}
-	default:
-		log.Warnf("unknown command: %v", cmd.Content.Command)
 	}
+
+}
+
+func disconnectWorker(w worker) bool {
+	conn, err := grpc.Dial("unix:"+w.addr, grpc.WithInsecure())
+	if err != nil {
+		log.Errorf("cannot dial socket: %v", err)
+		return true
+	}
+	defer conn.Close()
+
+	workerClient := pb.NewWorkerClient(conn)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+	defer cancel()
+
+	_, err = workerClient.Disconnect(ctx, &pb.Empty{})
+	if err != nil {
+		log.Errorf("cannot disconnect worker %v", err)
+	}
+	return false
 }
 
 func createDataHandler(d *dispatcher) func(msg []byte) {
