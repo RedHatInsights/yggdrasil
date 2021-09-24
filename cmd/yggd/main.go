@@ -238,7 +238,7 @@ func main() {
 			})
 			log.Tracef("subscribed to topic: %v", topic)
 
-			go publishConnectionStatus(client, map[string]map[string]string{})
+			go publishConnectionStatus(client, d.makeDispatchersMap())
 		})
 		mqttClientOpts.SetDefaultPublishHandler(func(c mqtt.Client, m mqtt.Message) {
 			log.Errorf("unhandled message: %v", string(m.Payload()))
