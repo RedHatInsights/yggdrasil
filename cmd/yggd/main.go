@@ -342,7 +342,7 @@ func main() {
 			fp := filepath.Join(yggdrasil.SysconfDir, yggdrasil.LongName, "tags.toml")
 
 			if err := notify.Watch(fp, c, notify.InCloseWrite, notify.InDelete); err != nil {
-				log.Errorf("cannot start watching '%v': %v", fp, err)
+				log.Infof("cannot start watching '%v': %v", fp, err)
 				return
 			}
 			defer notify.Stop(c)
