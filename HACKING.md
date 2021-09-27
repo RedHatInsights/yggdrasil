@@ -78,7 +78,8 @@ produce a message similar to the following:
   "sent": "2021-09-27T15:25:35.932776317-04:00",
   "type": "data",
   "version": 1
-}```
+}
+```
 
 # Call Graphs
 
