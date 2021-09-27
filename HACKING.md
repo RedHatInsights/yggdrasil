@@ -59,6 +59,27 @@ export CONSUMER_ID=$(openssl x509 -in cert.pem -subject -nocert | cut -f3 -d" ")
 mosquitto_pub --host 127.0.0.1 --port 1883 --topic "yggdrasil/${CONSUMER_ID}/control/in" --message "{\"type\":\"command\",\"message_id\":\"$(uuidgen | tr -d '\n')\",\"version\":1,\"sent\":\"$(date --iso-8601=seconds --utc | tr -d '\n')\",\"content\":{\"command\":\"ping\"}}"
 ```
 
+# Generating Messages
+
+The `cmd/yggctl` program can be used to generate messages, both "control" and
+"data". `yggctl` has a subcommand hierarchy that can be explored with the `help`
+subcommand. In order to generate messages, the hidden `debug` subcommand must be
+used. Generate a data message with the `generate data-message` command sentence:
+`go run ./cmd/yggctl debug generate data-message --directive echo "hello"` will
+produce a message similar to the following:
+
+```json
+{
+  "content": "hello",
+  "directive": "echo",
+  "message_id": "0109e4de-43c9-45c0-bd7d-a04b76d21696",
+  "metadata": {},
+  "response_id": "",
+  "sent": "2021-09-27T15:25:35.932776317-04:00",
+  "type": "data",
+  "version": 1
+}```
+
 # Call Graphs
 
 Call graphs can be generated to provide a high-level overview of the
