@@ -17,17 +17,19 @@
 
 # Quickstart
 
+### Terminal 1
+
 Start `yggd`, connecting it to the broker `test.mosquitto.org` over an
 unencrypted TCP connection, log judiciously to `stdout`, and bind to the socket
 address `@yggd`.
 
-
-### Terminal 1
 ```
 sudo go run ./cmd/yggd --broker tcp://test.mosquitto.org:8883 --log-level trace --socket-addr @yggd
 ```
 
 ### Terminal 2
+
+Start an `echo`, connecting to the specified UNIX domain socket.
 
 ```
 sudo YGG_SOCKET_ADDR=unix:@yggd go run ./worker/echo
@@ -35,11 +37,15 @@ sudo YGG_SOCKET_ADDR=unix:@yggd go run ./worker/echo
 
 ### Terminal 3
 
+Subscribe to the "control/out" topic the `yggd` client is subscribing to.
+
 ```
 sub -broker tcp://test.mosquitto.org:8883 -topic yggdrasil/$CLIENT_ID/control/out
 ```
 
 ### Terminal 4
+
+Publish a "PING" command to the `yggd` "control/in" topic.
 
 ```
 yggctl generate control-message --type command '{"command":"ping"}' | pub -broker tcp://test.mosquitto.org:8883 -topic yggdrasil/$CLIENT_ID/control/in
@@ -77,6 +83,10 @@ RPC interface. It is currently very limited in its functionality. Until this
 program provides usefulness to users, rather than just to developers, it will
 not be installed by default. It can be run directly with `go run`, or installed
 with `go install`.
+
+```
+go install ./cmd/yggctl
+```
 
 See the output of `yggctl --help` for available commands.
 
@@ -130,7 +140,7 @@ message to the broker, destined for one of the topics `yggd` is subscribed to.
 To watch a topic for messages, subscribe to it with `sub`:
 
 ```
-sub -broker tcp://test.mosquitto.org:8883 -topic yggdrasil/$CLIENT_ID/data/in` -topic yggdrasil/$CLIENT_ID/data/out -topic yggdrasil/$CLIENT_ID/control/out
+sub -broker tcp://test.mosquitto.org:8883 -topic yggdrasil/$CLIENT_ID/data/in -topic yggdrasil/$CLIENT_ID/data/out -topic yggdrasil/$CLIENT_ID/control/out
 ```
 
 ## Publish a message
@@ -144,7 +154,7 @@ yggctl generate control-message --type command '{"command":"ping"}' | pub -broke
 
 Activity should occur on the terminal attached to `yggd`, and a `PONG` event
 message should be received on the "control/out" topic, subscribed to in
-[Monitoring topics](#Monitoring topics).
+**Monitoring topics**.
 
 Similarly, a data message can be published to a client using `yggctl generate`
 and `pub`.
