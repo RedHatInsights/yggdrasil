@@ -159,10 +159,30 @@ func main() {
 			return cli.Exit(fmt.Errorf("cannot kill workers: %w", err), 1)
 		}
 
-		ClientID, err = parseCertCN(c.String("cert-file"))
-		if err != nil {
-			return cli.Exit(fmt.Errorf("cannot parse certificate: %w", err), 1)
+		clientIDFile := filepath.Join(yggdrasil.LocalstateDir, yggdrasil.LongName, "client-id")
+		if c.String("cert-file") != "" {
+			CN, err := parseCertCN(c.String("cert-file"))
+			if err != nil {
+				return cli.Exit(fmt.Errorf("cannot parse certificate: %w", err), 1)
+			}
+			if err := setClientID([]byte(CN), clientIDFile); err != nil {
+				return cli.Exit(fmt.Errorf("cannot set client-id to CN: %w", err), 1)
+			}
 		}
+
+		clientID, err := getClientID(clientIDFile)
+		if err != nil {
+			return cli.Exit(fmt.Errorf("cannot get client-id: %w", err), 1)
+		}
+		if len(clientID) == 0 {
+			data, err := createClientID(clientIDFile)
+			if err != nil {
+				return cli.Exit(fmt.Errorf("cannot create client-id: %w", err), 1)
+			}
+			clientID = data
+		}
+
+		ClientID = string(clientID)
 
 		// Read certificates, create a TLS config, and initialize HTTP client
 		certData, err := ioutil.ReadFile(c.String("cert-file"))
