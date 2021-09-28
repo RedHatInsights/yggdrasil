@@ -19,6 +19,17 @@ func main() {
 	app.Version = yggdrasil.Version
 	app.Usage = "control and interact with " + yggdrasil.ShortName + "d"
 
+	app.Flags = []cli.Flag{
+		&cli.BoolFlag{
+			Name:   "generate-man-page",
+			Hidden: true,
+		},
+		&cli.BoolFlag{
+			Name:   "generate-markdown",
+			Hidden: true,
+		},
+	}
+
 	app.Commands = []*cli.Command{
 		{
 			Name:   "generate",
@@ -106,6 +117,26 @@ func main() {
 				},
 			},
 		},
+	}
+
+	app.Action = func(c *cli.Context) error {
+		if c.Bool("generate-man-page") || c.Bool("generate-markdown") {
+			type GenerationFunc func() (string, error)
+			var generationFunc GenerationFunc
+			if c.Bool("generate-man-page") {
+				generationFunc = c.App.ToMan
+			} else if c.Bool("generate-markdown") {
+				generationFunc = c.App.ToMarkdown
+			}
+			data, err := generationFunc()
+			if err != nil {
+				return err
+			}
+			fmt.Println(data)
+			return nil
+		}
+
+		return nil
 	}
 
 	if err := app.Run(os.Args); err != nil {
