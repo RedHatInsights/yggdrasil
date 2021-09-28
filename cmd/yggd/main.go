@@ -185,13 +185,17 @@ func main() {
 		ClientID = string(clientID)
 
 		// Read certificates, create a TLS config, and initialize HTTP client
-		certData, err := ioutil.ReadFile(c.String("cert-file"))
-		if err != nil {
-			return cli.Exit(fmt.Errorf("cannot read certificate file: %v", err), 1)
-		}
-		keyData, err := ioutil.ReadFile(c.String("key-file"))
-		if err != nil {
-			return cli.Exit(fmt.Errorf("cannot read key file: %w", err), 1)
+		var certData, keyData []byte
+		if c.String("cert-file") != "" && c.String("key-file") != "" {
+			var err error
+			certData, err = ioutil.ReadFile(c.String("cert-file"))
+			if err != nil {
+				return cli.Exit(fmt.Errorf("cannot read certificate file: %v", err), 1)
+			}
+			keyData, err = ioutil.ReadFile(c.String("key-file"))
+			if err != nil {
+				return cli.Exit(fmt.Errorf("cannot read key file: %w", err), 1)
+			}
 		}
 		rootCAs := make([][]byte, 0)
 		for _, file := range c.StringSlice("ca-root") {
