@@ -13,6 +13,8 @@ import (
 	"github.com/urfave/cli/v2"
 )
 
+var DeveloperBuild = true
+
 func main() {
 	app := cli.NewApp()
 	app.Name = yggdrasil.ShortName + "ctl"
@@ -22,11 +24,11 @@ func main() {
 	app.Flags = []cli.Flag{
 		&cli.BoolFlag{
 			Name:   "generate-man-page",
-			Hidden: true,
+			Hidden: !DeveloperBuild,
 		},
 		&cli.BoolFlag{
 			Name:   "generate-markdown",
-			Hidden: true,
+			Hidden: !DeveloperBuild,
 		},
 	}
 
@@ -34,7 +36,7 @@ func main() {
 		{
 			Name:   "generate",
 			Usage:  `Generate messages for publishing to client "in" topics.`,
-			Hidden: true,
+			Hidden: !DeveloperBuild,
 			Subcommands: []*cli.Command{
 				{
 					Name:    "data-message",

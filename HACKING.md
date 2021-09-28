@@ -78,8 +78,7 @@ program provides usefulness to users, rather than just to developers, it will
 not be installed by default. It can be run directly with `go run`, or installed
 with `go install`.
 
-See the output of `yggctl --help` for basic commands, or `yggctl --help-full`
-for a complete list of available commands.
+See the output of `yggctl --help` for available commands.
 
 
 ## `worker/echo`
