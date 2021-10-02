@@ -153,15 +153,22 @@ func generateMessage(messageType, responseTo, directive, content string, metadat
 		"response_id": responseTo,
 		"version":     version,
 		"sent":        time.Now(),
-		"content":     content,
 	}
 
 	switch messageType {
 	case "data":
 		msg["directive"] = directive
 		msg["metadata"] = metadata
+		msg["content"] = content
 	case "command":
-		break
+		var commandContent struct {
+			Command   string   `json:"command"`
+			Arguments []string `json:"arguments"`
+		}
+		if err := json.Unmarshal([]byte(content), &commandContent); err != nil {
+			return nil, fmt.Errorf("cannot unmarshal command: %v", err)
+		}
+		msg["content"] = commandContent
 	default:
 		return nil, fmt.Errorf("unsupported message type: %v", messageType)
 	}
