@@ -65,7 +65,7 @@ func PublishReceivedData(transport Transport, c <-chan yggdrasil.Data) {
 	for d := range c {
 		err := transport.SendData(d)
 		if err != nil {
-			log.Error(err)
+			log.Debug(err)
 		}
 	}
 }

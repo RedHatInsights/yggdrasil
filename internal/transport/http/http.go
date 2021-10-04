@@ -48,7 +48,7 @@ func (t *Transport) Start() error {
 			}
 			payload, err := t.HttpClient.Get(t.getUrl("in", "control"))
 			if err != nil {
-				log.Errorf("Error while getting work: %v", err)
+				log.Tracef("Error while getting work: %v", err)
 			}
 			if payload != nil && len(payload) > 0 {
 				t.controlHandler(payload, t)
@@ -64,7 +64,7 @@ func (t *Transport) Start() error {
 			}
 			payload, err := t.HttpClient.Get(t.getUrl("in", "data"))
 			if err != nil {
-				log.Errorf("Error while getting work: %v", err)
+				log.Tracef("Error while getting work: %v", err)
 			}
 			if payload != nil && len(payload) > 0 {
 				t.dataHandler(payload)
