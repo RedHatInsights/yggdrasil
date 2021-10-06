@@ -21,7 +21,7 @@ VERSION   := 0.2.98
 # Used as the prefix for MQTT topic names
 TOPICPREFIX := yggdrasil
 # Used to force sending all HTTP traffic to a specific host.
-DATAHOST := 
+DATAHOST :=
 # Used to identify the agency providing the connection broker.
 PROVIDER :=
 
@@ -42,7 +42,7 @@ DESTDIR       ?=
 SYSTEMD_SYSTEM_UNIT_DIR  := $(shell pkg-config --variable systemdsystemunitdir systemd)
 
 # Build flags
-LDFLAGS := 
+LDFLAGS :=
 LDFLAGS += -X 'github.com/redhatinsights/yggdrasil.Version=$(VERSION)'
 LDFLAGS += -X 'github.com/redhatinsights/yggdrasil.ShortName=$(SHORTNAME)'
 LDFLAGS += -X 'github.com/redhatinsights/yggdrasil.LongName=$(LONGNAME)'
@@ -65,6 +65,11 @@ BUILDFLAGS ?=
 BUILDFLAGS += -buildmode=pie
 ifeq ($(shell find . -name vendor), ./vendor)
 BUILDFLAGS += -mod=vendor
+endif
+
+ARCH ?=
+ifneq ($ARCH,)
+	export GOARCH=$(ARCH)
 endif
 
 BINS = yggd
