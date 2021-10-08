@@ -13,3 +13,8 @@
 /doc/tags.toml
 
 .idea
+
+*.pem
+*.rpm
+*.gz
+*.x86

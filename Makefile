@@ -67,9 +67,9 @@ ifeq ($(shell find . -name vendor), ./vendor)
 BUILDFLAGS += -mod=vendor
 endif
 
-ARCH ?=
-ifneq ($ARCH,)
-	export GOARCH=$(ARCH)
+ARCH ?= x86_64
+ifeq ($(ARCH),aarch64)
+	export GOARCH=arm64
 endif
 
 BINS = yggd

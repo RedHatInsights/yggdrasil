@@ -42,6 +42,7 @@ srpm: deps
 		-e 's,[@]SYSCONFDIR[@],$(SYSCONFDIR),g' \
 		-e 's,[@]LOCALSTATEDIR[@],$(LOCALSTATEDIR),g' \
 		-e 's,[@]DOCDIR[@],$(DOCDIR),g' \
+		-e 's,[@]ARCH[@],$(ARCH),g' \
 		yggdrasil.spec.in > yggdrasil.spec.tmp && mv yggdrasil.spec.tmp yggdrasil.spec
 	make PKGNAME=$(PKGNAME) VERSION=$(VERSION)-$(RELEASE) dist
 	install -D -m644 $(PKGNAME)-$(VERSION)-$(RELEASE).tar.gz $(SOURCEDIR)/

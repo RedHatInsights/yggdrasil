@@ -43,7 +43,8 @@ make PREFIX=%{_prefix} \
      TOPICPREFIX=@TOPICPREFIX@ \
      VERSION=%{version} \
      DATAHOST=@DATAHOST@ \
-     'PROVIDER=@PROVIDER@'
+     'PROVIDER=@PROVIDER@' \
+     ARCH=@ARCH@
 
 
 %install
