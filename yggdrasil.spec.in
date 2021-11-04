@@ -32,6 +32,7 @@ a receiving queue for instructions to be sent to the system via a broker.
 
 
 %build
+export CGO_ENABLED=0
 make PREFIX=%{_prefix} \
      SYSCONFDIR=%{_sysconfdir} \
      LOCALSTATEDIR=%{_localstatedir} \
@@ -44,7 +45,7 @@ make PREFIX=%{_prefix} \
      VERSION=%{version} \
      DATAHOST=@DATAHOST@ \
      'PROVIDER=@PROVIDER@' \
-     ARCH=@ARCH@
+     ARCH=%{_arch}
 
 
 %install
