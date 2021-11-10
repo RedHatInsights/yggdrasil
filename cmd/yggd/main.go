@@ -345,6 +345,7 @@ func main() {
 			"PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
 			"BASE_CONFIG_DIR=" + configDir,
 			"LOG_LEVEL=" + level.String(),
+			"DEVICE_ID=" + ClientID,
 		}
 		for _, info := range fileInfos {
 			if strings.HasSuffix(info.Name(), "worker") {
