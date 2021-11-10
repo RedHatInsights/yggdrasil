@@ -301,6 +301,7 @@ func main() {
 			"PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
 			"BASE_CONFIG_DIR=" + configDir,
 			"LOG_LEVEL=" + level.String(),
+			"DEVICE_ID=" + ClientID,
 		}
 		for _, info := range fileInfos {
 			if strings.HasSuffix(info.Name(), "worker") {
@@ -376,7 +377,7 @@ func createTransport(c *cli.Context, tlsConfig *tls.Config, d *dispatcher) (tran
 }
 
 func createControlMessageHandler(d *dispatcher) func(msg []byte, t transport.Transport) {
-	return func(msg []byte, t transport.Transport){
+	return func(msg []byte, t transport.Transport) {
 		var cmd yggdrasil.Command
 		if err := json.Unmarshal(msg, &cmd); err != nil {
 			log.Errorf("cannot unmarshal control message: %v", err)
