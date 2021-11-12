@@ -92,17 +92,10 @@ func publishConnectionStatus(c mqtt.Client, dispatchers map[string]map[string]st
 
 	var tags map[string]string
 	if _, err := os.Stat(tagsFilePath); !os.IsNotExist(err) {
-		f, err := os.Open(tagsFilePath)
+		var err error
+		tags, err = readTagsFile(tagsFilePath)
 		if err != nil {
-			log.Errorf("cannot open '%v' for reading: %v", tagsFilePath, err)
-			return
-		}
-		defer f.Close()
-
-		tags, err = readTags(f)
-		if err != nil {
-			log.Errorf("cannot read tags file: %v", err)
-			return
+			log.Errorf("cannot load tags: %v", err)
 		}
 	}
 
