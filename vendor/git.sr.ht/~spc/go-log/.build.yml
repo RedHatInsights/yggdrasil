@@ -1,0 +1,9 @@
+image: archlinux
+packages:
+  - go
+sources:
+  - https://git.sr.ht/~spc/go-log
+tasks:
+  - test: |
+      cd go-log
+      go test -race -v ./
