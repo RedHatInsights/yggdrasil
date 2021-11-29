@@ -29,3 +29,13 @@ jobs:
         uses: actions/checkout@v2
       - name: Run golangci-lint
         uses: golangci/golangci-lint-action@v2.5.1
+  lint-language:
+    name: Lint language
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v2
+      - name: Run woke
+        uses: get-woke/woke-action@v0
+        with:
+          fail-on-error: true
