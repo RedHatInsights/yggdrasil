@@ -22,11 +22,17 @@ sudo make ${MAKE_FLAGS} install
 
 ## Register/Activate
 
-In order to run `yggd`, a system must first be registered with an RHSM provider.
-The simplest way to do this is to create a free [Red Hat Developer
-account](https://developers.redhat.com/register). On a Red Hat Enterprise Linux
-system, run `subscription-manager register`, using the developer account
-username and password.
+In order to run `yggd` under certain conditions (such as connecting to a broker
+that requires mTLS authentication), a valid certificate must first be created and
+written to the filesystem. 
+
+### Red Hat Subscription Manager
+
+One way of generating a valid certificate is to first register the system with
+an RHSM provider. The simplest way to do this is to create a free [Red Hat
+Developer account](https://developers.redhat.com/register). On a Red Hat
+Enterprise Linux system, run `subscription-manager register`, using the
+developer account username and password.
 
 ```
 sudo subscription-manager register --username j_developer@company.com --password sw0rdf1sh
