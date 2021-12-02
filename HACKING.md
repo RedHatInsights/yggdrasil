@@ -29,7 +29,7 @@ sudo go run ./cmd/yggd --broker tcp://test.mosquitto.org:8883 --log-level trace 
 
 ### Terminal 2
 
-Start an `echo`, connecting to the specified UNIX domain socket.
+Start an `echo` worker, connecting to the specified UNIX domain socket.
 
 ```
 sudo YGG_SOCKET_ADDR=unix:@yggd go run ./worker/echo
