@@ -1,1 +1,3 @@
 exec = "/usr/local/libexec/yggdrasil/ygg-echo-worker"
+protocol = "grpc"
+env = []
