@@ -1,0 +1,32 @@
+name: Go
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  build:
+    name: "Build"
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        go: ['1.15', '1.16', '1.17']
+    steps:
+      - name: Updating ...
+        run: sudo apt-get -qq update
+
+      - uses: actions/checkout@v2
+
+      - name: Setup go
+        uses: actions/setup-go@v2
+        with:
+          go-version: ${{ matrix.go }}
+
+      - name: Go build (source)
+        run: make
+
+      - name: Go build (tests)
+        run: make tests
+
+      - name: Go vet
+        run: make vet
