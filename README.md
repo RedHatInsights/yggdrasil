@@ -63,17 +63,26 @@ booleans, floats, Local Date, Local Time, Offset Date-Time and Local Date-Time).
 `yggd` has a dispatcher/worker protocol defined in `protocol/yggdrasil.proto`.
 This protocol defines two services (`Dispatcher` and `Worker`), along with the
 messages necessary for the services to exchange data. In order to interact with
-`yggd` as a worker process an executable must be installed into
-`$LIBEXECDIR/yggdrasil/`. The executable name must end with the string "worker".
+`yggd` as a worker process, a TOML configuration file must be installed into
+`$SYSCONFDIR/yggdrasil/workers`. The configuration file must contain a field
+called `exec` that's value is a valid path to an executable program. When `yggd`
+starts up its workers, the configuration file is used to locate and start the
+worker executable. Additional fields in the configuration file may be specified
+to further alter the behavior of the worker. The name of the worker's
+configuration file is assumed to be the handle value the worker claims during
+registration (i.e. a worker that would like to register with the "echo" handler
+value must be installed into the worker config directory under the name
+"echo.toml").
+
 A pkg-config module named 'yggdrasil' is installed so that workers can locate
-the worker exec directory at build time.
+the worker config directory at build time.
 
 ```
-pkg-config --variable workerexecdir yggdrasil
-/usr/local/libexec/yggdrasil
+pkg-config --variable workerconfdir yggdrasil
+/usr/local/etc/yggdrasil/workers
 ```
 
-A worker program must implement the `Worker` service.  `yggd` will execute
+A worker program must implement the `Worker` service. `yggd` will execute
 worker programs at start up. It will set the `YGG_SOCKET_ADDR` variable in the
 worker's environment. This address is the socket on which the worker must dial
 the dispatcher and call the "Register" RPC method. Upon successful registration,
@@ -81,3 +90,16 @@ the worker will receive back a socket address. The worker must bind to and
 listen on this address for RPC methods. See `worker/echo` for an example worker
 process that does nothing more than return the content data it received from the
 dispatcher.
+
+# Worker Configuration
+
+The following table includes valid fields for a worker configuration file:
+
+| **Field**  | **Value** | **Description** |
+| ---------- | --------- | --------------- |
+| `exec`     | `string`  | Path to an executable that is assumed to be the worker program (required). |
+| `protocol` | `string`  | RPC protocol the worker is using to communicate with`yggd`. Currently, only "grpc" is supported. |
+| `env`      | `array`   | Any additional values that a worker needs injected into its runtime enviroment before starting up. `PATH` and all variables beginning with `YGG_` are forbidden and may not be overridden. |
+
+An example of a worker configuration file can be see in the example `echo`
+worker directory: `./workers/echo/config.toml`.

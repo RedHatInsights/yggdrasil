@@ -53,3 +53,33 @@ func parseCertCN(filename string) (string, error) {
 	}
 	return cert.Subject.CommonName, nil
 }
+
+// createClientID will generate a semi-random string to be used as the MQTT
+// client ID and save the value to the client-id file.
+func createClientID(file string) ([]byte, error) {
+	if _, err := os.Stat(file); os.IsExist(err) {
+		return nil, fmt.Errorf("cannot create client-id: %w", err)
+	}
+
+	data := []byte(randomString(64))
+
+	if err := setClientID(data, file); err != nil {
+		return nil, fmt.Errorf("cannot set client-id: %w", err)
+	}
+
+	return data, nil
+}
+
+// setClientID writes data to the client ID file.
+func setClientID(data []byte, file string) error {
+	if err := os.MkdirAll(filepath.Dir(file), 0750); err != nil {
+		return fmt.Errorf("cannot create directory: %w", err)
+	}
+
+	if err := os.WriteFile(file, data, 0600); err != nil {
+		return fmt.Errorf("cannot write file: %w", err)
+	}
+
+	return nil
+
+}

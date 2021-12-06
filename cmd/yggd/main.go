@@ -25,8 +25,12 @@ import (
 	"google.golang.org/grpc"
 )
 
-var ClientID string = ""
-var ExcludeWorkers map[string]bool = map[string]bool{}
+var (
+	ClientID                       = ""
+	SocketAddr                     = ""
+	UserAgent                      = yggdrasil.LongName + "/" + yggdrasil.Version
+	ExcludeWorkers map[string]bool = map[string]bool{}
+)
 
 func main() {
 	app := cli.NewApp()
@@ -195,13 +199,36 @@ func main() {
 		log.Infof("starting %v version %v", app.Name, app.Version)
 
 		log.Trace("attempting to kill any orphaned workers")
-		if err := killWorkers(); err != nil {
-			return cli.Exit(fmt.Errorf("cannot kill workers: %w", err), 1)
+		if err := stopWorkers(); err != nil {
+			return cli.Exit(fmt.Errorf("cannot stop workers: %w", err), 1)
+		}
+
+		clientIDFile := filepath.Join(yggdrasil.LocalstateDir, yggdrasil.LongName, "client-id")
+		if c.String("cert-file") != "" {
+			CN, err := parseCertCN(c.String("cert-file"))
+			if err != nil {
+				return cli.Exit(fmt.Errorf("cannot parse certificate: %w", err), 1)
+			}
+			if err := setClientID([]byte(CN), clientIDFile); err != nil {
+				return cli.Exit(fmt.Errorf("cannot set client-id to CN: %w", err), 1)
+			}
 		}
 
 		ClientID, err = parseCertCN(c.String("cert-file"))
 		if err != nil {
 			return cli.Exit(fmt.Errorf("cannot parse certificate: %w", err), 1)
+		}
+		if len(ClientID) == 0 {
+			data, err := createClientID(clientIDFile)
+			if err != nil {
+				return cli.Exit(fmt.Errorf("cannot create client-id: %w", err), 1)
+			}
+			ClientID = string(data)
+		}
+
+		SocketAddr = c.String("socket-addr")
+		for _, worker := range c.StringSlice("exclude-worker") {
+			ExcludeWorkers[worker] = true
 		}
 
 		// Read certificates, create a TLS config, and initialize HTTP client
@@ -236,12 +263,12 @@ func main() {
 		s := grpc.NewServer()
 		pb.RegisterDispatcherServer(s, d)
 
-		l, err := net.Listen("unix", c.String("socket-addr"))
+		l, err := net.Listen("unix", SocketAddr)
 		if err != nil {
 			return cli.Exit(fmt.Errorf("cannot listen to socket: %w", err), 1)
 		}
 		go func() {
-			log.Infof("listening on socket: %v", c.String("socket-addr"))
+			log.Infof("listening on socket: %v", SocketAddr)
 			if err := s.Serve(l); err != nil {
 				log.Errorf("cannot start server: %v", err)
 			}
@@ -408,28 +435,30 @@ func main() {
 		if err != nil {
 			return cli.Exit(fmt.Errorf("cannot read contents of directory: %w", err), 1)
 		}
-
-		env := []string{
-			"YGG_SOCKET_ADDR=unix:" + c.String("socket-addr"),
-			"PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
-			"http_proxy=" + os.Getenv("http_proxy"),
-			"https_proxy=" + os.Getenv("https_proxy"),
-			"HTTPS_PROXY=" + os.Getenv("HTTPS_PROXY"),
-			"no_proxy=" + os.Getenv("no_proxy"),
-			"NO_PROXY=" + os.Getenv("NO_PROXY"),
-		}
 		for _, info := range fileInfos {
+			config, err := loadWorkerConfig(filepath.Join(workerPath, info.Name()))
+			if err != nil {
+				log.Errorf("cannot load worker config: %v", err)
+				continue
+			}
 			if strings.HasSuffix(info.Name(), "worker") {
 				if ExcludeWorkers[info.Name()] {
 					continue
 				}
 				log.Debugf("starting worker: %v", info.Name())
-				go startProcess(filepath.Join(workerPath, info.Name()), env, 0, d.deadWorkers)
+				go func() {
+					if err := startWorker(*config, nil, func(pid int) {
+						d.deadWorkers <- pid
+					}); err != nil {
+						log.Errorf("cannot start worker: %v", err)
+						return
+					}
+				}()
 			}
 		}
 		// Start a goroutine that watches the worker directory for added or
 		// deleted files. Any "worker" files it detects are started up.
-		go watchWorkerDir(workerPath, env, d.deadWorkers)
+		go watchWorkerDir(workerPath, d.deadWorkers)
 
 		// Start a goroutine that receives handler values on a channel and
 		// removes the worker registration entry.
@@ -463,8 +492,8 @@ func main() {
 
 		<-quit
 
-		if err := killWorkers(); err != nil {
-			return cli.Exit(fmt.Errorf("cannot kill workers: %w", err), 1)
+		if err := stopWorkers(); err != nil {
+			return cli.Exit(fmt.Errorf("cannot stop workers: %w", err), 1)
 		}
 
 		return nil
