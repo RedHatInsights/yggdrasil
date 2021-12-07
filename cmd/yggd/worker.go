@@ -230,6 +230,11 @@ func watchWorkerDir(dir string, died chan int) {
 			if err != nil {
 				log.Errorf("cannot load worker config: %v", err)
 			}
+			if ExcludeWorkers[config.directive] {
+				log.Tracef("skipping excluded worker %v", config.directive)
+				continue
+			}
+			log.Debugf("starting worker: %v", config.directive)
 			go func() {
 				if err := startWorker(*config, nil, func(pid int) {
 					died <- pid
