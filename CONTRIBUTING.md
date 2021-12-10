@@ -167,9 +167,20 @@ yggctl generate data-message --directive echo hello | pub -broker tcp://test.mos
 
 * Commits follow the [Conventional Commits](https://www.conventionalcommits.org)
   pattern.
+* Commit messages should include a concise subject line that completes the
+  following phrase: "when applied, this commit will...". The body of the commit
+  should further expand on this statement with additional relevant details.
 * Communicate errors through return values, not logging. Library functions in
   particular should follow this guideline. You never know under which condition
   a library function will be called, so excessive logging should be avoided.
+* Code useful to `cmd/*` packages or external third-party packages should exist
+  in the top-level `yggdrasil` package.
+* Code useful to `cmd/*` packages, but not external packages should exist in the
+  top-level `internal` package.
+* Code should exist in a package only if it can be useful when imported
+  exclusively.
+* Code can exist in a package if it provides an alternative interface to
+  another package, and the two packages cannot be imported together.
 
 # Contact Us
 
