@@ -4,6 +4,7 @@ import (
 	"crypto/x509"
 	"encoding/pem"
 	"fmt"
+	"github.com/google/uuid"
 	"io/ioutil"
 	"math/rand"
 	"os"
@@ -67,7 +68,12 @@ func createClientID(file string) ([]byte, error) {
 		return nil, fmt.Errorf("cannot get hostname: %w", err)
 	}
 
-	data := []byte(hostname + "-" + randomString(8))
+	generatedUUID, err := uuid.NewUUID()
+	if err != nil {
+		return nil, fmt.Errorf("cannot generate UUID: %w", err)
+	}
+
+	data := []byte(hostname + "-" + generatedUUID.String())
 
 	if err := setClientID(data, file); err != nil {
 		return nil, fmt.Errorf("cannot set client-id: %w", err)
