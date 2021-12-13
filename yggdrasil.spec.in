@@ -65,7 +65,6 @@ make PREFIX=%{_prefix} \
 
 %files
 %doc README.md doc/tags.toml
-%{_bindir}/@SHORTNAME@
 %{_sbindir}/@SHORTNAME@d
 %config(noreplace) %{_sysconfdir}/@LONGNAME@/config.toml
 %{_unitdir}/@SHORTNAME@d.service
