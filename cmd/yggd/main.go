@@ -241,13 +241,13 @@ func main() {
 		switch c.String("protocol") {
 		case "mqtt":
 			var err error
-			transporter, err = transport.NewMQTTTransport(ClientID, c.String("server"), tlsConfig, client.DataRecvHandlerFunc)
+			transporter, err = transport.NewMQTTTransport(ClientID, c.String("server"), tlsConfig, client.DataReceiveHandlerFunc)
 			if err != nil {
 				return cli.Exit(fmt.Errorf("cannot create MQTT transport: %w", err), 1)
 			}
 		case "http":
 			var err error
-			transporter, err = transport.NewHTTPTransport(ClientID, c.String("server"), tlsConfig, getUserAgent(c.App), time.Second*5, client.DataRecvHandlerFunc)
+			transporter, err = transport.NewHTTPTransport(ClientID, c.String("server"), tlsConfig, getUserAgent(c.App), time.Second*5, client.DataReceiveHandlerFunc)
 			if err != nil {
 				return cli.Exit(fmt.Errorf("cannot create HTTP transport: %w", err), 1)
 			}
@@ -297,7 +297,7 @@ func main() {
 
 		// Start a goroutine that receives yggdrasil.Data values on a 'recv'
 		// channel and publish them to MQTT.
-		go client.RecvData()
+		go client.ReceiveData()
 
 		// Locate and start worker child processes.
 		workerPath := filepath.Join(yggdrasil.LibexecDir, yggdrasil.LongName)

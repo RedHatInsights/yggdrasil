@@ -16,12 +16,12 @@ type HTTP struct {
 	clientID        string
 	client          *http.Client
 	server          string
-	dataHandler     DataRecvHandlerFunc
+	dataHandler     DataReceiveHandlerFunc
 	pollingInterval time.Duration
 	disconnected    atomic.Value
 }
 
-func NewHTTPTransport(clientID string, server string, tlsConfig *tls.Config, userAgent string, pollingInterval time.Duration, dataRecvFunc DataRecvHandlerFunc) (*HTTP, error) {
+func NewHTTPTransport(clientID string, server string, tlsConfig *tls.Config, userAgent string, pollingInterval time.Duration, dataRecvFunc DataReceiveHandlerFunc) (*HTTP, error) {
 	disconnected := atomic.Value{}
 	disconnected.Store(false)
 	return &HTTP{
@@ -46,7 +46,7 @@ func (t *HTTP) Connect() error {
 				log.Tracef("Error while getting work: %v", err)
 			}
 			if len(payload) > 0 {
-				t.RecvData(payload, "control")
+				t.ReceiveData(payload, "control")
 			}
 			time.Sleep(t.pollingInterval)
 		}
@@ -62,7 +62,7 @@ func (t *HTTP) Connect() error {
 				log.Tracef("Error while getting work: %v", err)
 			}
 			if len(payload) > 0 {
-				t.RecvData(payload, "data")
+				t.ReceiveData(payload, "data")
 			}
 			time.Sleep(t.pollingInterval)
 		}
@@ -80,7 +80,7 @@ func (t *HTTP) SendData(data []byte, dest string) error {
 	return t.send(data, dest)
 }
 
-func (t *HTTP) RecvData(data []byte, dest string) error {
+func (t *HTTP) ReceiveData(data []byte, dest string) error {
 	t.dataHandler(data, dest)
 	return nil
 }

@@ -15,13 +15,13 @@ import (
 // MQTT is a Transporter that sends and receives data and control
 // messages over MQTT by subscribing and publishing to topics on an MQTT broker.
 type MQTT struct {
-	client mqtt.Client
-	recv   DataRecvHandlerFunc
+	client         mqtt.Client
+	receiveHandler DataReceiveHandlerFunc
 }
 
 // NewMQTTTransport creates a transport suitable for transmitting data over a
 // set of MQTT topics.
-func NewMQTTTransport(clientID string, broker string, tlsConfig *tls.Config, dataRecvFunc DataRecvHandlerFunc) (*MQTT, error) {
+func NewMQTTTransport(clientID string, broker string, tlsConfig *tls.Config, dataRecvFunc DataReceiveHandlerFunc) (*MQTT, error) {
 	var t MQTT
 
 	opts := mqtt.NewClientOptions()
@@ -46,7 +46,7 @@ func NewMQTTTransport(clientID string, broker string, tlsConfig *tls.Config, dat
 		topic = fmt.Sprintf("%v/%v/data/in", yggdrasil.TopicPrefix, opts.ClientID())
 		c.Subscribe(topic, 1, func(c mqtt.Client, m mqtt.Message) {
 			go func() {
-				if err := t.RecvData(m.Payload(), "data"); err != nil {
+				if err := t.ReceiveData(m.Payload(), "data"); err != nil {
 					log.Errorf("cannot receive data message: %v", err)
 				}
 			}()
@@ -56,7 +56,7 @@ func NewMQTTTransport(clientID string, broker string, tlsConfig *tls.Config, dat
 		topic = fmt.Sprintf("%v/%v/control/in", yggdrasil.TopicPrefix, opts.ClientID())
 		c.Subscribe(topic, 1, func(c mqtt.Client, m mqtt.Message) {
 			go func() {
-				if err := t.RecvData(m.Payload(), "control"); err != nil {
+				if err := t.ReceiveData(m.Payload(), "control"); err != nil {
 					log.Errorf("cannot receive control message: %v", err)
 				}
 			}()
@@ -95,7 +95,7 @@ func NewMQTTTransport(clientID string, broker string, tlsConfig *tls.Config, dat
 	opts.SetBinaryWill(fmt.Sprintf("%v/%v/control/out", yggdrasil.TopicPrefix, opts.ClientID), data, 1, false)
 
 	t.client = mqtt.NewClient(opts)
-	t.recv = dataRecvFunc
+	t.receiveHandler = dataRecvFunc
 
 	return &t, nil
 }
@@ -131,7 +131,7 @@ func (t *MQTT) SendData(data []byte, dest string) error {
 	return nil
 }
 
-func (t *MQTT) RecvData(data []byte, dest string) error {
-	t.recv(data, dest)
+func (t *MQTT) ReceiveData(data []byte, dest string) error {
+	t.receiveHandler(data, dest)
 	return nil
 }
