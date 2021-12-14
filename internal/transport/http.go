@@ -43,7 +43,7 @@ func (t *HTTP) Connect() error {
 			}
 			payload, err := t.client.Get(t.getUrl("in", "control"))
 			if err != nil {
-				log.Tracef("Error while getting work: %v", err)
+				log.Tracef("cannot get HTTP request: %v", err)
 			}
 			if len(payload) > 0 {
 				_ = t.ReceiveData(payload, "control")
@@ -59,7 +59,7 @@ func (t *HTTP) Connect() error {
 			}
 			payload, err := t.client.Get(t.getUrl("in", "data"))
 			if err != nil {
-				log.Tracef("Error while getting work: %v", err)
+				log.Tracef("cannot get HTTP request: %v", err)
 			}
 			if len(payload) > 0 {
 				_ = t.ReceiveData(payload, "data")
@@ -93,7 +93,7 @@ func (t *HTTP) send(message []byte, channel string) error {
 	headers := map[string]string{
 		"Content-Type": "application/json",
 	}
-	log.Tracef("Sending %s", string(message))
+	log.Tracef("posting HTTP request body: %s", string(message))
 	return t.client.Post(url, headers, message)
 }
 
