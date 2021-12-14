@@ -4,11 +4,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"time"
 
 	"git.sr.ht/~spc/go-log"
 
-	"github.com/google/uuid"
 	"github.com/redhatinsights/yggdrasil"
 	"github.com/urfave/cli/v2"
 )
@@ -147,36 +145,28 @@ func main() {
 }
 
 func generateMessage(messageType, responseTo, directive, content string, metadata map[string]string, version int) ([]byte, error) {
-	msg := map[string]interface{}{
-		"type":        messageType,
-		"message_id":  uuid.New().String(),
-		"response_id": responseTo,
-		"version":     version,
-		"sent":        time.Now(),
-	}
-
 	switch messageType {
 	case "data":
-		msg["directive"] = directive
-		msg["metadata"] = metadata
-		msg["content"] = content
+		msg, err := generateDataMessage(yggdrasil.MessageType(messageType), responseTo, directive, []byte(content), metadata, version)
+		if err != nil {
+			return nil, err
+		}
+		data, err := json.Marshal(msg)
+		if err != nil {
+			return nil, err
+		}
+		return data, nil
 	case "command":
-		var commandContent struct {
-			Command   string   `json:"command"`
-			Arguments []string `json:"arguments"`
+		msg, err := generateCommandMessage(yggdrasil.MessageType(messageType), responseTo, version, []byte(content))
+		if err != nil {
+			return nil, err
 		}
-		if err := json.Unmarshal([]byte(content), &commandContent); err != nil {
-			return nil, fmt.Errorf("cannot unmarshal command: %v", err)
+		data, err := json.Marshal(msg)
+		if err != nil {
+			return nil, err
 		}
-		msg["content"] = commandContent
+		return data, nil
 	default:
 		return nil, fmt.Errorf("unsupported message type: %v", messageType)
 	}
-
-	data, err := json.Marshal(msg)
-	if err != nil {
-		return nil, fmt.Errorf("cannot marshal message: %w", err)
-	}
-
-	return data, nil
 }
