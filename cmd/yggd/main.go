@@ -259,6 +259,16 @@ func main() {
 			return cli.Exit(fmt.Errorf("cannot connect using transport: %w", err), 1)
 		}
 
+		go func() {
+			msg, err := client.ConnectionStatus()
+			if err != nil {
+				log.Errorf("cannot get connection status: %v", err)
+			}
+			if err := client.SendConnectionStatusMessage(msg); err != nil {
+				log.Errorf("cannot send connection status message: %v", err)
+			}
+		}()
+
 		// Start a goroutine that receives values on the 'dispatchers' channel
 		// and publishes "connection-status" messages to MQTT.
 		var prevDispatchersHash atomic.Value

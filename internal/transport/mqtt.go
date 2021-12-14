@@ -62,8 +62,6 @@ func NewMQTTTransport(clientID string, broker string, tlsConfig *tls.Config, dat
 			}()
 		})
 		log.Tracef("subscribed to topic: %v", topic)
-
-		// TODO: PublishConnectionStatus
 	})
 
 	opts.SetDefaultPublishHandler(func(c mqtt.Client, m mqtt.Message) {
