@@ -101,6 +101,15 @@ type Event struct {
 	Content    string      `json:"content"`
 }
 
+type Control struct {
+	Type       MessageType     `json:"type"`
+	MessageID  string          `json:"message_id"`
+	ResponseTo string          `json:"response_to"`
+	Version    int             `json:"version"`
+	Sent       time.Time       `json:"sent"`
+	Content    json.RawMessage `json:"content"`
+}
+
 // Data messages are published by both client and server on their respective
 // "data" topic. The client consumes Data messages and routes them to an
 // appropriate worker based on the "Directive" field.

@@ -1,4 +1,5 @@
 # yggdrasil global configuration settings
 
-broker = ["tcp://test.mosquitto.org:1883"]
+protocol = "mqtt"
+server = "tcp://test.mosquitto.org:1883"
 log-level = "error"

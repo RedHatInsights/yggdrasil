@@ -4,10 +4,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/redhatinsights/yggdrasil/internal"
 	"net/url"
 	"sync"
 	"time"
+
+	"github.com/redhatinsights/yggdrasil/internal/http"
 
 	"git.sr.ht/~spc/go-log"
 	"github.com/redhatinsights/yggdrasil"
@@ -32,10 +33,10 @@ type dispatcher struct {
 	deadWorkers chan int
 	workers     map[string]worker
 	pidHandlers map[int]string
-	httpClient  *internal.Client
+	httpClient  *http.Client
 }
 
-func newDispatcher(httpClient *internal.Client) *dispatcher {
+func newDispatcher(httpClient *http.Client) *dispatcher {
 	return &dispatcher{
 		dispatchers: make(chan map[string]map[string]string),
 		sendQ:       make(chan yggdrasil.Data),
@@ -43,7 +44,7 @@ func newDispatcher(httpClient *internal.Client) *dispatcher {
 		deadWorkers: make(chan int),
 		workers:     make(map[string]worker),
 		pidHandlers: make(map[int]string),
-		httpClient: httpClient,
+		httpClient:  httpClient,
 	}
 }
 

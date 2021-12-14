@@ -1,4 +1,4 @@
-package internal
+package http
 
 import (
 	"bytes"
@@ -12,20 +12,23 @@ import (
 	"github.com/redhatinsights/yggdrasil"
 )
 
+// Client is a specialized HTTP client, configured with mutual TLS certificate
+// authentication.
 type Client struct {
 	client    *http.Client
 	userAgent string
 }
 
-// NewHTTPClient initializes the HTTP Client
+// NewHTTPClient creates a client with the given TLS configuration and
+// user-agent string.
 func NewHTTPClient(config *tls.Config, ua string) *Client {
 	client := &http.Client{
 		Transport: http.DefaultTransport.(*http.Transport).Clone(),
 	}
-	client.Transport.(*http.Transport).TLSClientConfig = config
+	client.Transport.(*http.Transport).TLSClientConfig = config.Clone()
 
 	return &Client{
-		client: client,
+		client:    client,
 		userAgent: ua,
 	}
 }
