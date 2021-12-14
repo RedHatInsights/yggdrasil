@@ -24,7 +24,7 @@ unencrypted TCP connection, log judiciously to `stdout`, and bind to the socket
 address `@yggd`.
 
 ```
-sudo go run ./cmd/yggd --broker tcp://test.mosquitto.org:8883 --log-level trace --socket-addr @yggd
+sudo go run ./cmd/yggd --server tcp://test.mosquitto.org:8883 --log-level trace --socket-addr @yggd
 ```
 
 ### Terminal 2
