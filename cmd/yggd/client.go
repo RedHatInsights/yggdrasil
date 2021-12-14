@@ -115,7 +115,10 @@ func (c *Client) DataReceiveHandlerFunc(data []byte, dest string) {
 			log.Errorf("cannot unmarshal data message: %v", err)
 			return
 		}
-		c.ReceiveDataMessage(&message)
+		if err := c.ReceiveDataMessage(&message); err != nil {
+			log.Errorf("cannot process data message: %v", err)
+			return
+		}
 	case "control":
 		var message yggdrasil.Control
 
@@ -123,7 +126,10 @@ func (c *Client) DataReceiveHandlerFunc(data []byte, dest string) {
 			log.Errorf("cannot unmarshal control message: %v", err)
 			return
 		}
-		c.ReceiveControlMessage(&message)
+		if err := c.ReceiveControlMessage(&message); err != nil {
+			log.Errorf("cannot process control message: %v", err)
+			return
+		}
 	default:
 		log.Errorf("unsupported destination type: %v", dest)
 		return
