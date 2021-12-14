@@ -2,25 +2,23 @@ package main
 
 import (
 	"crypto/sha256"
-	"crypto/tls"
 	"encoding/json"
 	"fmt"
-	"github.com/redhatinsights/yggdrasil/internal"
-	"github.com/redhatinsights/yggdrasil/internal/http"
-	"github.com/redhatinsights/yggdrasil/internal/mqtt"
 	"io/ioutil"
 	"net"
 	"os"
 	"os/signal"
 	"path/filepath"
-	"strconv"
 	"strings"
 	"sync/atomic"
 	"syscall"
 	"time"
 
+	"github.com/redhatinsights/yggdrasil/internal"
+	"github.com/redhatinsights/yggdrasil/internal/http"
+	"github.com/redhatinsights/yggdrasil/internal/transport"
+
 	"git.sr.ht/~spc/go-log"
-	"github.com/google/uuid"
 	"github.com/redhatinsights/yggdrasil"
 	pb "github.com/redhatinsights/yggdrasil/protocol"
 	"github.com/rjeczalik/notify"
@@ -30,13 +28,6 @@ import (
 )
 
 var ClientID = ""
-
-type TransportType string
-
-const (
-	MQTT TransportType = "mqtt"
-	HTTP TransportType = "http"
-)
 
 func main() {
 	app := cli.NewApp()
@@ -80,9 +71,14 @@ func main() {
 			Hidden: true,
 			Usage:  "Use `PREFIX` as the MQTT topic prefix",
 		}),
-		altsrc.NewStringSliceFlag(&cli.StringSliceFlag{
-			Name:  "broker",
-			Usage: "Connect to the broker specified in `URI`",
+		altsrc.NewStringFlag(&cli.StringFlag{
+			Name:  "protocol",
+			Usage: "Transmit data remotely using `PROTOCOL` ('mqtt' or 'http')",
+			Value: "mqtt",
+		}),
+		altsrc.NewStringFlag(&cli.StringFlag{
+			Name:  "server",
+			Usage: "Connect the client to the specified `URI`",
 		}),
 		&cli.BoolFlag{
 			Name:   "generate-man-page",
@@ -103,18 +99,6 @@ func main() {
 			Value:  fmt.Sprintf("@yggd-dispatcher-%v", randomString(6)),
 			Hidden: true,
 		},
-		altsrc.NewStringFlag(&cli.StringFlag{
-			Name:   "transport",
-			Usage:  "Force yggdrasil to use specific transport",
-			Value:  string(MQTT),
-			Hidden: true,
-		}),
-		altsrc.NewStringFlag(&cli.StringFlag{
-			Name:   "http-server",
-			Usage:  "HTTP server to use for HTTP transport",
-			Value:  "localhost:8888",
-			Hidden: true,
-		}),
 	}
 
 	// This BeforeFunc will load flag values from a config file only if the
@@ -231,7 +215,7 @@ func main() {
 		if err != nil {
 			return cli.Exit(fmt.Errorf("cannot create TLS config: %w", err), 1)
 		}
-		httpClient := internal.NewHTTPClient(tlsConfig, getUserAgent(app))
+		httpClient := http.NewHTTPClient(tlsConfig, getUserAgent(app))
 
 		// Create gRPC dispatcher service
 		d := newDispatcher(httpClient)
@@ -249,13 +233,31 @@ func main() {
 			}
 		}()
 
-		controlPlaneTransport, err := createTransport(c, tlsConfig, d)
-		if err != nil {
-			return cli.Exit(err.Error(), 1)
+		var transporter transport.Transporter
+		client := Client{
+			t: transporter,
+			d: d,
 		}
-		err = controlPlaneTransport.Start()
-		if err != nil {
-			return cli.Exit(err, 1)
+
+		switch c.String("protocol") {
+		case "mqtt":
+			var err error
+			transporter, err = transport.NewMQTTTransport(ClientID, c.String("server"), tlsConfig, client.DataRecvHandlerFunc)
+			if err != nil {
+				return cli.Exit(fmt.Errorf("cannot create MQTT transport: %w", err), 1)
+			}
+		case "http":
+			var err error
+			transporter, err = transport.NewHTTPTransport(ClientID, c.String("server"), tlsConfig, getUserAgent(c.App), time.Second*5, client.DataRecvHandlerFunc)
+			if err != nil {
+				return cli.Exit(fmt.Errorf("cannot create HTTP transport: %w", err), 1)
+			}
+		default:
+			return cli.Exit(fmt.Errorf("unsupported transport protocol: %v", c.String("protocol")), 1)
+		}
+
+		if err := client.Connect(); err != nil {
+			return cli.Exit(fmt.Errorf("cannot connect using transport: %w", err), 1)
 		}
 
 		// Start a goroutine that receives values on the 'dispatchers' channel
@@ -280,7 +282,13 @@ func main() {
 					}
 				}
 				prevDispatchersHash.Store(sum)
-				go internal.PublishConnectionStatus(controlPlaneTransport, d.makeDispatchersMap())
+				go func() {
+					msg, err := client.ConnectionStatus()
+					if err != nil {
+						log.Errorf("cannot get connection status: %v", err)
+					}
+					client.SendConnectionStatusMessage(msg)
+				}()
 			}
 		}()
 
@@ -290,7 +298,7 @@ func main() {
 
 		// Start a goroutine that receives yggdrasil.Data values on a 'recv'
 		// channel and publish them to MQTT.
-		go internal.PublishReceivedData(controlPlaneTransport, d.recvQ)
+		go client.RecvData()
 
 		// Locate and start worker child processes.
 		workerPath := filepath.Join(yggdrasil.LibexecDir, yggdrasil.LongName)
@@ -341,7 +349,13 @@ func main() {
 				log.Debugf("received inotify event %v", e.Event())
 				switch e.Event() {
 				case notify.InCloseWrite, notify.InDelete:
-					go internal.PublishConnectionStatus(controlPlaneTransport, d.makeDispatchersMap())
+					go func() {
+						msg, err := client.ConnectionStatus()
+						if err != nil {
+							log.Errorf("cannot get connection status: %v", err)
+						}
+						client.SendConnectionStatusMessage(msg)
+					}()
 				}
 			}
 		}()
@@ -364,81 +378,4 @@ func main() {
 
 func getUserAgent(app *cli.App) string {
 	return fmt.Sprintf("%v/%v", app.Name, app.Version)
-}
-
-func createTransport(c *cli.Context, tlsConfig *tls.Config, d *dispatcher) (internal.Transport, error) {
-	dataHandler := createDataHandler(d)
-	controlMessageHandler := handleControlMessage
-
-	transportType := TransportType(c.String("transport"))
-	switch transportType {
-	case MQTT:
-		brokers := c.StringSlice("broker")
-		return mqtt.NewMQTTTransport(ClientID, brokers, tlsConfig, controlMessageHandler, dataHandler)
-	case HTTP:
-		server := c.String("http-server")
-		return http.NewHTTPTransport(ClientID, server, tlsConfig, getUserAgent(c.App), time.Second*5, controlMessageHandler, dataHandler)
-	default:
-		return nil, fmt.Errorf("unrecognized transport type: %v", transportType)
-	}
-}
-
-func handleControlMessage(msg []byte, t internal.Transport) {
-	var cmd yggdrasil.Command
-	if err := json.Unmarshal(msg, &cmd); err != nil {
-		log.Errorf("cannot unmarshal control message: %v", err)
-		return
-	}
-
-	log.Debugf("received message %v", cmd.MessageID)
-	log.Tracef("command: %+v", cmd)
-	log.Tracef("Control message: %v", cmd)
-
-	switch cmd.Content.Command {
-	case yggdrasil.CommandNamePing:
-		event := yggdrasil.Event{
-			Type:       yggdrasil.MessageTypeEvent,
-			MessageID:  uuid.New().String(),
-			ResponseTo: cmd.MessageID,
-			Version:    1,
-			Sent:       time.Now(),
-			Content:    string(yggdrasil.EventNamePong),
-		}
-
-		err := t.SendControl(event)
-		if err != nil {
-			log.Error(err)
-		}
-	case yggdrasil.CommandNameDisconnect:
-		log.Info("disconnecting...")
-		t.Disconnect(500)
-	case yggdrasil.CommandNameReconnect:
-		log.Info("reconnecting...")
-		t.Disconnect(500)
-		delay, err := strconv.ParseInt(cmd.Content.Arguments["delay"], 10, 64)
-		if err != nil {
-			log.Errorf("cannot parse data to int: %v", err)
-			return
-		}
-		time.Sleep(time.Duration(delay) * time.Second)
-
-		if err := t.Start(); err != nil {
-			log.Errorf("cannot reconnect to broker: %v", err)
-			return
-		}
-	default:
-		log.Warnf("unknown command: %v", cmd.Content.Command)
-	}
-}
-
-func createDataHandler(d *dispatcher) func(msg []byte) {
-	return func(msg []byte) {
-		var data yggdrasil.Data
-		if err := json.Unmarshal(msg, &data); err != nil {
-			log.Errorf("cannot unmarshal data message: %v", err)
-			return
-		}
-		log.Tracef("message: %+v", data)
-		d.sendQ <- data
-	}
 }
