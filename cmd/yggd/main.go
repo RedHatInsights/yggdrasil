@@ -28,6 +28,7 @@ import (
 )
 
 var ClientID = ""
+var UserAgent = yggdrasil.LongName + "/" + yggdrasil.Version
 
 func main() {
 	app := cli.NewApp()
@@ -215,7 +216,7 @@ func main() {
 		if err != nil {
 			return cli.Exit(fmt.Errorf("cannot create TLS config: %w", err), 1)
 		}
-		httpClient := http.NewHTTPClient(tlsConfig, getUserAgent(app))
+		httpClient := http.NewHTTPClient(tlsConfig, UserAgent)
 
 		// Create gRPC dispatcher service
 		d := newDispatcher(httpClient)
@@ -247,7 +248,7 @@ func main() {
 			}
 		case "http":
 			var err error
-			transporter, err = transport.NewHTTPTransport(ClientID, c.String("server"), tlsConfig, getUserAgent(c.App), time.Second*5, client.DataReceiveHandlerFunc)
+			transporter, err = transport.NewHTTPTransport(ClientID, c.String("server"), tlsConfig, UserAgent, time.Second*5, client.DataReceiveHandlerFunc)
 			if err != nil {
 				return cli.Exit(fmt.Errorf("cannot create HTTP transport: %w", err), 1)
 			}
@@ -387,8 +388,4 @@ func main() {
 	if err := app.Run(os.Args); err != nil {
 		log.Fatal(err)
 	}
-}
-
-func getUserAgent(app *cli.App) string {
-	return fmt.Sprintf("%v/%v", app.Name, app.Version)
 }
