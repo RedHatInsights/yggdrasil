@@ -233,12 +233,11 @@ func main() {
 			}
 		}()
 
-		var transporter transport.Transporter
 		client := Client{
-			t: transporter,
 			d: d,
 		}
 
+		var transporter transport.Transporter
 		switch c.String("protocol") {
 		case "mqtt":
 			var err error
@@ -255,7 +254,7 @@ func main() {
 		default:
 			return cli.Exit(fmt.Errorf("unsupported transport protocol: %v", c.String("protocol")), 1)
 		}
-
+		client.t = transporter
 		if err := client.Connect(); err != nil {
 			return cli.Exit(fmt.Errorf("cannot connect using transport: %w", err), 1)
 		}
