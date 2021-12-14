@@ -46,7 +46,7 @@ func (t *HTTP) Connect() error {
 				log.Tracef("Error while getting work: %v", err)
 			}
 			if len(payload) > 0 {
-				t.ReceiveData(payload, "control")
+				_ = t.ReceiveData(payload, "control")
 			}
 			time.Sleep(t.pollingInterval)
 		}
@@ -62,7 +62,7 @@ func (t *HTTP) Connect() error {
 				log.Tracef("Error while getting work: %v", err)
 			}
 			if len(payload) > 0 {
-				t.ReceiveData(payload, "data")
+				_ = t.ReceiveData(payload, "data")
 			}
 			time.Sleep(t.pollingInterval)
 		}
