@@ -43,15 +43,15 @@ func (c *Client) sendMessage(msg interface{}, dest string) error {
 	return c.t.SendData(data, dest)
 }
 
-// RecvDataMessage sends a value to a channel for dispatching to worker processes.
-func (c *Client) RecvDataMessage(msg *yggdrasil.Data) error {
+// ReceiveDataMessage sends a value to a channel for dispatching to worker processes.
+func (c *Client) ReceiveDataMessage(msg *yggdrasil.Data) error {
 	c.d.sendQ <- *msg
 
 	return nil
 }
 
-// RecvControlMessage unpacks a control message and acts accordingly.
-func (c *Client) RecvControlMessage(msg *yggdrasil.Control) error {
+// ReceiveControlMessage unpacks a control message and acts accordingly.
+func (c *Client) ReceiveControlMessage(msg *yggdrasil.Control) error {
 	switch msg.Type {
 	case yggdrasil.MessageTypeCommand:
 		var cmd yggdrasil.Command
@@ -106,7 +106,7 @@ func (c *Client) RecvControlMessage(msg *yggdrasil.Control) error {
 	return nil
 }
 
-func (c *Client) DataRecvHandlerFunc(data []byte, dest string) {
+func (c *Client) DataReceiveHandlerFunc(data []byte, dest string) {
 	switch dest {
 	case "data":
 		var message yggdrasil.Data
@@ -115,7 +115,7 @@ func (c *Client) DataRecvHandlerFunc(data []byte, dest string) {
 			log.Errorf("cannot unmarshal data message: %v", err)
 			return
 		}
-		c.RecvDataMessage(&message)
+		c.ReceiveDataMessage(&message)
 	case "control":
 		var message yggdrasil.Control
 
@@ -123,16 +123,16 @@ func (c *Client) DataRecvHandlerFunc(data []byte, dest string) {
 			log.Errorf("cannot unmarshal control message: %v", err)
 			return
 		}
-		c.RecvControlMessage(&message)
+		c.ReceiveControlMessage(&message)
 	default:
 		log.Errorf("unsupported destination type: %v", dest)
 		return
 	}
 }
 
-// RecvData receives values from workers via a dispatch receive queue and
+// ReceiveData receives values from workers via a dispatch receive queue and
 // sends them using the configured transport.
-func (c *Client) RecvData() {
+func (c *Client) ReceiveData() {
 	for msg := range c.d.recvQ {
 		if err := c.SendDataMessage(&msg); err != nil {
 			log.Errorf("failed to send data message: %v", err)
