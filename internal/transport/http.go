@@ -2,7 +2,6 @@ package transport
 
 import (
 	"crypto/tls"
-	"encoding/json"
 	"fmt"
 	"sync/atomic"
 	"time"
@@ -31,6 +30,7 @@ func NewHTTPTransport(clientID string, server string, tlsConfig *tls.Config, use
 		dataHandler:     dataRecvFunc,
 		pollingInterval: pollingInterval,
 		disconnected:    disconnected,
+		server:          server,
 	}, nil
 }
 
@@ -85,20 +85,16 @@ func (t *HTTP) RecvData(data []byte, dest string) error {
 	return nil
 }
 
-func (t *HTTP) send(message interface{}, channel string) error {
+func (t *HTTP) send(message []byte, channel string) error {
 	if t.disconnected.Load().(bool) {
 		return nil
 	}
 	url := t.getUrl("out", channel)
-	dataBytes, err := json.Marshal(message)
-	if err != nil {
-		return err
-	}
 	headers := map[string]string{
 		"Content-Type": "application/json",
 	}
-	log.Tracef("Sending %s", string(dataBytes))
-	return t.client.Post(url, headers, dataBytes)
+	log.Tracef("Sending %s", string(message))
+	return t.client.Post(url, headers, message)
 }
 
 func (t *HTTP) getUrl(direction string, channel string) string {
