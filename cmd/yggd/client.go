@@ -1,8 +1,11 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
+	pb "github.com/redhatinsights/yggdrasil/protocol"
+	"google.golang.org/grpc"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -83,6 +86,11 @@ func (c *Client) ReceiveControlMessage(msg *yggdrasil.Control) error {
 			}
 		case yggdrasil.CommandNameDisconnect:
 			log.Info("disconnecting...")
+			for _, w := range c.d.workers {
+				if err := c.disconnectWorker(w); err != nil {
+					log.Errorf("cannot disconnect worker %v; %v", w, err)
+				}
+			}
 			c.t.Disconnect(500)
 		case yggdrasil.CommandNameReconnect:
 			log.Info("reconnecting...")
@@ -184,4 +192,24 @@ func (c *Client) ConnectionStatus() (*yggdrasil.ConnectionStatus, error) {
 	}
 
 	return &msg, nil
+}
+
+func (c *Client) disconnectWorker(w worker) error {
+	conn, err := grpc.Dial("unix:"+w.addr, grpc.WithInsecure())
+	if err != nil {
+		log.Errorf("cannot dial socket: %v", err)
+		return err
+	}
+	defer conn.Close()
+
+	workerClient := pb.NewWorkerClient(conn)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+	defer cancel()
+
+	_, err = workerClient.Disconnect(ctx, &pb.Empty{})
+	if err != nil {
+		log.Errorf("cannot disconnect worker %v", err)
+		return err
+	}
+	return nil
 }
