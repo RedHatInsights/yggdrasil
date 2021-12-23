@@ -108,7 +108,7 @@ data: $(DATA)
 		-e 's,[@]LONGNAME[@],$(LONGNAME),g' \
 		-e 's,[@]BRANDNAME[@],$(BRANDNAME),g' \
 		-e 's,[@]VERSION[@],$(VERSION),g' \
-		-e 's,[@]PACKAGE[@],$(PACKAGE),g' \
+		-e 's,[@]PACKAGE[@],$(PKGNAME),g' \
 		-e 's,[@]TOPICPREFIX[@],$(TOPICPREFIX),g' \
 		-e 's,[@]DATAHOST[@],$(DATAHOST),g' \
 		-e 's,[@]PROVIDER[@],$(PROVIDER),g' \
