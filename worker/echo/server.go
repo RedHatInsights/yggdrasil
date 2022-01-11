@@ -56,11 +56,11 @@ func (s *echoServer) Send(ctx context.Context, d *pb.Data) (*pb.Receipt, error) 
 	return &pb.Receipt{}, nil
 }
 
-// Disconnect implements the "Disconnect" method of the Worker gRPC service.
-func (s *echoServer) Disconnect(ctx context.Context, in *pb.Empty) (*pb.DisconnectResponse, error) {
-	log.Infof("received worker disconnect request")
+// NotifyEvent implements the "NotifyEvent" method of the Worker gRPC service.
+func (s *echoServer) NotifyEvent(_ context.Context, in *pb.EventNotification) (*pb.EventReceipt, error) {
+	log.Infof("received event: %s", in.Name)
 
-	// Respond to the disconnect request that the work was accepted.
-	return &pb.DisconnectResponse{}, nil
+	// Respond to the event request that the work was accepted.
+	return &pb.EventReceipt{}, nil
 
 }

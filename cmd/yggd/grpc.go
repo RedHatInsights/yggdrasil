@@ -114,6 +114,36 @@ func (d *dispatcher) Send(ctx context.Context, r *pb.Data) (*pb.Receipt, error) 
 	return &pb.Receipt{}, nil
 }
 
+func (d *dispatcher) DisconnectWorkers() {
+	for _, w := range d.workers {
+		if err := d.disconnectWorker(w); err != nil {
+			log.Errorf("cannot disconnect worker %v; %v", w, err)
+		}
+	}
+}
+
+func (d *dispatcher) disconnectWorker(w worker) error {
+	conn, err := grpc.Dial("unix:"+w.addr, grpc.WithInsecure())
+	if err != nil {
+		log.Errorf("cannot dial socket: %v", err)
+		return err
+	}
+	defer func() {
+		_ = conn.Close()
+	}()
+
+	workerClient := pb.NewWorkerClient(conn)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+	defer cancel()
+
+	_, err = workerClient.NotifyEvent(ctx, &pb.EventNotification{Name: pb.Event_RECEIVED_DISCONNECT})
+	if err != nil {
+		log.Errorf("cannot disconnect worker %v", err)
+		return err
+	}
+	return nil
+}
+
 // sendData receives values on a channel and sends the data over gRPC
 func (d *dispatcher) sendData() {
 	for data := range d.sendQ {
