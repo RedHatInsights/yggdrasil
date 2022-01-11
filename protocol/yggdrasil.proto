@@ -17,8 +17,8 @@ service Worker {
     // Send is called by the dispatcher to send data to a worker.
     rpc Send (Data) returns (Receipt) {}
 
-    // Disconnect is called by an operator to handle device deregistration gracefully
-    rpc Disconnect (Empty) returns (DisconnectResponse) {}
+    // NotifyEvent is called by the dispatcher to send event information to a worker.
+    rpc NotifyEvent (Event) returns (EventReceipt) {}
 }
 
 // An Empty message.
@@ -71,5 +71,12 @@ message Data {
 // A Receipt message is sent as a successful response to a Send method.
 message Receipt {}
 
-// A DisconnectResponse message is sent as a successful response to a Disconnect method.
-message DisconnectResponse {}
+// An EventReceipt message is sent as a successful response to the NotifyEven method.
+message EventReceipt {}
+
+// An Event message contains data and metadata describing event occurring in the dispatcher.
+message Event {
+    // The name of an event
+    string name = 1;
+}
+
