@@ -153,7 +153,7 @@ type WorkerClient interface {
 	// Send is called by the dispatcher to send data to a worker.
 	Send(ctx context.Context, in *Data, opts ...grpc.CallOption) (*Receipt, error)
 	// NotifyEvent is called by the dispatcher to send event information to a worker.
-	NotifyEvent(ctx context.Context, in *Event, opts ...grpc.CallOption) (*EventReceipt, error)
+	NotifyEvent(ctx context.Context, in *EventNotification, opts ...grpc.CallOption) (*EventReceipt, error)
 }
 
 type workerClient struct {
@@ -173,7 +173,7 @@ func (c *workerClient) Send(ctx context.Context, in *Data, opts ...grpc.CallOpti
 	return out, nil
 }
 
-func (c *workerClient) NotifyEvent(ctx context.Context, in *Event, opts ...grpc.CallOption) (*EventReceipt, error) {
+func (c *workerClient) NotifyEvent(ctx context.Context, in *EventNotification, opts ...grpc.CallOption) (*EventReceipt, error) {
 	out := new(EventReceipt)
 	err := c.cc.Invoke(ctx, "/yggdrasil.Worker/NotifyEvent", in, out, opts...)
 	if err != nil {
@@ -189,7 +189,7 @@ type WorkerServer interface {
 	// Send is called by the dispatcher to send data to a worker.
 	Send(context.Context, *Data) (*Receipt, error)
 	// NotifyEvent is called by the dispatcher to send event information to a worker.
-	NotifyEvent(context.Context, *Event) (*EventReceipt, error)
+	NotifyEvent(context.Context, *EventNotification) (*EventReceipt, error)
 	mustEmbedUnimplementedWorkerServer()
 }
 
@@ -200,7 +200,7 @@ type UnimplementedWorkerServer struct {
 func (UnimplementedWorkerServer) Send(context.Context, *Data) (*Receipt, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Send not implemented")
 }
-func (UnimplementedWorkerServer) NotifyEvent(context.Context, *Event) (*EventReceipt, error) {
+func (UnimplementedWorkerServer) NotifyEvent(context.Context, *EventNotification) (*EventReceipt, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method NotifyEvent not implemented")
 }
 func (UnimplementedWorkerServer) mustEmbedUnimplementedWorkerServer() {}
@@ -235,7 +235,7 @@ func _Worker_Send_Handler(srv interface{}, ctx context.Context, dec func(interfa
 }
 
 func _Worker_NotifyEvent_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(Event)
+	in := new(EventNotification)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -247,7 +247,7 @@ func _Worker_NotifyEvent_Handler(srv interface{}, ctx context.Context, dec func(
 		FullMethod: "/yggdrasil.Worker/NotifyEvent",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(WorkerServer).NotifyEvent(ctx, req.(*Event))
+		return srv.(WorkerServer).NotifyEvent(ctx, req.(*EventNotification))
 	}
 	return interceptor(ctx, in, info, handler)
 }

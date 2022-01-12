@@ -18,7 +18,7 @@ service Worker {
     rpc Send (Data) returns (Receipt) {}
 
     // NotifyEvent is called by the dispatcher to send event information to a worker.
-    rpc NotifyEvent (Event) returns (EventReceipt) {}
+    rpc NotifyEvent (EventNotification) returns (EventReceipt) {}
 }
 
 // An Empty message.
@@ -74,9 +74,27 @@ message Receipt {}
 // An EventReceipt message is sent as a successful response to the NotifyEven method.
 message EventReceipt {}
 
-// An Event message contains data and metadata describing event occurring in the dispatcher.
-message Event {
-    // The name of an event
-    string name = 1;
+enum Event {
+    // UNKNOWN is an undeclared event; protobuf requires the presence of a zero value. It shouldn't be used.
+    UNKNOWN = 0;
+
+    // RECEIVED_DISCONNECT is sent by the dispatcher to workers when the service received the "disconnect" command.
+    RECEIVED_DISCONNECT = 1;
+
+    // UNEXPECTED_DISCONNECT is sent by the dispatcher when the service unexpectedly disconnects from the network.
+    UNEXPECTED_DISCONNECT = 2;
+
+    // CONNECTION_RESTORED is sent by the dispatcher when the service re-connects to the network.
+    CONNECTION_RESTORED = 3;
+}
+
+// An EventNotification message contains data and metadata describing event occurring in the dispatcher.
+message EventNotification {
+    // The name of an event.
+    Event name = 1;
+    // Details of the event.
+    string detail = 2;
+    // Optional key-value pairs.
+    map<string, string> metadata = 3;
 }
 
