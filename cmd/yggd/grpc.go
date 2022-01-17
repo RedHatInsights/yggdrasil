@@ -117,7 +117,7 @@ func (d *dispatcher) Send(ctx context.Context, r *pb.Data) (*pb.Receipt, error) 
 func (d *dispatcher) DisconnectWorkers() {
 	for _, w := range d.workers {
 		if err := d.disconnectWorker(w); err != nil {
-			log.Errorf("cannot disconnect worker %v; %v", w, err)
+			log.Errorf("cannot disconnect worker %v: %v", w, err)
 		}
 	}
 }
