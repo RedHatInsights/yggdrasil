@@ -55,3 +55,12 @@ func (s *echoServer) Send(ctx context.Context, d *pb.Data) (*pb.Receipt, error) 
 	// Respond to the start request that the work was accepted.
 	return &pb.Receipt{}, nil
 }
+
+// NotifyEvent implements the "NotifyEvent" method of the Worker gRPC service.
+func (s *echoServer) NotifyEvent(_ context.Context, in *pb.EventNotification) (*pb.EventReceipt, error) {
+	log.Infof("received event: %s", in.Name)
+
+	// Respond to the event request that the work was accepted.
+	return &pb.EventReceipt{}, nil
+
+}
