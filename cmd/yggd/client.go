@@ -83,6 +83,7 @@ func (c *Client) ReceiveControlMessage(msg *yggdrasil.Control) error {
 			}
 		case yggdrasil.CommandNameDisconnect:
 			log.Info("disconnecting...")
+			c.d.DisconnectWorkers()
 			c.t.Disconnect(500)
 		case yggdrasil.CommandNameReconnect:
 			log.Info("reconnecting...")
