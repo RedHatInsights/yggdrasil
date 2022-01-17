@@ -16,6 +16,7 @@ import (
 
 	"github.com/redhatinsights/yggdrasil/internal"
 	"github.com/redhatinsights/yggdrasil/internal/http"
+	"github.com/redhatinsights/yggdrasil/internal/tls"
 	"github.com/redhatinsights/yggdrasil/internal/transport"
 
 	"git.sr.ht/~spc/go-log"
@@ -191,32 +192,19 @@ func main() {
 
 		ClientID = string(clientID)
 
-		// Read certificates, create a TLS config, and initialize HTTP client
-		var certData, keyData []byte
+		var TLSConfig *tls.TLSConfig
 		if c.String("cert-file") != "" && c.String("key-file") != "" {
-			var err error
-			certData, err = ioutil.ReadFile(c.String("cert-file"))
+			TLSConfig, err = tls.NewTLSConfig(
+				c.String("cert-file"),
+				c.String("key-file"),
+				c.StringSlice("ca-root"))
+
 			if err != nil {
-				return cli.Exit(fmt.Errorf("cannot read certificate file: %v", err), 1)
-			}
-			keyData, err = ioutil.ReadFile(c.String("key-file"))
-			if err != nil {
-				return cli.Exit(fmt.Errorf("cannot read key file: %w", err), 1)
+				return cli.Exit(fmt.Errorf("cannot create TLSconfig: %v", err), 1)
 			}
 		}
-		rootCAs := make([][]byte, 0)
-		for _, file := range c.StringSlice("ca-root") {
-			data, err := ioutil.ReadFile(file)
-			if err != nil {
-				return cli.Exit(fmt.Errorf("cannot read certificate authority: %v", err), 1)
-			}
-			rootCAs = append(rootCAs, data)
-		}
-		tlsConfig, err := newTLSConfig(certData, keyData, rootCAs)
-		if err != nil {
-			return cli.Exit(fmt.Errorf("cannot create TLS config: %w", err), 1)
-		}
-		httpClient := http.NewHTTPClient(tlsConfig, UserAgent)
+
+		httpClient := http.NewHTTPClient(TLSConfig, UserAgent)
 
 		// Create gRPC dispatcher service
 		d := newDispatcher(httpClient)
@@ -242,13 +230,13 @@ func main() {
 		switch c.String("protocol") {
 		case "mqtt":
 			var err error
-			transporter, err = transport.NewMQTTTransport(ClientID, c.String("server"), tlsConfig, client.DataReceiveHandlerFunc)
+			transporter, err = transport.NewMQTTTransport(ClientID, c.String("server"), TLSConfig, client.DataReceiveHandlerFunc)
 			if err != nil {
 				return cli.Exit(fmt.Errorf("cannot create MQTT transport: %w", err), 1)
 			}
 		case "http":
 			var err error
-			transporter, err = transport.NewHTTPTransport(ClientID, c.String("server"), tlsConfig, UserAgent, time.Second*5, client.DataReceiveHandlerFunc)
+			transporter, err = transport.NewHTTPTransport(ClientID, c.String("server"), TLSConfig, UserAgent, time.Second*5, client.DataReceiveHandlerFunc)
 			if err != nil {
 				return cli.Exit(fmt.Errorf("cannot create HTTP transport: %w", err), 1)
 			}

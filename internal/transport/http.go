@@ -1,13 +1,13 @@
 package transport
 
 import (
-	"crypto/tls"
 	"fmt"
 	"sync/atomic"
 	"time"
 
 	"git.sr.ht/~spc/go-log"
 	"github.com/redhatinsights/yggdrasil/internal/http"
+	"github.com/redhatinsights/yggdrasil/internal/tls"
 )
 
 // HTTP is a Transporter that sends and receives data and control
@@ -15,22 +15,25 @@ import (
 type HTTP struct {
 	clientID        string
 	client          *http.Client
+	isTLS           bool
 	server          string
 	dataHandler     DataReceiveHandlerFunc
 	pollingInterval time.Duration
 	disconnected    atomic.Value
 }
 
-func NewHTTPTransport(clientID string, server string, tlsConfig *tls.Config, userAgent string, pollingInterval time.Duration, dataRecvFunc DataReceiveHandlerFunc) (*HTTP, error) {
+func NewHTTPTransport(clientID string, server string, tlsConfig *tls.TLSConfig, userAgent string, pollingInterval time.Duration, dataRecvFunc DataReceiveHandlerFunc) (*HTTP, error) {
 	disconnected := atomic.Value{}
 	disconnected.Store(false)
+
 	return &HTTP{
 		clientID:        clientID,
-		client:          http.NewHTTPClient(tlsConfig.Clone(), userAgent),
+		client:          http.NewHTTPClient(tlsConfig, userAgent),
 		dataHandler:     dataRecvFunc,
 		pollingInterval: pollingInterval,
 		disconnected:    disconnected,
 		server:          server,
+		isTLS:           tlsConfig.Config != nil,
 	}, nil
 }
 
@@ -98,5 +101,9 @@ func (t *HTTP) send(message []byte, channel string) error {
 }
 
 func (t *HTTP) getUrl(direction string, channel string) string {
-	return fmt.Sprintf("http://%s/%s/%s/%s", t.server, channel, t.clientID, direction)
+	protocol := "http"
+	if t.isTLS {
+		protocol = "https"
+	}
+	return fmt.Sprintf("%s://%s/%s/%s/%s", protocol, t.server, channel, t.clientID, direction)
 }

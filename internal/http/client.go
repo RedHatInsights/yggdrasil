@@ -2,8 +2,9 @@ package http
 
 import (
 	"bytes"
-	"crypto/tls"
+
 	"fmt"
+	"github.com/redhatinsights/yggdrasil/internal/tls"
 	"io/ioutil"
 	"net/http"
 	"strings"
@@ -21,15 +22,37 @@ type Client struct {
 
 // NewHTTPClient creates a client with the given TLS configuration and
 // user-agent string.
-func NewHTTPClient(config *tls.Config, ua string) *Client {
+func NewHTTPClient(config *tls.TLSConfig, ua string) *Client {
 	client := &http.Client{
 		Transport: http.DefaultTransport.(*http.Transport).Clone(),
 	}
-	client.Transport.(*http.Transport).TLSClientConfig = config.Clone()
+
+	client.Transport.(*http.Transport).TLSClientConfig = config.Config.Clone()
+
+	res := &Client{
+		client:    client,
+		userAgent: ua,
+	}
+
+	// Callback if tls certificates change to start a new client.
+	config.OnUpdate(func() {
+		res.SetConfig(config)
+	})
+
+	return res
+}
+
+func (c *Client) SetConfig(config *tls.TLSConfig) *Client {
+	client := &http.Client{
+		Transport: http.DefaultTransport.(*http.Transport).Clone(),
+	}
+
+	client.Transport.(*http.Transport).TLSClientConfig = config.Config.Clone()
+	*c.client = *client
 
 	return &Client{
 		client:    client,
-		userAgent: ua,
+		userAgent: c.userAgent,
 	}
 }
 

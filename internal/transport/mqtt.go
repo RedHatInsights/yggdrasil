@@ -1,7 +1,6 @@
 package transport
 
 import (
-	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"time"
@@ -10,6 +9,7 @@ import (
 	mqtt "github.com/eclipse/paho.mqtt.golang"
 	"github.com/google/uuid"
 	"github.com/redhatinsights/yggdrasil"
+	"github.com/redhatinsights/yggdrasil/internal/tls"
 )
 
 // MQTT is a Transporter that sends and receives data and control
@@ -21,13 +21,18 @@ type MQTT struct {
 
 // NewMQTTTransport creates a transport suitable for transmitting data over a
 // set of MQTT topics.
-func NewMQTTTransport(clientID string, broker string, tlsConfig *tls.Config, dataRecvFunc DataReceiveHandlerFunc) (*MQTT, error) {
+func NewMQTTTransport(clientID string, broker string, tlsConfig *tls.TLSConfig, dataRecvFunc DataReceiveHandlerFunc) (*MQTT, error) {
 	var t MQTT
 
 	opts := mqtt.NewClientOptions()
 	opts.AddBroker(broker)
 	opts.SetClientID(clientID)
-	opts.SetTLSConfig(tlsConfig.Clone())
+	opts.SetTLSConfig(tlsConfig.Config.Clone())
+
+	tlsConfig.OnUpdate(func() {
+		opts.SetTLSConfig(tlsConfig.Config.Clone())
+	})
+
 	opts.SetCleanSession(true)
 	opts.SetOnConnectHandler(func(c mqtt.Client) {
 		opts := c.OptionsReader()
