@@ -27,6 +27,7 @@ import (
 )
 
 var ClientID string = ""
+var ExcludeWorkers map[string]bool = map[string]bool{}
 
 func main() {
 	app := cli.NewApp()
@@ -93,6 +94,10 @@ func main() {
 			Value:  fmt.Sprintf("@yggd-dispatcher-%v", randomString(6)),
 			Hidden: true,
 		},
+		altsrc.NewStringSliceFlag(&cli.StringSliceFlag{
+			Name:  "exclude-worker",
+			Usage: "Exclude `WORKER` from activation when starting workers",
+		}),
 	}
 
 	// This BeforeFunc will load flag values from a config file only if the
@@ -186,6 +191,10 @@ func main() {
 			return cli.Exit(fmt.Errorf("cannot create TLS config: %w", err), 1)
 		}
 		initHTTPClient(tlsConfig, fmt.Sprintf("%v/%v", app.Name, app.Version))
+
+		for _, worker := range c.StringSlice("exclude-worker") {
+			ExcludeWorkers[worker] = true
+		}
 
 		// Create gRPC dispatcher service
 		d := newDispatcher()
@@ -322,6 +331,9 @@ func main() {
 		}
 		for _, info := range fileInfos {
 			if strings.HasSuffix(info.Name(), "worker") {
+				if ExcludeWorkers[info.Name()] {
+					continue
+				}
 				log.Debugf("starting worker: %v", info.Name())
 				go startProcess(filepath.Join(workerPath, info.Name()), env, 0, d.deadWorkers)
 			}

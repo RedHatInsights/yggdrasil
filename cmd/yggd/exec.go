@@ -175,6 +175,9 @@ func watchWorkerDir(dir string, env []string, died chan int) {
 		switch e.Event() {
 		case notify.InCloseWrite, notify.InMovedTo:
 			if strings.HasSuffix(e.Path(), "worker") {
+				if ExcludeWorkers[filepath.Base(e.Path())] {
+					continue
+				}
 				log.Tracef("new worker detected: %v", e.Path())
 				go startProcess(e.Path(), env, 0, died)
 			}
