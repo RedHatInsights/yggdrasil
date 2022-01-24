@@ -11,6 +11,9 @@ service Dispatcher {
 
     // Send is called by a worker to send data to the dispatcher.
     rpc Send (Data) returns (Receipt) {}
+
+    // GetConfig get yggdrasil service configuration
+    rpc GetConfig (Empty) returns (Config) {}
 }
 
 service Worker {
@@ -98,3 +101,26 @@ message EventNotification {
     map<string, string> metadata = 3;
 }
 
+// A running-config definition for yggdrasil
+message Config {
+  // Log level
+  string log_level = 1;
+
+  // Client-id for yggdrasil
+  string client_id = 2;
+
+  // socket address where yggdrasil is listening
+  string socket_addr = 3;
+
+  // server where yggdrasil is connected
+  string server = 4;
+
+  // Path to the client certificate
+  string cert_file = 5;
+
+  // Path to the client certificate key
+  string key_file = 6;
+
+  // path to the CA certificates
+  string ca_root = 7;
+}

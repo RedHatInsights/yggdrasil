@@ -72,6 +72,18 @@ func (d *dispatcher) Register(ctx context.Context, r *pb.RegistrationRequest) (*
 	return &pb.RegistrationResponse{Registered: true, Address: w.addr}, nil
 }
 
+func (d *dispatcher) GetConfig(ctx context.Context, _ *pb.Empty) (*pb.Config, error) {
+	return &pb.Config{
+		LogLevel:   DefaultConfig.LogLevel,
+		ClientId:   DefaultConfig.ClientId,
+		SocketAddr: DefaultConfig.SocketAddr,
+		Server:     DefaultConfig.Server,
+		CertFile:   DefaultConfig.CertFile,
+		KeyFile:    DefaultConfig.KeyFile,
+		CaRoot:     DefaultConfig.CaRoot,
+	}, nil
+}
+
 func (d *dispatcher) Send(ctx context.Context, r *pb.Data) (*pb.Receipt, error) {
 	data := yggdrasil.Data{
 		Type:       yggdrasil.MessageTypeData,
