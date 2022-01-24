@@ -77,7 +77,7 @@ func startWorker(config workerConfig, started func(pid int), stopped func(pid in
 
 	switch config.Protocol {
 	case "grpc":
-		env = append(env, "YGG_SOCKET_ADDR=unix:"+SocketAddr)
+		env = append(env, "YGG_SOCKET_ADDR=unix:"+DefaultConfig.SocketAddr)
 	default:
 		return fmt.Errorf("unsupported protocol: %v", config.Protocol)
 	}
@@ -230,7 +230,7 @@ func watchWorkerDir(dir string, died chan int) {
 			if err != nil {
 				log.Errorf("cannot load worker config: %v", err)
 			}
-			if ExcludeWorkers[config.directive] {
+			if DefaultConfig.ExcludeWorkers[config.directive] {
 				log.Tracef("skipping excluded worker %v", config.directive)
 				continue
 			}

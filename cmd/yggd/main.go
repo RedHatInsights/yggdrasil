@@ -27,10 +27,9 @@ import (
 )
 
 var (
-	ClientID                       = ""
-	SocketAddr                     = ""
-	UserAgent                      = yggdrasil.LongName + "/" + yggdrasil.Version
-	ExcludeWorkers map[string]bool = map[string]bool{}
+	ClientID      = ""
+	DefaultConfig = Config{}
+	UserAgent     = yggdrasil.LongName + "/" + yggdrasil.Version
 )
 
 func main() {
@@ -52,36 +51,36 @@ func main() {
 			Usage:     "Read config values from `FILE`",
 		},
 		altsrc.NewStringFlag(&cli.StringFlag{
-			Name:  "log-level",
+			Name:  cliLogLevel,
 			Value: "info",
 			Usage: "Set the logging output level to `LEVEL`",
 		}),
 		altsrc.NewStringFlag(&cli.StringFlag{
-			Name:  "cert-file",
+			Name:  cliCertFile,
 			Usage: "Use `FILE` as the client certificate",
 		}),
 		altsrc.NewStringFlag(&cli.StringFlag{
-			Name:  "key-file",
+			Name:  cliKeyFile,
 			Usage: "Use `FILE` as the client's private key",
 		}),
 		altsrc.NewStringSliceFlag(&cli.StringSliceFlag{
-			Name:   "ca-root",
+			Name:   cliCaRoot,
 			Hidden: true,
 			Usage:  "Use `FILE` as the root CA",
 		}),
 		altsrc.NewStringFlag(&cli.StringFlag{
-			Name:   "topic-prefix",
+			Name:   cliTopicPrefix,
 			Value:  yggdrasil.TopicPrefix,
 			Hidden: true,
 			Usage:  "Use `PREFIX` as the MQTT topic prefix",
 		}),
 		altsrc.NewStringFlag(&cli.StringFlag{
-			Name:  "protocol",
+			Name:  cliProtocol,
 			Usage: "Transmit data remotely using `PROTOCOL` ('mqtt' or 'http')",
 			Value: "mqtt",
 		}),
 		altsrc.NewStringFlag(&cli.StringFlag{
-			Name:  "server",
+			Name:  cliServer,
 			Usage: "Connect the client to the specified `URI`",
 		}),
 		&cli.BoolFlag{
@@ -93,18 +92,18 @@ func main() {
 			Hidden: true,
 		},
 		altsrc.NewStringFlag(&cli.StringFlag{
-			Name:  "data-host",
+			Name:  cliDataHost,
 			Usage: "Force all HTTP traffic over `HOST`",
 			Value: yggdrasil.DataHost,
 		}),
 		&cli.StringFlag{
-			Name:   "socket-addr",
+			Name:   cliSocketAddr,
 			Usage:  "Force yggd to listen on `SOCKET`",
 			Value:  fmt.Sprintf("@yggd-dispatcher-%v", randomString(6)),
 			Hidden: true,
 		},
 		altsrc.NewStringSliceFlag(&cli.StringSliceFlag{
-			Name:  "exclude-worker",
+			Name:  cliExcludeWorker,
 			Usage: "Exclude `WORKER` from activation when starting workers",
 		}),
 	}
@@ -140,14 +139,32 @@ func main() {
 			return nil
 		}
 
+		DefaultConfig = Config{
+			LogLevel:       c.String(cliLogLevel),
+			ClientId:       c.String(cliClientID),
+			SocketAddr:     c.String(cliSocketAddr),
+			Server:         c.String(cliServer),
+			CertFile:       c.String(cliCertFile),
+			KeyFile:        c.String(cliKeyFile),
+			CaRoot:         c.String(cliCaRoot),
+			TopicPrefix:    c.String(cliTopicPrefix),
+			Protocol:       c.String(cliProtocol),
+			DataHost:       c.String(cliDataHost),
+			ExcludeWorkers: map[string]bool{},
+		}
+
+		for _, worker := range c.StringSlice(cliExcludeWorker) {
+			DefaultConfig.ExcludeWorkers[worker] = true
+		}
+
 		// Set TopicPrefix globally if the config option is non-zero
-		if c.String("topic-prefix") != "" {
-			yggdrasil.TopicPrefix = c.String("topic-prefix")
+		if DefaultConfig.TopicPrefix != "" {
+			yggdrasil.TopicPrefix = DefaultConfig.TopicPrefix
 		}
 
 		// Set DataHost globally if the config option is non-zero
-		if c.String("data-host") != "" {
-			yggdrasil.DataHost = c.String("data-host")
+		if DefaultConfig.DataHost != "" {
+			yggdrasil.DataHost = DefaultConfig.DataHost
 		}
 
 		// Set up a channel to receive the TERM or INT signal over and clean up
@@ -156,7 +173,7 @@ func main() {
 		signal.Notify(quit, syscall.SIGTERM, syscall.SIGINT)
 
 		// Set up logging
-		level, err := log.ParseLevel(c.String("log-level"))
+		level, err := log.ParseLevel(DefaultConfig.LogLevel)
 		if err != nil {
 			return cli.Exit(err, 1)
 		}
@@ -173,50 +190,46 @@ func main() {
 			return cli.Exit(fmt.Errorf("cannot stop workers: %w", err), 1)
 		}
 
-		clientIDFile := filepath.Join(yggdrasil.LocalstateDir, yggdrasil.LongName, "client-id")
-		if c.String("cert-file") != "" {
-			CN, err := parseCertCN(c.String("cert-file"))
+		clientIDFile := filepath.Join(yggdrasil.LocalstateDir, yggdrasil.LongName, cliClientID)
+		if DefaultConfig.CertFile != "" {
+			CN, err := parseCertCN(DefaultConfig.CertFile)
 			if err != nil {
 				return cli.Exit(fmt.Errorf("cannot parse certificate: %w", err), 1)
 			}
 			if err := setClientID([]byte(CN), clientIDFile); err != nil {
-				return cli.Exit(fmt.Errorf("cannot set client-id to CN: %w", err), 1)
+				return cli.Exit(fmt.Errorf("cannot set %s to CN: %w", cliClientID, err), 1)
 			}
 		}
 
 		clientID, err := getClientID(clientIDFile)
 		if err != nil {
-			return cli.Exit(fmt.Errorf("cannot get client-id: %w", err), 1)
+			return cli.Exit(fmt.Errorf("cannot get %s: %w", cliClientID, err), 1)
 		}
 		if len(clientID) == 0 {
 			data, err := createClientID(clientIDFile)
 			if err != nil {
-				return cli.Exit(fmt.Errorf("cannot create client-id: %w", err), 1)
+				return cli.Exit(fmt.Errorf("cannot create %s: %w", cliClientID, err), 1)
 			}
 			clientID = data
 		}
 
 		ClientID = string(clientID)
-		SocketAddr = c.String("socket-addr")
-		for _, worker := range c.StringSlice("exclude-worker") {
-			ExcludeWorkers[worker] = true
-		}
 
 		// Read certificates, create a TLS config, and initialize HTTP client
 		var certData, keyData []byte
-		if c.String("cert-file") != "" && c.String("key-file") != "" {
+		if DefaultConfig.CertFile != "" && DefaultConfig.KeyFile != "" {
 			var err error
-			certData, err = ioutil.ReadFile(c.String("cert-file"))
+			certData, err = ioutil.ReadFile(DefaultConfig.CertFile)
 			if err != nil {
 				return cli.Exit(fmt.Errorf("cannot read certificate file: %v", err), 1)
 			}
-			keyData, err = ioutil.ReadFile(c.String("key-file"))
+			keyData, err = ioutil.ReadFile(DefaultConfig.KeyFile)
 			if err != nil {
 				return cli.Exit(fmt.Errorf("cannot read key file: %w", err), 1)
 			}
 		}
 		rootCAs := make([][]byte, 0)
-		for _, file := range c.StringSlice("ca-root") {
+		for _, file := range c.StringSlice(DefaultConfig.CaRoot) {
 			data, err := ioutil.ReadFile(file)
 			if err != nil {
 				return cli.Exit(fmt.Errorf("cannot read certificate authority: %v", err), 1)
@@ -233,13 +246,12 @@ func main() {
 		d := newDispatcher(httpClient)
 		s := grpc.NewServer()
 		pb.RegisterDispatcherServer(s, d)
-
-		l, err := net.Listen("unix", SocketAddr)
+		l, err := net.Listen("unix", DefaultConfig.SocketAddr)
 		if err != nil {
 			return cli.Exit(fmt.Errorf("cannot listen to socket: %w", err), 1)
 		}
 		go func() {
-			log.Infof("listening on socket: %v", SocketAddr)
+			log.Infof("listening on socket: %v", DefaultConfig.SocketAddr)
 			if err := s.Serve(l); err != nil {
 				log.Errorf("cannot start server: %v", err)
 			}
@@ -250,21 +262,21 @@ func main() {
 		}
 
 		var transporter transport.Transporter
-		switch c.String("protocol") {
+		switch DefaultConfig.Protocol {
 		case "mqtt":
 			var err error
-			transporter, err = transport.NewMQTTTransport(ClientID, c.String("server"), tlsConfig, client.DataReceiveHandlerFunc)
+			transporter, err = transport.NewMQTTTransport(ClientID, DefaultConfig.Server, tlsConfig, client.DataReceiveHandlerFunc)
 			if err != nil {
 				return cli.Exit(fmt.Errorf("cannot create MQTT transport: %w", err), 1)
 			}
 		case "http":
 			var err error
-			transporter, err = transport.NewHTTPTransport(ClientID, c.String("server"), tlsConfig, UserAgent, time.Second*5, client.DataReceiveHandlerFunc)
+			transporter, err = transport.NewHTTPTransport(ClientID, DefaultConfig.Server, tlsConfig, UserAgent, time.Second*5, client.DataReceiveHandlerFunc)
 			if err != nil {
 				return cli.Exit(fmt.Errorf("cannot create HTTP transport: %w", err), 1)
 			}
 		default:
-			return cli.Exit(fmt.Errorf("unsupported transport protocol: %v", c.String("protocol")), 1)
+			return cli.Exit(fmt.Errorf("unsupported transport protocol: %v", DefaultConfig.Protocol), 1)
 		}
 		client.t = transporter
 		if err := client.Connect(); err != nil {
@@ -340,7 +352,7 @@ func main() {
 				log.Errorf("cannot load worker config: %v", err)
 				continue
 			}
-			if ExcludeWorkers[config.directive] {
+			if DefaultConfig.ExcludeWorkers[config.directive] {
 				log.Tracef("skipping excluded worker %v", config.directive)
 				continue
 			}
