@@ -49,36 +49,36 @@ func main() {
 			Usage:     "Read config values from `FILE`",
 		},
 		altsrc.NewStringFlag(&cli.StringFlag{
-			Name:  "log-level",
+			Name:  cliLogLevel,
 			Value: "info",
 			Usage: "Set the logging output level to `LEVEL`",
 		}),
 		altsrc.NewStringFlag(&cli.StringFlag{
-			Name:  "cert-file",
+			Name:  cliCertFile,
 			Usage: "Use `FILE` as the client certificate",
 		}),
 		altsrc.NewStringFlag(&cli.StringFlag{
-			Name:  "key-file",
+			Name:  cliKeyFile,
 			Usage: "Use `FILE` as the client's private key",
 		}),
 		altsrc.NewStringSliceFlag(&cli.StringSliceFlag{
-			Name:   "ca-root",
+			Name:   cliCaRoot,
 			Hidden: true,
 			Usage:  "Use `FILE` as the root CA",
 		}),
 		altsrc.NewStringFlag(&cli.StringFlag{
-			Name:   "topic-prefix",
+			Name:   cliTopicPrefix,
 			Value:  yggdrasil.TopicPrefix,
 			Hidden: true,
 			Usage:  "Use `PREFIX` as the MQTT topic prefix",
 		}),
 		altsrc.NewStringFlag(&cli.StringFlag{
-			Name:  "protocol",
+			Name:  cliProtocol,
 			Usage: "Transmit data remotely using `PROTOCOL` ('mqtt' or 'http')",
 			Value: "mqtt",
 		}),
 		altsrc.NewStringFlag(&cli.StringFlag{
-			Name:  "server",
+			Name:  cliServer,
 			Usage: "Connect the client to the specified `URI`",
 		}),
 		&cli.BoolFlag{
@@ -90,12 +90,12 @@ func main() {
 			Hidden: true,
 		},
 		altsrc.NewStringFlag(&cli.StringFlag{
-			Name:  "data-host",
+			Name:  cliDataHost,
 			Usage: "Force all HTTP traffic over `HOST`",
 			Value: yggdrasil.DataHost,
 		}),
 		&cli.StringFlag{
-			Name:   "socket-addr",
+			Name:   cliSocketAddr,
 			Usage:  "Force yggd to listen on `SOCKET`",
 			Value:  fmt.Sprintf("@yggd-dispatcher-%v", randomString(6)),
 			Hidden: true,
@@ -133,14 +133,27 @@ func main() {
 			return nil
 		}
 
+		config := &Config{
+			LogLevel:    c.String(cliLogLevel),
+			ClientId:    c.String(cliClientID),
+			SocketAddr:  c.String(cliSocketAddr),
+			Server:      c.String(cliServer),
+			CertFile:    c.String(cliCertFile),
+			KeyFile:     c.String(cliKeyFile),
+			CaRoot:      c.String(cliCaRoot),
+			TopicPrefix: c.String(cliTopicPrefix),
+			Protocol:    c.String(cliProtocol),
+			DataHost:    c.String(cliDataHost),
+		}
+
 		// Set TopicPrefix globally if the config option is non-zero
-		if c.String("topic-prefix") != "" {
-			yggdrasil.TopicPrefix = c.String("topic-prefix")
+		if config.TopicPrefix != "" {
+			yggdrasil.TopicPrefix = config.TopicPrefix
 		}
 
 		// Set DataHost globally if the config option is non-zero
-		if c.String("data-host") != "" {
-			yggdrasil.DataHost = c.String("data-host")
+		if config.DataHost != "" {
+			yggdrasil.DataHost = config.DataHost
 		}
 
 		// Set up a channel to receive the TERM or INT signal over and clean up
@@ -149,7 +162,7 @@ func main() {
 		signal.Notify(quit, syscall.SIGTERM, syscall.SIGINT)
 
 		// Set up logging
-		level, err := log.ParseLevel(c.String("log-level"))
+		level, err := log.ParseLevel(config.LogLevel)
 		if err != nil {
 			return cli.Exit(err, 1)
 		}
@@ -166,25 +179,25 @@ func main() {
 			return cli.Exit(fmt.Errorf("cannot kill workers: %w", err), 1)
 		}
 
-		clientIDFile := filepath.Join(yggdrasil.LocalstateDir, yggdrasil.LongName, "client-id")
-		if c.String("cert-file") != "" {
-			CN, err := parseCertCN(c.String("cert-file"))
+		clientIDFile := filepath.Join(yggdrasil.LocalstateDir, yggdrasil.LongName, cliClientID)
+		if config.CertFile != "" {
+			CN, err := parseCertCN(config.CertFile)
 			if err != nil {
 				return cli.Exit(fmt.Errorf("cannot parse certificate: %w", err), 1)
 			}
 			if err := setClientID([]byte(CN), clientIDFile); err != nil {
-				return cli.Exit(fmt.Errorf("cannot set client-id to CN: %w", err), 1)
+				return cli.Exit(fmt.Errorf("cannot set %s to CN: %w", cliClientID, err), 1)
 			}
 		}
 
 		clientID, err := getClientID(clientIDFile)
 		if err != nil {
-			return cli.Exit(fmt.Errorf("cannot get client-id: %w", err), 1)
+			return cli.Exit(fmt.Errorf("cannot get %s: %w", cliClientID, err), 1)
 		}
 		if len(clientID) == 0 {
 			data, err := createClientID(clientIDFile)
 			if err != nil {
-				return cli.Exit(fmt.Errorf("cannot create client-id: %w", err), 1)
+				return cli.Exit(fmt.Errorf("cannot create %s: %w", cliClientID, err), 1)
 			}
 			clientID = data
 		}
@@ -193,19 +206,19 @@ func main() {
 
 		// Read certificates, create a TLS config, and initialize HTTP client
 		var certData, keyData []byte
-		if c.String("cert-file") != "" && c.String("key-file") != "" {
+		if config.CertFile != "" && config.KeyFile != "" {
 			var err error
-			certData, err = ioutil.ReadFile(c.String("cert-file"))
+			certData, err = ioutil.ReadFile(config.CertFile)
 			if err != nil {
 				return cli.Exit(fmt.Errorf("cannot read certificate file: %v", err), 1)
 			}
-			keyData, err = ioutil.ReadFile(c.String("key-file"))
+			keyData, err = ioutil.ReadFile(config.KeyFile)
 			if err != nil {
 				return cli.Exit(fmt.Errorf("cannot read key file: %w", err), 1)
 			}
 		}
 		rootCAs := make([][]byte, 0)
-		for _, file := range c.StringSlice("ca-root") {
+		for _, file := range c.StringSlice(config.CaRoot) {
 			data, err := ioutil.ReadFile(file)
 			if err != nil {
 				return cli.Exit(fmt.Errorf("cannot read certificate authority: %v", err), 1)
@@ -219,16 +232,15 @@ func main() {
 		httpClient := http.NewHTTPClient(tlsConfig, UserAgent)
 
 		// Create gRPC dispatcher service
-		d := newDispatcher(httpClient)
+		d := newDispatcher(httpClient, config)
 		s := grpc.NewServer()
 		pb.RegisterDispatcherServer(s, d)
-
-		l, err := net.Listen("unix", c.String("socket-addr"))
+		l, err := net.Listen("unix", config.SocketAddr)
 		if err != nil {
 			return cli.Exit(fmt.Errorf("cannot listen to socket: %w", err), 1)
 		}
 		go func() {
-			log.Infof("listening on socket: %v", c.String("socket-addr"))
+			log.Infof("listening on socket: %v", config.SocketAddr)
 			if err := s.Serve(l); err != nil {
 				log.Errorf("cannot start server: %v", err)
 			}
@@ -239,21 +251,21 @@ func main() {
 		}
 
 		var transporter transport.Transporter
-		switch c.String("protocol") {
+		switch config.Protocol {
 		case "mqtt":
 			var err error
-			transporter, err = transport.NewMQTTTransport(ClientID, c.String("server"), tlsConfig, client.DataReceiveHandlerFunc)
+			transporter, err = transport.NewMQTTTransport(ClientID, config.Server, tlsConfig, client.DataReceiveHandlerFunc)
 			if err != nil {
 				return cli.Exit(fmt.Errorf("cannot create MQTT transport: %w", err), 1)
 			}
 		case "http":
 			var err error
-			transporter, err = transport.NewHTTPTransport(ClientID, c.String("server"), tlsConfig, UserAgent, time.Second*5, client.DataReceiveHandlerFunc)
+			transporter, err = transport.NewHTTPTransport(ClientID, config.Server, tlsConfig, UserAgent, time.Second*5, client.DataReceiveHandlerFunc)
 			if err != nil {
 				return cli.Exit(fmt.Errorf("cannot create HTTP transport: %w", err), 1)
 			}
 		default:
-			return cli.Exit(fmt.Errorf("unsupported transport protocol: %v", c.String("protocol")), 1)
+			return cli.Exit(fmt.Errorf("unsupported transport protocol: %v", config.Protocol), 1)
 		}
 		client.t = transporter
 		if err := client.Connect(); err != nil {
@@ -324,7 +336,7 @@ func main() {
 		}
 		configDir := filepath.Join(yggdrasil.SysconfDir, yggdrasil.LongName)
 		env := []string{
-			"YGG_SOCKET_ADDR=unix:" + c.String("socket-addr"),
+			"YGG_SOCKET_ADDR=unix:" + c.String(cliSocketAddr),
 			"PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
 			"YGG_CONFIG_DIR=" + configDir,
 			"YGG_LOG_LEVEL=" + level.String(),
