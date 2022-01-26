@@ -307,6 +307,7 @@ func main() {
 					msg, err := client.ConnectionStatus()
 					if err != nil {
 						log.Errorf("cannot get connection status: %v", err)
+						return
 					}
 					if err = client.SendConnectionStatusMessage(msg); err != nil {
 						log.Errorf("cannot send connection status: %v", err)
