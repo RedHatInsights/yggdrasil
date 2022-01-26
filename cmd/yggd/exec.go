@@ -12,7 +12,7 @@ import (
 // process has been started.
 func startProcess(file string, args []string, env []string, started func(pid int, stdout io.ReadCloser, stderr io.ReadCloser)) error {
 	if _, err := os.Stat(file); os.IsNotExist(err) {
-		return fmt.Errorf("cannot find file: %v", err)
+		return fmt.Errorf("cannot find file: %w", err)
 	}
 
 	cmd := exec.Command(file, args...)
@@ -20,16 +20,16 @@ func startProcess(file string, args []string, env []string, started func(pid int
 
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
-		return fmt.Errorf("cannot connect to stdout: %v", err)
+		return fmt.Errorf("cannot connect to stdout: %w", err)
 	}
 
 	stderr, err := cmd.StderrPipe()
 	if err != nil {
-		return fmt.Errorf("cannot connect to stderr: %v", err)
+		return fmt.Errorf("cannot connect to stderr: %w", err)
 	}
 
 	if err := cmd.Start(); err != nil {
-		return fmt.Errorf("cannot start process: %v: %v", file, err)
+		return fmt.Errorf("cannot start process: %v: %w", file, err)
 	}
 
 	if started != nil {
@@ -44,12 +44,12 @@ func startProcess(file string, args []string, env []string, started func(pid int
 func waitProcess(pid int, died func(pid int, state *os.ProcessState)) error {
 	process, err := os.FindProcess(pid)
 	if err != nil {
-		return fmt.Errorf("cannot find process with pid: %v", err)
+		return fmt.Errorf("cannot find process with pid %v: %w", pid, err)
 	}
 
 	state, err := process.Wait()
 	if err != nil {
-		return fmt.Errorf("process %v exited with error: %v", process.Pid, err)
+		return fmt.Errorf("process %v exited with error: %w", process.Pid, err)
 	}
 
 	if died != nil {
@@ -63,11 +63,11 @@ func waitProcess(pid int, died func(pid int, state *os.ProcessState)) error {
 func stopProcess(pid int) error {
 	process, err := os.FindProcess(pid)
 	if err != nil {
-		return fmt.Errorf("cannot find process with pid: %v", err)
+		return fmt.Errorf("cannot find process with pid %v: %w", pid, err)
 	}
 
 	if err := process.Kill(); err != nil {
-		return fmt.Errorf("cannot stop process: %v", err)
+		return fmt.Errorf("cannot stop process: %w", err)
 	}
 
 	return nil

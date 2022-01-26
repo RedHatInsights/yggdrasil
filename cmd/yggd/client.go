@@ -142,7 +142,7 @@ func (c *Client) DataReceiveHandlerFunc(data []byte, dest string) {
 func (c *Client) ReceiveData() {
 	for msg := range c.d.recvQ {
 		if err := c.SendDataMessage(&msg); err != nil {
-			log.Errorf("failed to send data message: %v", err)
+			log.Errorf("cannot send data message: %v", err)
 		}
 	}
 }

@@ -137,7 +137,7 @@ func (d *dispatcher) disconnectWorker(w *worker) error {
 
 	_, err = workerClient.NotifyEvent(ctx, &pb.EventNotification{Name: pb.Event_RECEIVED_DISCONNECT})
 	if err != nil {
-		log.Errorf("cannot disconnect worker %v", err)
+		log.Errorf("cannot disconnect worker %v: %v", w, err)
 		return err
 	}
 	return nil
@@ -150,7 +150,7 @@ func (d *dispatcher) sendData() {
 			w := d.reg.get(data.Directive)
 
 			if w == nil {
-				log.Warnf("cannot route message to directive: %v", data.Directive)
+				log.Warnf("cannot route message  %v to directive: %v", data.MessageID, data.Directive)
 				return
 			}
 
