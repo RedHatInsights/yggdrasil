@@ -239,7 +239,7 @@ func watchWorkerDir(dir string, died chan int) {
 				if err := startWorker(*config, nil, func(pid int) {
 					died <- pid
 				}); err != nil {
-					log.Errorf("cannot start worker: %v", err)
+					log.Errorf("cannot start worker %v: %v", config.directive, err)
 					return
 				}
 			}()
@@ -247,7 +247,7 @@ func watchWorkerDir(dir string, died chan int) {
 			name := strings.TrimSuffix(filepath.Base(e.Path()), filepath.Ext(e.Path()))
 
 			if err := stopWorker(name); err != nil {
-				log.Errorf("cannot kill worker: %v", err)
+				log.Errorf("cannot kill worker %v: %v", name, err)
 				continue
 			}
 		}
