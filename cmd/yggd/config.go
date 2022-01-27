@@ -37,9 +37,9 @@ type Config struct {
 	// CertFile to authenticate connections.
 	KeyFile string
 
-	// CaRoot is a path to full chain certificate file to optionally include in
-	// the TLS configration's CA root list.
-	CaRoot string
+	// CARoot is the list of paths with chain certificate file to optionally
+	// include in the TLS configration's CA root list.
+	CARoot []string
 
 	// PathPrefix is a value prepended to all path names at the transport layer.
 	PathPrefix string
