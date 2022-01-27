@@ -14,28 +14,45 @@ const (
 	cliExcludeWorker = "exclude-worker"
 )
 
-// Config struct that holds all yggd config.
+// Config contains current configuration state for yggdrasil.
 type Config struct {
 	// LogLevel is the level value used for logging.
 	LogLevel string
-	// ClientID is the ID of the client
+
+	// ClientId is a unique identification value for the client over connection
+	// transports.
 	ClientId string
-	// SocketAddr is the socket address where yggd is listening on.
+
+	// SocketAddr is the socket address on which yggd is listening.
 	SocketAddr string
-	// Server where yggd connects to.
+
+	// Server is a URI to which yggd connects in order to send and receive data.
 	Server string
-	// Client certificate used by yggd.
+
+	// CertFile is a path to a public certificate, optionally used along with
+	// KeyFile to authenticate connections.
 	CertFile string
-	// Client key certificate used by yggd.
+
+	// KeyFile is a path to a private certificate, optionally used along with
+	// CertFile to authenticate connections.
 	KeyFile string
-	// CaRoot path used by ygdd to verify TLS connections.
+
+	// CaRoot is a path to full chain certificate file to optionally include in
+	// the TLS configration's CA root list.
 	CaRoot string
-	// MQTT Topic prefix
+
+	// TopicPrefix is a value prepended to all topics when publishing and
+	// subscribing to MQTT topics.
 	TopicPrefix string
-	// Protocol used by yggd to connect upstream, can be HTTP or MQTT
+
+	// Protocol is the protocol used by yggd when connecting to Server. Can be
+	// either MQTT or HTTP.
 	Protocol string
-	// DataHost Host that needs to be used on HTTP request.
+
+	// DataHost is a hostname value to interject into all HTTP requests when
+	// handling data retrieval for "detachedContent" workers.
 	DataHost string
+
 	// ExcludeWorkers contains worker names to be excluded from starting when
 	// yggd starts.
 	ExcludeWorkers map[string]bool
