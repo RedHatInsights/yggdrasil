@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/url"
+	"strings"
 	"time"
 
 	"github.com/redhatinsights/yggdrasil/internal/http"
@@ -80,7 +81,7 @@ func (d *dispatcher) GetConfig(ctx context.Context, _ *pb.Empty) (*pb.Config, er
 		Server:     DefaultConfig.Server,
 		CertFile:   DefaultConfig.CertFile,
 		KeyFile:    DefaultConfig.KeyFile,
-		CaRoot:     DefaultConfig.CaRoot,
+		CaRoot:     strings.Join(DefaultConfig.CARoot, ";"),
 	}, nil
 }
 

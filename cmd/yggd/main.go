@@ -149,7 +149,7 @@ func main() {
 			Server:         c.String(cliServer),
 			CertFile:       c.String(cliCertFile),
 			KeyFile:        c.String(cliKeyFile),
-			CaRoot:         c.String(cliCaRoot),
+			CARoot:         c.StringSlice(cliCaRoot),
 			PathPrefix:     c.String(cliPathPrefix),
 			Protocol:       c.String(cliProtocol),
 			DataHost:       c.String(cliDataHost),
@@ -233,7 +233,7 @@ func main() {
 			}
 		}
 		rootCAs := make([][]byte, 0)
-		for _, file := range c.StringSlice(DefaultConfig.CaRoot) {
+		for _, file := range DefaultConfig.CARoot {
 			data, err := ioutil.ReadFile(file)
 			if err != nil {
 				return cli.Exit(fmt.Errorf("cannot read certificate authority: %v", err), 1)
