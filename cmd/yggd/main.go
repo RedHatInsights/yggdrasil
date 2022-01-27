@@ -190,25 +190,25 @@ func main() {
 			return cli.Exit(fmt.Errorf("cannot stop workers: %w", err), 1)
 		}
 
-		clientIDFile := filepath.Join(yggdrasil.LocalstateDir, yggdrasil.LongName, cliClientID)
+		clientIDFile := filepath.Join(yggdrasil.LocalstateDir, yggdrasil.LongName, "client-id")
 		if DefaultConfig.CertFile != "" {
 			CN, err := parseCertCN(DefaultConfig.CertFile)
 			if err != nil {
 				return cli.Exit(fmt.Errorf("cannot parse certificate: %w", err), 1)
 			}
 			if err := setClientID([]byte(CN), clientIDFile); err != nil {
-				return cli.Exit(fmt.Errorf("cannot set %s to CN: %w", cliClientID, err), 1)
+				return cli.Exit(fmt.Errorf("cannot set client-id to CN: %w", err), 1)
 			}
 		}
 
 		clientID, err := getClientID(clientIDFile)
 		if err != nil {
-			return cli.Exit(fmt.Errorf("cannot get %s: %w", cliClientID, err), 1)
+			return cli.Exit(fmt.Errorf("cannot get client-id: %w", err), 1)
 		}
 		if len(clientID) == 0 {
 			data, err := createClientID(clientIDFile)
 			if err != nil {
-				return cli.Exit(fmt.Errorf("cannot create %s: %w", cliClientID, err), 1)
+				return cli.Exit(fmt.Errorf("cannot create client-id: %w", err), 1)
 			}
 			clientID = data
 		}
