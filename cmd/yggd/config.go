@@ -19,9 +19,9 @@ type Config struct {
 	// LogLevel is the level value used for logging.
 	LogLevel string
 
-	// ClientId is a unique identification value for the client over connection
+	// ClientID is a unique identification value for the client over connection
 	// transports.
-	ClientId string
+	ClientID string
 
 	// SocketAddr is the socket address on which yggd is listening.
 	SocketAddr string

@@ -141,7 +141,7 @@ func main() {
 
 		DefaultConfig = Config{
 			LogLevel:       c.String(cliLogLevel),
-			ClientId:       c.String(cliClientID),
+			ClientID:       c.String(cliClientID),
 			SocketAddr:     c.String(cliSocketAddr),
 			Server:         c.String(cliServer),
 			CertFile:       c.String(cliCertFile),

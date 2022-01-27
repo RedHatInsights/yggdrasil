@@ -75,7 +75,7 @@ func (d *dispatcher) Register(ctx context.Context, r *pb.RegistrationRequest) (*
 func (d *dispatcher) GetConfig(ctx context.Context, _ *pb.Empty) (*pb.Config, error) {
 	return &pb.Config{
 		LogLevel:   DefaultConfig.LogLevel,
-		ClientId:   DefaultConfig.ClientId,
+		ClientId:   DefaultConfig.ClientID,
 		SocketAddr: DefaultConfig.SocketAddr,
 		Server:     DefaultConfig.Server,
 		CertFile:   DefaultConfig.CertFile,
