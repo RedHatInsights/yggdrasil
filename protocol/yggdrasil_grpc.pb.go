@@ -23,7 +23,8 @@ type DispatcherClient interface {
 	Register(ctx context.Context, in *RegistrationRequest, opts ...grpc.CallOption) (*RegistrationResponse, error)
 	// Send is called by a worker to send data to the dispatcher.
 	Send(ctx context.Context, in *Data, opts ...grpc.CallOption) (*Receipt, error)
-	// GetConfig get yggdrasil service configuration
+	// GetConfig can be called by a worker to get the current configuration
+	// state of the dispatcher service.
 	GetConfig(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*Config, error)
 }
 
@@ -71,7 +72,8 @@ type DispatcherServer interface {
 	Register(context.Context, *RegistrationRequest) (*RegistrationResponse, error)
 	// Send is called by a worker to send data to the dispatcher.
 	Send(context.Context, *Data) (*Receipt, error)
-	// GetConfig get yggdrasil service configuration
+	// GetConfig can be called by a worker to get the current configuration
+	// state of the dispatcher service.
 	GetConfig(context.Context, *Empty) (*Config, error)
 	mustEmbedUnimplementedDispatcherServer()
 }
