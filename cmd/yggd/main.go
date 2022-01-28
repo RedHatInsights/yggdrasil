@@ -156,6 +156,11 @@ func main() {
 			ExcludeWorkers: map[string]bool{},
 		}
 
+		tlsConfig, err := DefaultConfig.CreateTLSConfig()
+		if err != nil {
+			return cli.Exit(fmt.Errorf("cannot create TLS config: %w", err), 1)
+		}
+
 		for _, worker := range c.StringSlice(cliExcludeWorker) {
 			DefaultConfig.ExcludeWorkers[worker] = true
 		}
@@ -219,31 +224,6 @@ func main() {
 			DefaultConfig.ClientID = string(clientID)
 		}
 
-		// Read certificates, create a TLS config, and initialize HTTP client
-		var certData, keyData []byte
-		if DefaultConfig.CertFile != "" && DefaultConfig.KeyFile != "" {
-			var err error
-			certData, err = ioutil.ReadFile(DefaultConfig.CertFile)
-			if err != nil {
-				return cli.Exit(fmt.Errorf("cannot read certificate file: %v", err), 1)
-			}
-			keyData, err = ioutil.ReadFile(DefaultConfig.KeyFile)
-			if err != nil {
-				return cli.Exit(fmt.Errorf("cannot read key file: %w", err), 1)
-			}
-		}
-		rootCAs := make([][]byte, 0)
-		for _, file := range DefaultConfig.CARoot {
-			data, err := ioutil.ReadFile(file)
-			if err != nil {
-				return cli.Exit(fmt.Errorf("cannot read certificate authority: %v", err), 1)
-			}
-			rootCAs = append(rootCAs, data)
-		}
-		tlsConfig, err := newTLSConfig(certData, keyData, rootCAs)
-		if err != nil {
-			return cli.Exit(fmt.Errorf("cannot create TLS config: %w", err), 1)
-		}
 		httpClient := http.NewHTTPClient(tlsConfig, UserAgent)
 
 		// Create gRPC dispatcher service
