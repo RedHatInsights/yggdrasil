@@ -99,7 +99,14 @@ func (conf *Config) CreateTLSConfig() (*tls.Config, error) {
 	return tlsConfig, nil
 }
 
-func (conf *Config) WatcherUpdate() error {
+// WatcherUpdate creates a Inotify watcher on all TLS related information
+// (Cert-file, key-file and CA-root) if any of those files are updated, it'll
+// send over the returned channel a new TLS.Config that consumers can use to
+// renew their connections.
+// The main use case if when on short-lived certificates, where a connection
+// need to be reloaded to create a new TLSHandshake
+// It will return a error if cannot set the inoty on any file
+func (conf *Config) WatcherUpdate() (chan *tls.Config, error) {
 	c := make(chan notify.EventInfo, 1)
 	files := []string{}
 
@@ -116,28 +123,32 @@ func (conf *Config) WatcherUpdate() error {
 	}
 
 	if len(files) == 0 {
-		return nil
+		return nil, nil
 	}
 
 	for _, fp := range files {
 		if err := notify.Watch(fp, c, notify.InCloseWrite, notify.InDelete); err != nil {
-			return fmt.Errorf("cannot start watching '%v': %v", fp, err)
+			return nil, fmt.Errorf("cannot start watching '%v': %v", fp, err)
 		}
 		log.Debugf("Added watcher for '%s'", fp)
 	}
 
+	events := make(chan *tls.Config, 1)
 	go func() {
 		for e := range c {
 			log.Debugf("received inotify event %v", e.Event())
 			switch e.Event() {
 			case notify.InCloseWrite, notify.InDelete:
-				_, err := conf.CreateTLSConfig()
+				cfg, err := conf.CreateTLSConfig()
 				if err != nil {
 					log.Errorf("Cannot update TLS config for '%s' on event %v: %v", e.Path(), e.Event(), err)
+				}
+				if cfg != nil {
+					events <- cfg
 				}
 			}
 		}
 	}()
 
-	return nil
+	return events, nil
 }
