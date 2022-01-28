@@ -161,6 +161,11 @@ func main() {
 			return cli.Exit(fmt.Errorf("cannot create TLS config: %w", err), 1)
 		}
 
+		err = DefaultConfig.WatcherUpdate()
+		if err != nil {
+			return cli.Exit(fmt.Errorf("cannot started TLS config: %w", err), 1)
+		}
+
 		for _, worker := range c.StringSlice(cliExcludeWorker) {
 			DefaultConfig.ExcludeWorkers[worker] = true
 		}

@@ -4,6 +4,9 @@ import (
 	"crypto/tls"
 	"fmt"
 	"io/ioutil"
+
+	"git.sr.ht/~spc/go-log"
+	"github.com/rjeczalik/notify"
 )
 
 const (
@@ -94,4 +97,47 @@ func (conf *Config) CreateTLSConfig() (*tls.Config, error) {
 	}
 
 	return tlsConfig, nil
+}
+
+func (conf *Config) WatcherUpdate() error {
+	c := make(chan notify.EventInfo, 1)
+	files := []string{}
+
+	if len(conf.CARoot) > 0 {
+		files = append(files, conf.CARoot...)
+	}
+
+	if conf.CertFile != "" {
+		files = append(files, conf.CertFile)
+	}
+
+	if conf.KeyFile != "" {
+		files = append(files, conf.KeyFile)
+	}
+
+	if len(files) == 0 {
+		return nil
+	}
+
+	for _, fp := range files {
+		if err := notify.Watch(fp, c, notify.InCloseWrite, notify.InDelete); err != nil {
+			return fmt.Errorf("cannot start watching '%v': %v", fp, err)
+		}
+		log.Debugf("Added watcher for '%s'", fp)
+	}
+
+	go func() {
+		for e := range c {
+			log.Debugf("received inotify event %v", e.Event())
+			switch e.Event() {
+			case notify.InCloseWrite, notify.InDelete:
+				_, err := conf.CreateTLSConfig()
+				if err != nil {
+					log.Errorf("Cannot update TLS config for '%s' on event %v: %v", e.Path(), e.Event(), err)
+				}
+			}
+		}
+	}()
+
+	return nil
 }
