@@ -22,11 +22,14 @@ type HTTP struct {
 	pollingInterval time.Duration
 	disconnected    atomic.Value
 	userAgent       string
+	isTLS           atomic.Value
 }
 
 func NewHTTPTransport(clientID string, server string, tlsConfig *tls.Config, userAgent string, pollingInterval time.Duration, dataRecvFunc DataReceiveHandlerFunc) (*HTTP, error) {
 	disconnected := atomic.Value{}
 	disconnected.Store(false)
+	isTls := atomic.Value{}
+	isTls.Store(tlsConfig != nil)
 	return &HTTP{
 		clientID:        clientID,
 		client:          http.NewHTTPClient(tlsConfig.Clone(), userAgent),
@@ -35,6 +38,7 @@ func NewHTTPTransport(clientID string, server string, tlsConfig *tls.Config, use
 		disconnected:    disconnected,
 		server:          server,
 		userAgent:       userAgent,
+		isTLS:           isTls,
 	}, nil
 }
 
@@ -78,6 +82,7 @@ func (t *HTTP) Connect() error {
 // Reload reloads TLS config and started a new client with the given tls.Config
 func (t *HTTP) ReloadTLSConfig(tlsConfig *tls.Config) error {
 	*t.client = *http.NewHTTPClient(tlsConfig, t.userAgent)
+	t.isTLS.Store(tlsConfig != nil)
 	return nil
 }
 
@@ -108,6 +113,11 @@ func (t *HTTP) send(message []byte, channel string) error {
 }
 
 func (t *HTTP) getUrl(direction string, channel string) string {
+	protocol := "http"
+	if t.isTLS.Load().(bool) {
+		protocol = "https"
+	}
 	path := filepath.Join(yggdrasil.PathPrefix, channel, t.clientID, direction)
-	return fmt.Sprintf("http://%s/%s", t.server, path)
+
+	return fmt.Sprintf("%s://%s/%s", protocol, t.server, path)
 }
