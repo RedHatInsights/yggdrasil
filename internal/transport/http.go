@@ -21,6 +21,7 @@ type HTTP struct {
 	dataHandler     DataReceiveHandlerFunc
 	pollingInterval time.Duration
 	disconnected    atomic.Value
+	userAgent       string
 }
 
 func NewHTTPTransport(clientID string, server string, tlsConfig *tls.Config, userAgent string, pollingInterval time.Duration, dataRecvFunc DataReceiveHandlerFunc) (*HTTP, error) {
@@ -33,6 +34,7 @@ func NewHTTPTransport(clientID string, server string, tlsConfig *tls.Config, use
 		pollingInterval: pollingInterval,
 		disconnected:    disconnected,
 		server:          server,
+		userAgent:       userAgent,
 	}, nil
 }
 
@@ -70,6 +72,12 @@ func (t *HTTP) Connect() error {
 		}
 	}()
 
+	return nil
+}
+
+// Reload reloads TLS config and started a new client with the given tls.Config
+func (t *HTTP) ReloadTLSConfig(tlsConfig *tls.Config) error {
+	*t.client = *http.NewHTTPClient(tlsConfig, t.userAgent)
 	return nil
 }
 
