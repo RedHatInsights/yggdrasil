@@ -38,12 +38,12 @@ func NewMQTTTransport(clientID string, broker string, tlsConfig *tls.Config, dat
 		// Publish a throwaway message in case the topic does not exist;
 		// this is a workaround for the Akamai MQTT broker implementation.
 		go func() {
-			topic := fmt.Sprintf("%v/%v/data/out", yggdrasil.TopicPrefix, opts.ClientID())
+			topic := fmt.Sprintf("%v/%v/data/out", yggdrasil.PathPrefix, opts.ClientID())
 			c.Publish(topic, 0, false, []byte{})
 		}()
 
 		var topic string
-		topic = fmt.Sprintf("%v/%v/data/in", yggdrasil.TopicPrefix, opts.ClientID())
+		topic = fmt.Sprintf("%v/%v/data/in", yggdrasil.PathPrefix, opts.ClientID())
 		c.Subscribe(topic, 1, func(c mqtt.Client, m mqtt.Message) {
 			go func() {
 				if err := t.ReceiveData(m.Payload(), "data"); err != nil {
@@ -53,7 +53,7 @@ func NewMQTTTransport(clientID string, broker string, tlsConfig *tls.Config, dat
 		})
 		log.Tracef("subscribed to topic: %v", topic)
 
-		topic = fmt.Sprintf("%v/%v/control/in", yggdrasil.TopicPrefix, opts.ClientID())
+		topic = fmt.Sprintf("%v/%v/control/in", yggdrasil.PathPrefix, opts.ClientID())
 		c.Subscribe(topic, 1, func(c mqtt.Client, m mqtt.Message) {
 			go func() {
 				if err := t.ReceiveData(m.Payload(), "control"); err != nil {
@@ -90,7 +90,7 @@ func NewMQTTTransport(clientID string, broker string, tlsConfig *tls.Config, dat
 		return nil, fmt.Errorf("cannot marshal message to JSON: %w", err)
 	}
 
-	opts.SetBinaryWill(fmt.Sprintf("%v/%v/control/out", yggdrasil.TopicPrefix, opts.ClientID), data, 1, false)
+	opts.SetBinaryWill(fmt.Sprintf("%v/%v/control/out", yggdrasil.PathPrefix, opts.ClientID), data, 1, false)
 
 	t.client = mqtt.NewClient(opts)
 	t.receiveHandler = dataRecvFunc
@@ -117,7 +117,7 @@ func (t *MQTT) Disconnect(quiesce uint) {
 // information with dest.
 func (t *MQTT) SendData(data []byte, dest string) error {
 	opts := t.client.OptionsReader()
-	topic := fmt.Sprintf("%v/%v/%v/out", yggdrasil.TopicPrefix, opts.ClientID(), dest)
+	topic := fmt.Sprintf("%v/%v/%v/out", yggdrasil.PathPrefix, opts.ClientID(), dest)
 
 	if token := t.client.Publish(topic, 1, false, data); token.Wait() && token.Error() != nil {
 		log.Errorf("failed to publish message: %v", token.Error())

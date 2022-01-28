@@ -3,10 +3,12 @@ package transport
 import (
 	"crypto/tls"
 	"fmt"
+	"path/filepath"
 	"sync/atomic"
 	"time"
 
 	"git.sr.ht/~spc/go-log"
+	"github.com/redhatinsights/yggdrasil"
 	"github.com/redhatinsights/yggdrasil/internal/http"
 )
 
@@ -98,5 +100,6 @@ func (t *HTTP) send(message []byte, channel string) error {
 }
 
 func (t *HTTP) getUrl(direction string, channel string) string {
-	return fmt.Sprintf("http://%s/%s/%s/%s", t.server, channel, t.clientID, direction)
+	path := filepath.Join(yggdrasil.PathPrefix, channel, t.clientID, direction)
+	return fmt.Sprintf("http://%s/%s", t.server, path)
 }
