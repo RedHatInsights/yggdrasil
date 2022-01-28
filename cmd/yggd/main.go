@@ -69,10 +69,10 @@ func main() {
 			Usage:  "Use `FILE` as the root CA",
 		}),
 		altsrc.NewStringFlag(&cli.StringFlag{
-			Name:   cliTopicPrefix,
-			Value:  yggdrasil.TopicPrefix,
+			Name:   cliPathPrefix,
+			Value:  yggdrasil.PathPrefix,
 			Hidden: true,
-			Usage:  "Use `PREFIX` as the MQTT topic prefix",
+			Usage:  "Use `PREFIX` as the MQTT topic or HTTP path prefix",
 		}),
 		altsrc.NewStringFlag(&cli.StringFlag{
 			Name:  cliProtocol,
@@ -147,7 +147,7 @@ func main() {
 			CertFile:       c.String(cliCertFile),
 			KeyFile:        c.String(cliKeyFile),
 			CaRoot:         c.String(cliCaRoot),
-			TopicPrefix:    c.String(cliTopicPrefix),
+			PathPrefix:     c.String(cliPathPrefix),
 			Protocol:       c.String(cliProtocol),
 			DataHost:       c.String(cliDataHost),
 			ExcludeWorkers: map[string]bool{},
@@ -158,8 +158,8 @@ func main() {
 		}
 
 		// Set TopicPrefix globally if the config option is non-zero
-		if DefaultConfig.TopicPrefix != "" {
-			yggdrasil.TopicPrefix = DefaultConfig.TopicPrefix
+		if DefaultConfig.PathPrefix != "" {
+			yggdrasil.PathPrefix = DefaultConfig.PathPrefix
 		}
 
 		// Set DataHost globally if the config option is non-zero

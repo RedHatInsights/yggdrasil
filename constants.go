@@ -15,8 +15,8 @@ var (
 	// BrandName is a long-form description.
 	BrandName string
 
-	// TopicPrefix is used as a prefix to all MQTT topics in the client.
-	TopicPrefix string
+	// PathPrefix is used as a prefix to all MQTT topics in the client.
+	PathPrefix string
 
 	// DataHost is used to force sending all HTTP traffic to a specific host.
 	DataHost string
@@ -87,8 +87,8 @@ func init() {
 	if BrandName == "" {
 		BrandName = "yggdrasil"
 	}
-	if TopicPrefix == "" {
-		TopicPrefix = "yggdrasil"
+	if PathPrefix == "" {
+		PathPrefix = "yggdrasil"
 	}
 	if Provider == "" {
 		Provider = "the cloud"

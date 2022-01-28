@@ -8,7 +8,7 @@ const (
 	cliServer        = "server"
 	cliSocketAddr    = "socket-addr"
 	cliClientID      = "client-id"
-	cliTopicPrefix   = "topic-prefix"
+	cliPathPrefix    = "path-prefix"
 	cliProtocol      = "protocol"
 	cliDataHost      = "data-host"
 	cliExcludeWorker = "exclude-worker"
@@ -41,9 +41,8 @@ type Config struct {
 	// the TLS configration's CA root list.
 	CaRoot string
 
-	// TopicPrefix is a value prepended to all topics when publishing and
-	// subscribing to MQTT topics.
-	TopicPrefix string
+	// PathPrefix is a value prepended at the transport level.
+	PathPrefix string
 
 	// Protocol is the protocol used by yggd when connecting to Server. Can be
 	// either MQTT or HTTP.
