@@ -1,5 +1,11 @@
 package main
 
+import (
+	"crypto/tls"
+	"fmt"
+	"io/ioutil"
+)
+
 const (
 	cliLogLevel      = "log-level"
 	cliCertFile      = "cert-file"
@@ -55,4 +61,37 @@ type Config struct {
 	// ExcludeWorkers contains worker names to be excluded from starting when
 	// yggd starts.
 	ExcludeWorkers map[string]bool
+}
+
+func (conf *Config) CreateTLSConfig() (*tls.Config, error) {
+	var certData, keyData []byte
+	var err error
+	rootCAs := make([][]byte, 0)
+
+	if conf.CertFile != "" && conf.KeyFile != "" {
+		certData, err = ioutil.ReadFile(conf.CertFile)
+		if err != nil {
+			return nil, fmt.Errorf("cannot read cert-file '%v': %v", conf.CertFile, err)
+		}
+
+		keyData, err = ioutil.ReadFile(conf.KeyFile)
+		if err != nil {
+			return nil, fmt.Errorf("cannot read key-file '%v': %v", conf.KeyFile, err)
+		}
+	}
+
+	for _, file := range conf.CARoot {
+		data, err := ioutil.ReadFile(file)
+		if err != nil {
+			return nil, fmt.Errorf("cannot read ca-file '%v': ", err)
+		}
+		rootCAs = append(rootCAs, data)
+	}
+
+	tlsConfig, err := newTLSConfig(certData, keyData, rootCAs)
+	if err != nil {
+		return nil, err
+	}
+
+	return tlsConfig, nil
 }
