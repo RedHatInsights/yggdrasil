@@ -2,6 +2,7 @@ package transport
 
 import (
 	"crypto/tls"
+	"encoding/json"
 	"fmt"
 	"path/filepath"
 	"sync/atomic"
@@ -92,9 +93,8 @@ func (t *HTTP) Disconnect(quiesce uint) {
 	t.disconnected.Store(true)
 }
 
-func (t *HTTP) SendData(data []byte, dest string) error {
-	_, err := t.send(data, dest)
-	return err
+func (t *HTTP) SendData(data []byte, dest string) ([]byte, error) {
+	return t.send(data, dest)
 }
 
 func (t *HTTP) ReceiveData(data []byte, dest string) error {
@@ -102,7 +102,7 @@ func (t *HTTP) ReceiveData(data []byte, dest string) error {
 	return nil
 }
 
-func (t *HTTP) send(message []byte, channel string) (*http.Response, error) {
+func (t *HTTP) send(message []byte, channel string) ([]byte, error) {
 	if t.disconnected.Load().(bool) {
 		return nil, nil
 	}
@@ -111,7 +111,11 @@ func (t *HTTP) send(message []byte, channel string) (*http.Response, error) {
 		"Content-Type": "application/json",
 	}
 	log.Tracef("posting HTTP request body: %s", string(message))
-	return t.client.Post(url, headers, message)
+	res, err := t.client.Post(url, headers, message)
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(res)
 }
 
 func (t *HTTP) getUrl(direction string, channel string) string {
