@@ -304,7 +304,7 @@ func main() {
 			if err != nil {
 				log.Errorf("cannot get connection status: %v", err)
 			}
-			if err := client.SendConnectionStatusMessage(msg); err != nil {
+			if _, err := client.SendConnectionStatusMessage(msg); err != nil {
 				log.Errorf("cannot send connection status message: %v", err)
 			}
 		}()
@@ -337,7 +337,7 @@ func main() {
 						log.Errorf("cannot get connection status: %v", err)
 						return
 					}
-					if err = client.SendConnectionStatusMessage(msg); err != nil {
+					if _, err = client.SendConnectionStatusMessage(msg); err != nil {
 						log.Errorf("cannot send connection status: %v", err)
 					}
 				}()
@@ -412,7 +412,7 @@ func main() {
 						if err != nil {
 							log.Errorf("cannot get connection status: %v", err)
 						}
-						if err = client.SendConnectionStatusMessage(msg); err != nil {
+						if _, err = client.SendConnectionStatusMessage(msg); err != nil {
 							log.Errorf("cannot send connection status: %v", err)
 						}
 					}()

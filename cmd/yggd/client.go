@@ -23,22 +23,22 @@ func (c *Client) Connect() error {
 	return c.t.Connect()
 }
 
-func (c *Client) SendDataMessage(msg *yggdrasil.Data) error {
+func (c *Client) SendDataMessage(msg *yggdrasil.Data) ([]byte, error) {
 	return c.sendMessage(msg, "data")
 }
 
-func (c *Client) SendConnectionStatusMessage(msg *yggdrasil.ConnectionStatus) error {
+func (c *Client) SendConnectionStatusMessage(msg *yggdrasil.ConnectionStatus) ([]byte, error) {
 	return c.sendMessage(msg, "control")
 }
 
-func (c *Client) SendEventMessage(msg *yggdrasil.Event) error {
+func (c *Client) SendEventMessage(msg *yggdrasil.Event) ([]byte, error) {
 	return c.sendMessage(msg, "control")
 }
 
-func (c *Client) sendMessage(msg interface{}, dest string) error {
+func (c *Client) sendMessage(msg interface{}, dest string) ([]byte, error) {
 	data, err := json.Marshal(msg)
 	if err != nil {
-		return fmt.Errorf("cannot marshal message: %w", err)
+		return nil, fmt.Errorf("cannot marshal message: %w", err)
 	}
 	return c.t.SendData(data, dest)
 }
@@ -78,7 +78,7 @@ func (c *Client) ReceiveControlMessage(msg *yggdrasil.Control) error {
 			if err != nil {
 				return fmt.Errorf("cannot marshal event: %w", err)
 			}
-			if err := c.t.SendData(data, "control"); err != nil {
+			if _, err := c.t.SendData(data, "control"); err != nil {
 				return fmt.Errorf("cannot send data: %w", err)
 			}
 		case yggdrasil.CommandNameDisconnect:
@@ -141,7 +141,7 @@ func (c *Client) DataReceiveHandlerFunc(data []byte, dest string) {
 // sends them using the configured transport.
 func (c *Client) ReceiveData() {
 	for msg := range c.d.recvQ {
-		if err := c.SendDataMessage(&msg); err != nil {
+		if _, err := c.SendDataMessage(&msg); err != nil {
 			log.Errorf("cannot send data message: %v", err)
 		}
 	}
