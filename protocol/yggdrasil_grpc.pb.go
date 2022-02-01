@@ -22,7 +22,7 @@ type DispatcherClient interface {
 	// handling the specified type of work.
 	Register(ctx context.Context, in *RegistrationRequest, opts ...grpc.CallOption) (*RegistrationResponse, error)
 	// Send is called by a worker to send data to the dispatcher.
-	Send(ctx context.Context, in *Data, opts ...grpc.CallOption) (*Receipt, error)
+	Send(ctx context.Context, in *Data, opts ...grpc.CallOption) (*Response, error)
 	// GetConfig can be called by a worker to get the current configuration
 	// state of the dispatcher service.
 	GetConfig(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*Config, error)
@@ -45,8 +45,8 @@ func (c *dispatcherClient) Register(ctx context.Context, in *RegistrationRequest
 	return out, nil
 }
 
-func (c *dispatcherClient) Send(ctx context.Context, in *Data, opts ...grpc.CallOption) (*Receipt, error) {
-	out := new(Receipt)
+func (c *dispatcherClient) Send(ctx context.Context, in *Data, opts ...grpc.CallOption) (*Response, error) {
+	out := new(Response)
 	err := c.cc.Invoke(ctx, "/yggdrasil.Dispatcher/Send", in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -71,7 +71,7 @@ type DispatcherServer interface {
 	// handling the specified type of work.
 	Register(context.Context, *RegistrationRequest) (*RegistrationResponse, error)
 	// Send is called by a worker to send data to the dispatcher.
-	Send(context.Context, *Data) (*Receipt, error)
+	Send(context.Context, *Data) (*Response, error)
 	// GetConfig can be called by a worker to get the current configuration
 	// state of the dispatcher service.
 	GetConfig(context.Context, *Empty) (*Config, error)
@@ -85,7 +85,7 @@ type UnimplementedDispatcherServer struct {
 func (UnimplementedDispatcherServer) Register(context.Context, *RegistrationRequest) (*RegistrationResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Register not implemented")
 }
-func (UnimplementedDispatcherServer) Send(context.Context, *Data) (*Receipt, error) {
+func (UnimplementedDispatcherServer) Send(context.Context, *Data) (*Response, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Send not implemented")
 }
 func (UnimplementedDispatcherServer) GetConfig(context.Context, *Empty) (*Config, error) {
@@ -187,7 +187,7 @@ var Dispatcher_ServiceDesc = grpc.ServiceDesc{
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type WorkerClient interface {
 	// Send is called by the dispatcher to send data to a worker.
-	Send(ctx context.Context, in *Data, opts ...grpc.CallOption) (*Receipt, error)
+	Send(ctx context.Context, in *Data, opts ...grpc.CallOption) (*Response, error)
 	// NotifyEvent is called by the dispatcher to send event information to a worker.
 	NotifyEvent(ctx context.Context, in *EventNotification, opts ...grpc.CallOption) (*EventReceipt, error)
 }
@@ -200,8 +200,8 @@ func NewWorkerClient(cc grpc.ClientConnInterface) WorkerClient {
 	return &workerClient{cc}
 }
 
-func (c *workerClient) Send(ctx context.Context, in *Data, opts ...grpc.CallOption) (*Receipt, error) {
-	out := new(Receipt)
+func (c *workerClient) Send(ctx context.Context, in *Data, opts ...grpc.CallOption) (*Response, error) {
+	out := new(Response)
 	err := c.cc.Invoke(ctx, "/yggdrasil.Worker/Send", in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -223,7 +223,7 @@ func (c *workerClient) NotifyEvent(ctx context.Context, in *EventNotification, o
 // for forward compatibility
 type WorkerServer interface {
 	// Send is called by the dispatcher to send data to a worker.
-	Send(context.Context, *Data) (*Receipt, error)
+	Send(context.Context, *Data) (*Response, error)
 	// NotifyEvent is called by the dispatcher to send event information to a worker.
 	NotifyEvent(context.Context, *EventNotification) (*EventReceipt, error)
 	mustEmbedUnimplementedWorkerServer()
@@ -233,7 +233,7 @@ type WorkerServer interface {
 type UnimplementedWorkerServer struct {
 }
 
-func (UnimplementedWorkerServer) Send(context.Context, *Data) (*Receipt, error) {
+func (UnimplementedWorkerServer) Send(context.Context, *Data) (*Response, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Send not implemented")
 }
 func (UnimplementedWorkerServer) NotifyEvent(context.Context, *EventNotification) (*EventReceipt, error) {

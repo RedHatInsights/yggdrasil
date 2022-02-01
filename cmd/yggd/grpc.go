@@ -85,7 +85,7 @@ func (d *dispatcher) GetConfig(ctx context.Context, _ *pb.Empty) (*pb.Config, er
 	}, nil
 }
 
-func (d *dispatcher) Send(ctx context.Context, r *pb.Data) (*pb.Receipt, error) {
+func (d *dispatcher) Send(ctx context.Context, r *pb.Data) (*pb.Response, error) {
 	data := yggdrasil.Data{
 		Type:       yggdrasil.MessageTypeData,
 		MessageID:  r.GetMessageId(),
@@ -119,7 +119,7 @@ func (d *dispatcher) Send(ctx context.Context, r *pb.Data) (*pb.Receipt, error) 
 	log.Debugf("received message %v", data.MessageID)
 	log.Tracef("message: %+v", data.Content)
 
-	return &pb.Receipt{}, nil
+	return &pb.Response{}, nil
 }
 
 // DisconnectWorkers sends a RECEIVED_DISCONNECT event message to all registered
