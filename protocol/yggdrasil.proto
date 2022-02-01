@@ -10,7 +10,7 @@ service Dispatcher {
     rpc Register (RegistrationRequest) returns (RegistrationResponse) {}
 
     // Send is called by a worker to send data to the dispatcher.
-    rpc Send (Data) returns (Receipt) {}
+    rpc Send (Data) returns (Response) {}
 
     // GetConfig can be called by a worker to get the current configuration
     // state of the dispatcher service.
@@ -19,7 +19,7 @@ service Dispatcher {
 
 service Worker {
     // Send is called by the dispatcher to send data to a worker.
-    rpc Send (Data) returns (Receipt) {}
+    rpc Send (Data) returns (Response) {}
 
     // NotifyEvent is called by the dispatcher to send event information to a worker.
     rpc NotifyEvent (EventNotification) returns (EventReceipt) {}
@@ -128,3 +128,13 @@ message Config {
   // configration's CA root list.
   string ca_root = 7;
 }
+
+
+// A API Response object with all information regarding a response
+message Response {
+  // Response given by the transport, for each transport can be different:
+  // HTTP: JSON object with status_code, headers and body.
+  // MQTT: empty bytes
+  bytes response = 1;
+}
+
