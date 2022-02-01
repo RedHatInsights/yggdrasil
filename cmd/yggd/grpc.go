@@ -110,7 +110,7 @@ func (d *dispatcher) Send(ctx context.Context, r *pb.Data) (*pb.Response, error)
 		if yggdrasil.DataHost != "" {
 			URL.Host = yggdrasil.DataHost
 		}
-		if err := d.httpClient.Post(URL.String(), data.Metadata, data.Content); err != nil {
+		if _, err := d.httpClient.Post(URL.String(), data.Metadata, data.Content); err != nil {
 			e := fmt.Errorf("cannot post detached message content: %w", err)
 			log.Error(e)
 			return nil, e
@@ -182,12 +182,12 @@ func (d *dispatcher) sendData() {
 					URL.Host = yggdrasil.DataHost
 				}
 
-				content, err := d.httpClient.Get(URL.String())
+				resp, err := d.httpClient.Get(URL.String())
 				if err != nil {
 					log.Errorf("cannot get detached message content: %v", err)
 					return
 				}
-				data.Content = content
+				data.Content = resp.Body
 			}
 
 			conn, err := grpc.Dial("unix:"+w.addr, grpc.WithInsecure())
