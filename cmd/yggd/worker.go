@@ -61,7 +61,7 @@ func startWorker(config workerConfig, started func(pid int), stopped func(pid in
 		"PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
 		"YGG_CONFIG_DIR=" + filepath.Join(yggdrasil.SysconfDir, yggdrasil.LongName),
 		"YGG_LOG_LEVEL=" + log.CurrentLevel().String(),
-		"YGG_CLIENT_ID=" + ClientID,
+		"YGG_CLIENT_ID=" + DefaultConfig.ClientID,
 	}
 
 	proxy := httpproxy.FromEnvironment()

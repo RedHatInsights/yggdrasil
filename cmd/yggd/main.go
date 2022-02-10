@@ -27,7 +27,6 @@ import (
 )
 
 var (
-	ClientID      = ""
 	DefaultConfig = Config{}
 	UserAgent     = yggdrasil.LongName + "/" + yggdrasil.Version
 )
@@ -101,6 +100,10 @@ func main() {
 			Usage:  "Force yggd to listen on `SOCKET`",
 			Value:  fmt.Sprintf("@yggd-dispatcher-%v", randomString(6)),
 			Hidden: true,
+		},
+		&cli.StringFlag{
+			Name:  cliClientID,
+			Usage: "Use `VALUE` as the client ID when connecting",
 		},
 		altsrc.NewStringSliceFlag(&cli.StringSliceFlag{
 			Name:  cliExcludeWorker,
@@ -201,19 +204,20 @@ func main() {
 			}
 		}
 
-		clientID, err := getClientID(clientIDFile)
-		if err != nil {
-			return cli.Exit(fmt.Errorf("cannot get client-id: %w", err), 1)
-		}
-		if len(clientID) == 0 {
-			data, err := createClientID(clientIDFile)
+		if DefaultConfig.ClientID == "" {
+			clientID, err := getClientID(clientIDFile)
 			if err != nil {
-				return cli.Exit(fmt.Errorf("cannot create client-id: %w", err), 1)
+				return cli.Exit(fmt.Errorf("cannot get client-id: %w", err), 1)
 			}
-			clientID = data
+			if len(clientID) == 0 {
+				data, err := createClientID(clientIDFile)
+				if err != nil {
+					return cli.Exit(fmt.Errorf("cannot create client-id: %w", err), 1)
+				}
+				clientID = data
+			}
+			DefaultConfig.ClientID = string(clientID)
 		}
-
-		ClientID = string(clientID)
 
 		// Read certificates, create a TLS config, and initialize HTTP client
 		var certData, keyData []byte
@@ -265,13 +269,13 @@ func main() {
 		switch DefaultConfig.Protocol {
 		case "mqtt":
 			var err error
-			transporter, err = transport.NewMQTTTransport(ClientID, DefaultConfig.Server, tlsConfig, client.DataReceiveHandlerFunc)
+			transporter, err = transport.NewMQTTTransport(DefaultConfig.ClientID, DefaultConfig.Server, tlsConfig, client.DataReceiveHandlerFunc)
 			if err != nil {
 				return cli.Exit(fmt.Errorf("cannot create MQTT transport: %w", err), 1)
 			}
 		case "http":
 			var err error
-			transporter, err = transport.NewHTTPTransport(ClientID, DefaultConfig.Server, tlsConfig, UserAgent, time.Second*5, client.DataReceiveHandlerFunc)
+			transporter, err = transport.NewHTTPTransport(DefaultConfig.ClientID, DefaultConfig.Server, tlsConfig, UserAgent, time.Second*5, client.DataReceiveHandlerFunc)
 			if err != nil {
 				return cli.Exit(fmt.Errorf("cannot create HTTP transport: %w", err), 1)
 			}
