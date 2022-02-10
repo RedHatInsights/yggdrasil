@@ -42,7 +42,7 @@ DESTDIR       ?=
 SYSTEMD_SYSTEM_UNIT_DIR  := $(shell pkg-config --variable systemdsystemunitdir systemd)
 
 # Build flags
-LDFLAGS := 
+LDFLAGS ?= 
 LDFLAGS += -X 'github.com/redhatinsights/yggdrasil.Version=$(VERSION)'
 LDFLAGS += -X 'github.com/redhatinsights/yggdrasil.ShortName=$(SHORTNAME)'
 LDFLAGS += -X 'github.com/redhatinsights/yggdrasil.LongName=$(LONGNAME)'

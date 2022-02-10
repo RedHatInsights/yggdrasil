@@ -5,6 +5,8 @@
 
 %define debug_package %{nil}
 
+%global buildflags -buildmode pie -compiler gc -a -v -x
+%global goldflags %{expand:-linkmode=external -compressdwarf=false -B 0x$(head -c20 /dev/urandom|od -An -tx1|tr -d ' \\n') -extldflags '%__global_ldflags'}
 
 Name:    @LONGNAME@
 Version: @VERSION@
@@ -32,6 +34,9 @@ a receiving queue for instructions to be sent to the system via a broker.
 
 
 %build
+%set_build_flags
+export BUILDFLAGS="%{buildflags}"
+export LDFLAGS="%{goldflags}"
 make PREFIX=%{_prefix} \
      SYSCONFDIR=%{_sysconfdir} \
      LOCALSTATEDIR=%{_localstatedir} \
@@ -47,6 +52,9 @@ make PREFIX=%{_prefix} \
 
 
 %install
+%set_build_flags
+export BUILDFLAGS="%{buildflags}"
+export LDFLAGS="%{goldflags}"
 make PREFIX=%{_prefix} \
      SYSCONFDIR=%{_sysconfdir} \
      LOCALSTATEDIR=%{_localstatedir} \
