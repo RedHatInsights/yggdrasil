@@ -72,7 +72,7 @@ func main() {
 			Name:   cliPathPrefix,
 			Value:  yggdrasil.PathPrefix,
 			Hidden: true,
-			Usage:  "Use `PREFIX` as the MQTT topic or HTTP path prefix",
+			Usage:  "Use `PREFIX` as the transport layer path name prefix",
 		}),
 		altsrc.NewStringFlag(&cli.StringFlag{
 			Name:  cliProtocol,

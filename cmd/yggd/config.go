@@ -41,7 +41,7 @@ type Config struct {
 	// the TLS configration's CA root list.
 	CaRoot string
 
-	// PathPrefix is a value prepended at the transport level.
+	// PathPrefix is a value prepended to all path names at the transport layer.
 	PathPrefix string
 
 	// Protocol is the protocol used by yggd when connecting to Server. Can be

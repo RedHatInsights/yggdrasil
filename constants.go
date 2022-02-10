@@ -15,7 +15,8 @@ var (
 	// BrandName is a long-form description.
 	BrandName string
 
-	// PathPrefix is used as a prefix to all MQTT topics in the client.
+	// PathPrefix is used as a prefix to all transport layer path names in the
+	// client.
 	PathPrefix string
 
 	// DataHost is used to force sending all HTTP traffic to a specific host.
