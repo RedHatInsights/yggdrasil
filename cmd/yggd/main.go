@@ -101,10 +101,9 @@ func main() {
 			Value:  fmt.Sprintf("@yggd-dispatcher-%v", randomString(6)),
 			Hidden: true,
 		},
-
 		&cli.StringFlag{
-			Name:   cliClientID,
-			Usage:  "set yggd clientID manually",
+			Name:  cliClientID,
+			Usage: "Use `VALUE` as the client ID when connecting",
 		},
 		altsrc.NewStringSliceFlag(&cli.StringSliceFlag{
 			Name:  cliExcludeWorker,
