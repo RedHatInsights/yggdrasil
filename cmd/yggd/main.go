@@ -163,7 +163,7 @@ func main() {
 
 		TlSEvents, err := DefaultConfig.WatcherUpdate()
 		if err != nil {
-			return cli.Exit(fmt.Errorf("cannot started TLS config: %w", err), 1)
+			return cli.Exit(fmt.Errorf("cannot start watching for certificate changes: %w", err), 1)
 		}
 
 		for _, worker := range c.StringSlice(cliExcludeWorker) {
@@ -277,20 +277,20 @@ func main() {
 		go func() {
 			// Can be that there are no files to watch
 			if TlSEvents == nil {
-				log.Info("No TLSconfig, disabling TLS watcher update.")
+				log.Info("no TLSconfig, disabling TLS watcher update.")
 				return
 			}
 
 			for cfg := range TlSEvents {
 				err := transporter.ReloadTLSConfig(cfg)
 				if err != nil {
-					log.Errorf("Cannot update transporter TLS config: %s", err)
+					log.Errorf("cannot update transporter TLS config: %v", err)
 					continue
 				}
-				log.Info("Transporter tlsConfig reloaded correclty")
+				log.Info("transporter tlsConfig reloaded correctly")
 				httpClient := http.NewHTTPClient(cfg, UserAgent)
 				d.SetHTTPClient(httpClient)
-				log.Info("Reload dispatcher httpClient")
+				log.Info("reload dispatcher httpClient")
 			}
 		}()
 

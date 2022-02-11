@@ -130,7 +130,7 @@ func (conf *Config) WatcherUpdate() (chan *tls.Config, error) {
 		if err := notify.Watch(fp, c, notify.InCloseWrite, notify.InDelete); err != nil {
 			return nil, fmt.Errorf("cannot start watching '%v': %v", fp, err)
 		}
-		log.Debugf("Added watcher for '%s'", fp)
+		log.Debugf("added watcher for '%v'", fp)
 	}
 
 	events := make(chan *tls.Config, 1)
@@ -141,7 +141,7 @@ func (conf *Config) WatcherUpdate() (chan *tls.Config, error) {
 			case notify.InCloseWrite, notify.InDelete:
 				cfg, err := conf.CreateTLSConfig()
 				if err != nil {
-					log.Errorf("Cannot update TLS config for '%s' on event %v: %v", e.Path(), e.Event(), err)
+					log.Errorf("cannot update TLS config for '%v' on event %v: %v", e.Path(), e.Event(), err)
 				}
 				if cfg != nil {
 					events <- cfg
