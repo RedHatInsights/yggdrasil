@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
+	"regexp"
 	"sync/atomic"
 	"syscall"
 	"time"
@@ -103,7 +104,7 @@ func main() {
 		},
 		&cli.StringFlag{
 			Name:  cliClientID,
-			Usage: "Use `VALUE` as the client ID when connecting",
+			Usage: "Use `VALUE` as the client ID when connecting. Should only contain the characters '[a-zA-Z0-9]'",
 		},
 		altsrc.NewStringSliceFlag(&cli.StringSliceFlag{
 			Name:  cliExcludeWorker,
@@ -143,17 +144,18 @@ func main() {
 		}
 
 		DefaultConfig = Config{
-			LogLevel:       c.String(cliLogLevel),
-			ClientID:       c.String(cliClientID),
-			SocketAddr:     c.String(cliSocketAddr),
-			Server:         c.String(cliServer),
-			CertFile:       c.String(cliCertFile),
-			KeyFile:        c.String(cliKeyFile),
-			CaRoot:         c.String(cliCaRoot),
-			PathPrefix:     c.String(cliPathPrefix),
-			Protocol:       c.String(cliProtocol),
-			DataHost:       c.String(cliDataHost),
-			ExcludeWorkers: map[string]bool{},
+			LogLevel:        c.String(cliLogLevel),
+			ClientID:        c.String(cliClientID),
+			IsValidClientID: regexp.MustCompile(`^[a-zA-Z0-9]+$`).MatchString(c.String(cliClientID)),
+			SocketAddr:      c.String(cliSocketAddr),
+			Server:          c.String(cliServer),
+			CertFile:        c.String(cliCertFile),
+			KeyFile:         c.String(cliKeyFile),
+			CaRoot:          c.String(cliCaRoot),
+			PathPrefix:      c.String(cliPathPrefix),
+			Protocol:        c.String(cliProtocol),
+			DataHost:        c.String(cliDataHost),
+			ExcludeWorkers:  map[string]bool{},
 		}
 
 		for _, worker := range c.StringSlice(cliExcludeWorker) {
@@ -202,6 +204,10 @@ func main() {
 			if err := setClientID([]byte(CN), clientIDFile); err != nil {
 				return cli.Exit(fmt.Errorf("cannot set client-id to CN: %w", err), 1)
 			}
+		}
+
+		if !DefaultConfig.IsValidClientID {
+			return cli.Exit("ClientID should contain only the characters '[a-zA-Z0-9]'", 1)
 		}
 
 		if DefaultConfig.ClientID == "" {

@@ -23,6 +23,9 @@ type Config struct {
 	// transports.
 	ClientID string
 
+	// IsValidClientID
+	IsValidClientID bool
+
 	// SocketAddr is the socket address on which yggd is listening.
 	SocketAddr string
 
