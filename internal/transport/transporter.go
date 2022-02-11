@@ -12,6 +12,5 @@ type Transporter interface {
 	Disconnect(quiesce uint)
 	SendData(data []byte, dest string) error
 	ReceiveData(data []byte, dest string) error
-	// Reload reloads the transport with the given tls.Config
 	ReloadTLSConfig(tlsConfig *tls.Config) error
 }
