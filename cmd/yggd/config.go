@@ -74,19 +74,19 @@ func (conf *Config) CreateTLSConfig() (*tls.Config, error) {
 	if conf.CertFile != "" && conf.KeyFile != "" {
 		certData, err = ioutil.ReadFile(conf.CertFile)
 		if err != nil {
-			return nil, fmt.Errorf("cannot read cert-file '%v': %v", conf.CertFile, err)
+			return nil, fmt.Errorf("cannot read cert-file '%v': %w", conf.CertFile, err)
 		}
 
 		keyData, err = ioutil.ReadFile(conf.KeyFile)
 		if err != nil {
-			return nil, fmt.Errorf("cannot read key-file '%v': %v", conf.KeyFile, err)
+			return nil, fmt.Errorf("cannot read key-file '%v': %w", conf.KeyFile, err)
 		}
 	}
 
 	for _, file := range conf.CARoot {
 		data, err := ioutil.ReadFile(file)
 		if err != nil {
-			return nil, fmt.Errorf("cannot read ca-file '%v': ", err)
+			return nil, fmt.Errorf("cannot read ca-file '%v': %w", file, err)
 		}
 		rootCAs = append(rootCAs, data)
 	}
@@ -128,9 +128,9 @@ func (conf *Config) WatcherUpdate() (chan *tls.Config, error) {
 
 	for _, fp := range files {
 		if err := notify.Watch(fp, c, notify.InCloseWrite, notify.InDelete); err != nil {
-			return nil, fmt.Errorf("cannot start watching '%v': %v", fp, err)
+			return nil, fmt.Errorf("cannot start watching file '%v': %w", fp, err)
 		}
-		log.Debugf("added watcher for '%v'", fp)
+		log.Debugf("added watchpoint for file: %v", fp)
 	}
 
 	events := make(chan *tls.Config, 1)
@@ -141,7 +141,7 @@ func (conf *Config) WatcherUpdate() (chan *tls.Config, error) {
 			case notify.InCloseWrite, notify.InDelete:
 				cfg, err := conf.CreateTLSConfig()
 				if err != nil {
-					log.Errorf("cannot update TLS config for '%v' on event %v: %v", e.Path(), e.Event(), err)
+					log.Errorf("cannot create TLS config from file '%v' on event %v: %v", e.Path(), e.Event(), err)
 				}
 				if cfg != nil {
 					events <- cfg
