@@ -272,8 +272,10 @@ func main() {
 			return cli.Exit(fmt.Errorf("cannot connect using transport: %w", err), 1)
 		}
 
-		// This function reads the events on TLS Changes, and update the
-		// transporter and the httpClients if it's needed..
+		// Start a goroutine that receives values on the 'TLSEvents' channel and
+		// reloads the transporter and HTTP client TLS configurations.
+		// Depending on the transporter implementation, this may result in
+		// active client disconnections and reconnections.
 		go func() {
 			// Can be that there are no files to watch
 			if TlSEvents == nil {
@@ -282,15 +284,18 @@ func main() {
 			}
 
 			for cfg := range TlSEvents {
+				log.Debug("reloading transport TLS configuration")
 				err := transporter.ReloadTLSConfig(cfg)
 				if err != nil {
 					log.Errorf("cannot update transporter TLS config: %v", err)
 					continue
 				}
-				log.Info("transporter tlsConfig reloaded correctly")
+				log.Info("transport TLS configuration reloaded")
+
+				log.Debug("setting dispatcher HTTP client")
 				httpClient := http.NewHTTPClient(cfg, UserAgent)
-				d.SetHTTPClient(httpClient)
-				log.Info("reload dispatcher httpClient")
+				d.httpClient = httpClient
+				log.Info("dispatcher HTTP client updated")
 			}
 		}()
 

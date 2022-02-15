@@ -79,7 +79,7 @@ func (t *HTTP) Connect() error {
 	return nil
 }
 
-// Reload reloads TLS config and started a new client with the given tls.Config
+// ReloadTLSConfig creates a new HTTP client with the provided TLS config.
 func (t *HTTP) ReloadTLSConfig(tlsConfig *tls.Config) error {
 	*t.client = *http.NewHTTPClient(tlsConfig, t.userAgent)
 	t.isTLS.Store(tlsConfig != nil)

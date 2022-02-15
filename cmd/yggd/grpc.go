@@ -47,10 +47,6 @@ func newDispatcher(httpClient *http.Client) *dispatcher {
 	}
 }
 
-func (d *dispatcher) SetHTTPClient(client *http.Client) {
-	d.httpClient = client
-}
-
 func (d *dispatcher) Register(ctx context.Context, r *pb.RegistrationRequest) (*pb.RegistrationResponse, error) {
 	if d.reg.get(r.GetHandler()) != nil {
 		log.Errorf("worker failed to register for handler %v", r.GetHandler())

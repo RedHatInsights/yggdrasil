@@ -109,9 +109,11 @@ func (t *MQTT) Connect() error {
 	return nil
 }
 
-// Reload reloads TLS config and started a new client with the new tls.Config
+// ReloadTLSConfig creates a new MQTT client with the given TLS config, disconnects the
+// previous client, and connects the new one.
 func (t *MQTT) ReloadTLSConfig(tlsConfig *tls.Config) error {
-	// Disconnect old client to create a new one based on the new TLSConfig
+	// take a reference to the old client in order to disconnect it when the
+	// function returns.
 	client := t.client
 	defer client.Disconnect(1)
 
