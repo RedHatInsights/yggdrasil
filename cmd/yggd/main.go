@@ -53,12 +53,16 @@ func main() {
 			Usage: "Set the logging output level to `LEVEL`",
 		}),
 		altsrc.NewStringFlag(&cli.StringFlag{
-			Name:  "cert-file",
-			Usage: "Use `FILE` as the client certificate",
+			Name:      "cert-file",
+			Usage:     "Use `FILE` as the client certificate",
+			Required:  true,
+			TakesFile: true,
 		}),
 		altsrc.NewStringFlag(&cli.StringFlag{
-			Name:  "key-file",
-			Usage: "Use `FILE` as the client's private key",
+			Name:      "key-file",
+			Usage:     "Use `FILE` as the client's private key",
+			Required:  true,
+			TakesFile: true,
 		}),
 		altsrc.NewStringSliceFlag(&cli.StringSliceFlag{
 			Name:   "ca-root",
