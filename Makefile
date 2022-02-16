@@ -96,13 +96,13 @@ data: $(DATA)
 	go run $(BUILDFLAGS) -ldflags "$(LDFLAGS)" ./cmd/$(patsubst %.bash,%,$@) --generate-bash-completion > $@
 
 %.1: $(GOSRC)
-	go run $(BUILDFLAGS) -ldflags "$(LDFLAGS)" ./cmd/$(patsubst %.1,%,$@) --generate-man-page --cert-file /dev/null --key-file /dev/null > $@
+	go run $(BUILDFLAGS) -ldflags "$(LDFLAGS)" ./cmd/$(patsubst %.1,%,$@) --generate-man-page > $@
 
 %.1.gz: %.1
 	gzip -k $^
 
 %-USAGE.md: $(GOSRC)
-	go run $(BUILDFLAGS) -ldflags "$(LDFLAGS)" ./cmd/$(patsubst %-USAGE.md,%,$@) --generate-markdown --cert-file /dev/null --key-file /dev/null > $@
+	go run $(BUILDFLAGS) -ldflags "$(LDFLAGS)" ./cmd/$(patsubst %-USAGE.md,%,$@) --generate-markdown > $@
 
 %: %.in Makefile
 	sed \
