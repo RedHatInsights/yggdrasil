@@ -19,7 +19,7 @@ type echoServer struct {
 }
 
 // Send implements the "Send" method of the Worker gRPC service.
-func (s *echoServer) Send(ctx context.Context, d *pb.Data) (*pb.Receipt, error) {
+func (s *echoServer) Send(ctx context.Context, d *pb.Data) (*pb.Response, error) {
 	go func() {
 		log.Tracef("received data: %#v", d)
 		message := string(d.GetContent())
@@ -53,7 +53,7 @@ func (s *echoServer) Send(ctx context.Context, d *pb.Data) (*pb.Receipt, error) 
 	}()
 
 	// Respond to the start request that the work was accepted.
-	return &pb.Receipt{}, nil
+	return &pb.Response{}, nil
 }
 
 // NotifyEvent implements the "NotifyEvent" method of the Worker gRPC service.
