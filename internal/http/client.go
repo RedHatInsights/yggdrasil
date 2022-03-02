@@ -10,7 +10,6 @@ import (
 	"strings"
 
 	"git.sr.ht/~spc/go-log"
-	"github.com/redhatinsights/yggdrasil"
 )
 
 type Response struct {
@@ -100,7 +99,7 @@ func createResponse(resp *http.Response) (*Response, error) {
 	log.Debugf("received HTTP %v: %v", resp.Status, strings.TrimSpace(string(data)))
 	result.Body = data
 	if resp.StatusCode >= 400 {
-		return result, &yggdrasil.APIResponseError{Code: resp.StatusCode, Body: strings.TrimSpace(string(data))}
+		return result, &APIResponseError{Code: resp.StatusCode, Body: strings.TrimSpace(string(data))}
 	}
 
 	return result, nil
