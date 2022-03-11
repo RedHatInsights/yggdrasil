@@ -97,7 +97,11 @@ func createResponse(resp *http.Response) (*Response, error) {
 		return result, fmt.Errorf("cannot read response body: %w", err)
 	}
 	log.Debugf("received HTTP %v: %v", resp.Status, strings.TrimSpace(string(data)))
-	result.Body = data
+
+	if len(data) > 0 {
+		result.Body = data
+	}
+
 	if resp.StatusCode >= 400 {
 		return result, &APIResponseError{Code: resp.StatusCode, Body: strings.TrimSpace(string(data))}
 	}
