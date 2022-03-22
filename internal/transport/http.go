@@ -112,10 +112,14 @@ func (t *HTTP) send(message []byte, channel string) ([]byte, error) {
 	}
 	log.Tracef("posting HTTP request body: %s", string(message))
 	res, err := t.client.Post(url, headers, message)
-	if err != nil {
+	if err != nil && res == nil {
 		return nil, err
 	}
-	return json.Marshal(res)
+	resBytes, jsonerr := json.Marshal(res)
+	if err != nil {
+		return resBytes, err
+	}
+	return resBytes, jsonerr
 }
 
 func (t *HTTP) getUrl(direction string, channel string) string {
