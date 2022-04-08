@@ -18,6 +18,7 @@ import (
 	internaldbus "github.com/redhatinsights/yggdrasil/dbus"
 	"github.com/redhatinsights/yggdrasil/internal/config"
 	"github.com/redhatinsights/yggdrasil/internal/constants"
+	"github.com/redhatinsights/yggdrasil/internal/tags"
 	"github.com/redhatinsights/yggdrasil/internal/transport"
 	"github.com/redhatinsights/yggdrasil/internal/work"
 	"github.com/redhatinsights/yggdrasil/ipc"
@@ -328,7 +329,7 @@ func (c *Client) ConnectionStatus() (*yggdrasil.ConnectionStatus, error) {
 	var tagMap map[string]string
 	if _, err := os.Stat(tagsFilePath); !os.IsNotExist(err) {
 		var err error
-		tagMap, err = readTagsFile(tagsFilePath)
+		tagMap, err = tags.ReadTagsFile(tagsFilePath)
 		if err != nil {
 			log.Errorf("cannot load tags: %v", err)
 		}
