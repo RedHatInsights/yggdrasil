@@ -1,4 +1,4 @@
-package main
+package tags
 
 import (
 	"fmt"
@@ -61,7 +61,7 @@ func readTags(in io.Reader) (map[string]string, error) {
 }
 
 // readTagsFile reads tag data from file.
-func readTagsFile(file string) (map[string]string, error) {
+func ReadTagsFile(file string) (map[string]string, error) {
 	f, err := os.Open(file)
 	if err != nil {
 		return nil, fmt.Errorf("cannot open '%v' for reading: %w", file, err)

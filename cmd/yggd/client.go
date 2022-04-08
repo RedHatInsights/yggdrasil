@@ -12,6 +12,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/redhatinsights/yggdrasil"
 	"github.com/redhatinsights/yggdrasil/internal/transport"
+	"github.com/redhatinsights/yggdrasil/pkg/tags"
 )
 
 type Client struct {
@@ -163,7 +164,7 @@ func (c *Client) ConnectionStatus() (*yggdrasil.ConnectionStatus, error) {
 	var tagMap map[string]string
 	if _, err := os.Stat(tagsFilePath); !os.IsNotExist(err) {
 		var err error
-		tagMap, err = readTagsFile(tagsFilePath)
+		tagMap, err = tags.ReadTagsFile(tagsFilePath)
 		if err != nil {
 			log.Errorf("cannot load tags: %v", err)
 		}
