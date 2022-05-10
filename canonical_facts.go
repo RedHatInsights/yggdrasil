@@ -99,7 +99,7 @@ func CanonicalFactsFromMap(m map[string]interface{}) (*CanonicalFacts, error) {
 
 // GetCanonicalFacts attempts to construct a CanonicalFacts struct by collecting
 // data from the localhost.
-func GetCanonicalFacts() (*CanonicalFacts, error) {
+func GetCanonicalFacts(certFile string) (*CanonicalFacts, error) {
 	var facts CanonicalFacts
 	var err error
 
@@ -128,7 +128,7 @@ func GetCanonicalFacts() (*CanonicalFacts, error) {
 		facts.BIOSUUID = BIOSUUID
 	}
 
-	facts.SubscriptionManagerID, err = readCert("/etc/pki/consumer/cert.pem")
+	facts.SubscriptionManagerID, err = readCert(certFile)
 	if err != nil {
 		return nil, err
 	}

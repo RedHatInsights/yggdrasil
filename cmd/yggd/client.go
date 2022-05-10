@@ -153,7 +153,7 @@ func (c *Client) ReceiveData() {
 // ConnectionStatus creates a connection-status message using the current state
 // of the client.
 func (c *Client) ConnectionStatus() (*yggdrasil.ConnectionStatus, error) {
-	facts, err := yggdrasil.GetCanonicalFacts()
+	facts, err := yggdrasil.GetCanonicalFacts(DefaultConfig.CertFile)
 	if err != nil {
 		return nil, fmt.Errorf("cannot get canonical facts: %w", err)
 	}
