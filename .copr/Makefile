@@ -3,6 +3,7 @@ include Makefile
 SOURCEDIR := $(shell rpmbuild -E %_sourcedir)
 SRCRPMDIR := $(shell rpmbuild -E %_srcrpmdir)
 
+srpm: $(shell chown $(shell whoami):$(shell id -g) . -R)
 srpm: SHORTNAME = $(shell basename $(PWD))
 srpm: LONGNAME = $(SHORTNAME)
 srpm: BRANDNAME = $(SHORTNAME)
