@@ -74,6 +74,43 @@ Many default paths (such as Prefix, BinDir, LocalstateDir, etc), as well as some
 other compile-time constants, can be specified by providing a linker `-X` flag
 argument. See the `Makefile` or `constants.go` for a complete list. 
 
+## Debugging `yggd`
+
+`yggd` can be run within the Delve debugger to make development easier. Install
+`dlv` in the client if it is not already installed:
+
+```
+sudo go install github.com/go-delve/delve/cmd/dlv@latest
+```
+
+Start `dlv` using the `debug` command:
+
+```
+sudo /root/go/bin/dlv debug --api-version 2 --headless --listen 0.0.0.0:2345 ./cmd/yggd -- --config ./data/yggdrasil/config.toml
+```
+
+Note: you may need to open TCP prot 2345 on the guest. For example, to open the
+port using firewalld, run:
+
+```
+sudo firewall-cmd --zone public --add-port 2345/tcp --permanent
+```
+
+Next, from your host, connect to the dlv server, using either `dlv attach` or by
+creating a launch configuration in Visual Studio Code:
+
+```json
+{
+    "name": "Connect to server",
+    "type": "go",
+    "request": "attach",
+    "mode": "remote",
+    "remotePath": "${workspaceFolder}",
+    "port": 2345,
+    "host": "192.168.122.98"
+}
+```
+
 # Useful Utilities
 
 ## `yggctl`
