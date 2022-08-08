@@ -320,6 +320,14 @@ func main() {
 			"YGG_SOCKET_ADDR=unix:" + c.String("socket-addr"),
 			"PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
 		}
+
+		home, err := os.UserHomeDir();
+		if err == nil {
+			env = append(env, "HOME="+home);
+		} else {
+			log.Errorf("Failed to get user's home directory: %v", err);
+		}
+
 		for _, info := range fileInfos {
 			if strings.HasSuffix(info.Name(), "worker") {
 				log.Debugf("starting worker: %v", info.Name())
