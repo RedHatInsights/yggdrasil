@@ -1,3 +1,4 @@
+//go:build go1.16
 // +build go1.16
 
 package transport_test
@@ -13,7 +14,6 @@ import (
 	"time"
 
 	"github.com/google/go-cmp/cmp"
-	client "github.com/redhatinsights/yggdrasil/internal/http"
 	"github.com/redhatinsights/yggdrasil/internal/transport"
 )
 
@@ -155,7 +155,7 @@ func TestSend(t *testing.T) {
 				t.Error("Send should return a valid response")
 			}
 
-			var parsedResponse client.Response
+			var parsedResponse transport.HTTPResponse
 			err = json.Unmarshal(res, &parsedResponse)
 			if err != nil {
 				t.Errorf("Cannot unmarshal response, err = %v", err)
