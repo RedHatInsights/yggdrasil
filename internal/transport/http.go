@@ -4,20 +4,31 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
+	"net/http"
 	"path/filepath"
+	"strings"
 	"sync/atomic"
 	"time"
 
 	"git.sr.ht/~spc/go-log"
 	"github.com/redhatinsights/yggdrasil"
-	"github.com/redhatinsights/yggdrasil/internal/http"
+	internalhttp "github.com/redhatinsights/yggdrasil/internal/http"
 )
+
+// HTTPResponse is a data structure representing an HTTP response received from
+// an HTTP request sent through the transport.
+type HTTPResponse struct {
+	StatusCode int
+	Body       json.RawMessage
+	Metadata   map[string]string
+}
 
 // HTTP is a Transporter that sends and receives data and control
 // messages by sending HTTP requests to a URL.
 type HTTP struct {
 	clientID        string
-	client          *http.Client
+	client          *internalhttp.Client
 	server          string
 	dataHandler     DataReceiveHandlerFunc
 	pollingInterval time.Duration
@@ -33,7 +44,7 @@ func NewHTTPTransport(clientID string, server string, tlsConfig *tls.Config, use
 	isTls.Store(tlsConfig != nil)
 	return &HTTP{
 		clientID:        clientID,
-		client:          http.NewHTTPClient(tlsConfig.Clone(), userAgent),
+		client:          internalhttp.NewHTTPClient(tlsConfig.Clone(), userAgent),
 		dataHandler:     dataRecvFunc,
 		pollingInterval: pollingInterval,
 		disconnected:    disconnected,
@@ -54,8 +65,14 @@ func (t *HTTP) Connect() error {
 			if err != nil {
 				log.Tracef("cannot get HTTP request: %v", err)
 			}
-			if resp != nil && len(resp.Body) > 0 {
-				_ = t.ReceiveData(resp.Body, "control")
+			if resp != nil {
+				data, err := ioutil.ReadAll(resp.Body)
+				if err != nil {
+					log.Errorf("cannot read response body: %v", err)
+					continue
+				}
+				_ = t.ReceiveData(data, "control")
+				resp.Body.Close()
 			}
 			time.Sleep(t.pollingInterval)
 		}
@@ -71,8 +88,14 @@ func (t *HTTP) Connect() error {
 				log.Tracef("cannot get HTTP request: %v", err)
 			}
 
-			if resp != nil && len(resp.Body) > 0 {
-				_ = t.ReceiveData(resp.Body, "data")
+			if resp != nil {
+				data, err := ioutil.ReadAll(resp.Body)
+				if err != nil {
+					log.Errorf("cannot read response body: %v", err)
+					continue
+				}
+				_ = t.ReceiveData(data, "data")
+				resp.Body.Close()
 			}
 			time.Sleep(t.pollingInterval)
 		}
@@ -83,7 +106,7 @@ func (t *HTTP) Connect() error {
 
 // ReloadTLSConfig creates a new HTTP client with the provided TLS config.
 func (t *HTTP) ReloadTLSConfig(tlsConfig *tls.Config) error {
-	*t.client = *http.NewHTTPClient(tlsConfig, t.userAgent)
+	*t.client = *internalhttp.NewHTTPClient(tlsConfig, t.userAgent)
 	t.isTLS.Store(tlsConfig != nil)
 	return nil
 }
@@ -113,13 +136,36 @@ func (t *HTTP) send(message []byte, channel string) ([]byte, error) {
 	log.Tracef("posting HTTP request body: %s", string(message))
 	res, err := t.client.Post(url, headers, message)
 	if err != nil && res == nil {
-		return nil, err
+		return nil, fmt.Errorf("cannot do HTTP request: %w", err)
 	}
-	resBytes, jsonerr := json.Marshal(res)
+
+	var response HTTPResponse
+	response.StatusCode = res.StatusCode
+	response.Metadata = make(map[string]string)
+	for k, v := range res.Header {
+		response.Metadata[k] = strings.Join(v, ";")
+	}
+	body, err := ioutil.ReadAll(res.Body)
 	if err != nil {
-		return resBytes, err
+		return nil, fmt.Errorf("cannot read HTTP response body: %w", err)
 	}
-	return resBytes, jsonerr
+	defer res.Body.Close()
+
+	if err := json.Unmarshal(body, &response.Body); err != nil {
+		return nil, fmt.Errorf("cannot marshal HTTP response body: %w", err)
+	}
+
+	data, err := json.Marshal(response)
+	if err != nil {
+		return nil, fmt.Errorf("cannot marshal HTTP response: %w", err)
+	}
+
+	var httpError error
+	if res.StatusCode >= 400 {
+		httpError = fmt.Errorf("%v", http.StatusText(res.StatusCode))
+	}
+
+	return data, httpError
 }
 
 func (t *HTTP) getUrl(direction string, channel string) string {

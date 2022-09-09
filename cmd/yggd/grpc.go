@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"net/url"
 	"strings"
 	"time"
@@ -138,7 +139,14 @@ func (d *dispatcher) Send(ctx context.Context, r *pb.Data) (*pb.Response, error)
 			log.Error(e)
 			return nil, e
 		}
-		res, err = json.Marshal(httpRes)
+		data, err := ioutil.ReadAll(httpRes.Body)
+		if err != nil {
+			e := fmt.Errorf("cannot read HTTP response body: %w", err)
+			log.Error(e)
+			return nil, e
+		}
+		defer httpRes.Body.Close()
+		res, err = json.Marshal(data)
 		if err != nil {
 			e := fmt.Errorf("cannot marshal post detached content: %w", err)
 			log.Error(e)
@@ -218,7 +226,13 @@ func (d *dispatcher) sendData() {
 					log.Errorf("cannot get detached message content: %v", err)
 					return
 				}
-				data.Content = resp.Body
+				content, err := ioutil.ReadAll(resp.Body)
+				if err != nil {
+					log.Errorf("cannot read response body: %v", err)
+					return
+				}
+				defer resp.Body.Close()
+				data.Content = content
 			}
 
 			conn, err := grpc.Dial("unix:"+w.addr, grpc.WithInsecure())
