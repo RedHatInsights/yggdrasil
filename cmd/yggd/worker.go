@@ -14,6 +14,7 @@ import (
 	"git.sr.ht/~spc/go-log"
 	"github.com/pelletier/go-toml"
 	"github.com/redhatinsights/yggdrasil"
+	"github.com/redhatinsights/yggdrasil/internal/config"
 	"github.com/rjeczalik/notify"
 	"golang.org/x/net/http/httpproxy"
 )
@@ -34,21 +35,21 @@ func loadWorkerConfig(file string) (*workerConfig, error) {
 		return nil, fmt.Errorf("cannot read file: %w", err)
 	}
 
-	var config workerConfig
-	if err := toml.Unmarshal(data, &config); err != nil {
+	var worker workerConfig
+	if err := toml.Unmarshal(data, &worker); err != nil {
 		return nil, fmt.Errorf("cannot load config: %w", err)
 	}
-	config.directive = strings.TrimSuffix(filepath.Base(file), filepath.Ext(file))
+	worker.directive = strings.TrimSuffix(filepath.Base(file), filepath.Ext(file))
 
-	return &config, nil
+	return &worker, nil
 }
 
 // startWorker constructs a command to execute from the given workerConfig,
 // starts it, and starts a goroutine that waits for the process to exit. If not
 // nil, started is invoked after the process is started. Likewise, when the
 // process is stopped, stopped is invoked.
-func startWorker(config workerConfig, started func(pid int), stopped func(pid int)) error {
-	argv := strings.Split(config.Exec, " ")
+func startWorker(worker workerConfig, started func(pid int), stopped func(pid int)) error {
+	argv := strings.Split(worker.Exec, " ")
 
 	program := argv[0]
 	var args []string
@@ -60,7 +61,7 @@ func startWorker(config workerConfig, started func(pid int), stopped func(pid in
 		"PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
 		"YGG_CONFIG_DIR=" + filepath.Join(yggdrasil.SysconfDir, yggdrasil.LongName),
 		"YGG_LOG_LEVEL=" + log.CurrentLevel().String(),
-		"YGG_CLIENT_ID=" + DefaultConfig.ClientID,
+		"YGG_CLIENT_ID=" + config.DefaultConfig.ClientID,
 	}
 
 	proxy := httpproxy.FromEnvironment()
@@ -74,26 +75,26 @@ func startWorker(config workerConfig, started func(pid int), stopped func(pid in
 		env = append(env, "NO_PROXY="+proxy.NoProxy)
 	}
 
-	switch config.Protocol {
+	switch worker.Protocol {
 	case "grpc":
-		env = append(env, "YGG_SOCKET_ADDR=unix:"+DefaultConfig.SocketAddr)
+		env = append(env, "YGG_SOCKET_ADDR=unix:"+config.DefaultConfig.SocketAddr)
 	default:
-		return fmt.Errorf("unsupported protocol: %v", config.Protocol)
+		return fmt.Errorf("unsupported protocol: %v", worker.Protocol)
 	}
 
-	for _, val := range config.Env {
+	for _, val := range worker.Env {
 		if validEnvVar(val) {
 			env = append(env, val)
 		}
 	}
 
-	if config.delay < 0 {
+	if worker.delay < 0 {
 		return fmt.Errorf("failed to start worker %v too many times", program)
 	}
 
-	if config.delay > 0 {
-		log.Tracef("delaying worker start for %v...", config.delay)
-		time.Sleep(config.delay)
+	if worker.delay > 0 {
+		log.Tracef("delaying worker start for %v...", worker.delay)
+		time.Sleep(worker.delay)
 	}
 
 	err := startProcess(program, args, env, func(pid int, stdout, stderr io.ReadCloser) {
@@ -144,7 +145,7 @@ func startWorker(config workerConfig, started func(pid int), stopped func(pid in
 			return
 		}
 
-		if err := ioutil.WriteFile(filepath.Join(pidDirPath, config.directive+".pid"), []byte(fmt.Sprintf("%v", pid)), 0644); err != nil {
+		if err := ioutil.WriteFile(filepath.Join(pidDirPath, worker.directive+".pid"), []byte(fmt.Sprintf("%v", pid)), 0644); err != nil {
 			log.Errorf("cannot write to file: %v", err)
 			return
 		}
@@ -157,19 +158,19 @@ func startWorker(config workerConfig, started func(pid int), stopped func(pid in
 			log.Infof("worker stopped: %v", pid)
 
 			if state.SystemTime() < time.Duration(1*time.Second) {
-				config.delay += 5 * time.Second
+				worker.delay += 5 * time.Second
 			}
 
-			if config.delay >= time.Duration(30*time.Second) {
-				config.delay = -1
+			if worker.delay >= time.Duration(30*time.Second) {
+				worker.delay = -1
 			}
 
 			if stopped != nil {
 				go stopped(pid)
 			}
 
-			if workerExists(config.directive) {
-				if err := startWorker(config, started, stopped); err != nil {
+			if workerExists(worker.directive) {
+				if err := startWorker(worker, started, stopped); err != nil {
 					log.Errorf("cannot restart worker: %v", err)
 					return
 				}
@@ -245,20 +246,20 @@ func watchWorkerDir(dir string, died chan int) {
 		switch e.Event() {
 		case notify.InCloseWrite, notify.InMovedTo:
 			log.Tracef("new worker detected: %v", e.Path())
-			config, err := loadWorkerConfig(e.Path())
+			worker, err := loadWorkerConfig(e.Path())
 			if err != nil {
 				log.Errorf("cannot load worker config: %v", err)
 			}
-			if DefaultConfig.ExcludeWorkers[config.directive] {
-				log.Tracef("skipping excluded worker %v", config.directive)
+			if config.DefaultConfig.ExcludeWorkers[worker.directive] {
+				log.Tracef("skipping excluded worker %v", worker.directive)
 				continue
 			}
-			log.Debugf("starting worker: %v", config.directive)
+			log.Debugf("starting worker: %v", worker.directive)
 			go func() {
-				if err := startWorker(*config, nil, func(pid int) {
+				if err := startWorker(*worker, nil, func(pid int) {
 					died <- pid
 				}); err != nil {
-					log.Errorf("cannot start worker %v: %v", config.directive, err)
+					log.Errorf("cannot start worker %v: %v", worker.directive, err)
 					return
 				}
 			}()

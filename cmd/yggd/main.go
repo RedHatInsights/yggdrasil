@@ -13,7 +13,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/redhatinsights/yggdrasil/internal"
+	"github.com/redhatinsights/yggdrasil/internal/config"
 	"github.com/redhatinsights/yggdrasil/internal/http"
 	"github.com/redhatinsights/yggdrasil/internal/transport"
 
@@ -27,8 +27,7 @@ import (
 )
 
 var (
-	DefaultConfig = Config{}
-	UserAgent     = yggdrasil.LongName + "/" + yggdrasil.Version
+	UserAgent = yggdrasil.LongName + "/" + yggdrasil.Version
 )
 
 func main() {
@@ -50,36 +49,36 @@ func main() {
 			Usage:     "Read config values from `FILE`",
 		},
 		altsrc.NewStringFlag(&cli.StringFlag{
-			Name:  cliLogLevel,
+			Name:  config.FlagNameLogLevel,
 			Value: "info",
 			Usage: "Set the logging output level to `LEVEL`",
 		}),
 		altsrc.NewStringFlag(&cli.StringFlag{
-			Name:  cliCertFile,
+			Name:  config.FlagNameCertFile,
 			Usage: "Use `FILE` as the client certificate",
 		}),
 		altsrc.NewStringFlag(&cli.StringFlag{
-			Name:  cliKeyFile,
+			Name:  config.FlagNameKeyFile,
 			Usage: "Use `FILE` as the client's private key",
 		}),
 		altsrc.NewStringSliceFlag(&cli.StringSliceFlag{
-			Name:   cliCaRoot,
+			Name:   config.FlagNameCaRoot,
 			Hidden: true,
 			Usage:  "Use `FILE` as the root CA",
 		}),
 		altsrc.NewStringFlag(&cli.StringFlag{
-			Name:   cliPathPrefix,
+			Name:   config.FlagNamePathPrefix,
 			Value:  yggdrasil.PathPrefix,
 			Hidden: true,
 			Usage:  "Use `PREFIX` as the transport layer path name prefix",
 		}),
 		altsrc.NewStringFlag(&cli.StringFlag{
-			Name:  cliProtocol,
+			Name:  config.FlagNameProtocol,
 			Usage: "Transmit data remotely using `PROTOCOL` ('mqtt' or 'http')",
 			Value: "mqtt",
 		}),
 		altsrc.NewStringFlag(&cli.StringFlag{
-			Name:  cliServer,
+			Name:  config.FlagNameServer,
 			Usage: "Connect the client to the specified `URI`",
 		}),
 		&cli.BoolFlag{
@@ -91,26 +90,26 @@ func main() {
 			Hidden: true,
 		},
 		altsrc.NewStringFlag(&cli.StringFlag{
-			Name:  cliDataHost,
+			Name:  config.FlagNameDataHost,
 			Usage: "Force all HTTP traffic over `HOST`",
 			Value: yggdrasil.DataHost,
 		}),
 		&cli.StringFlag{
-			Name:   cliSocketAddr,
+			Name:   config.FlagNameSocketAddr,
 			Usage:  "Force yggd to listen on `SOCKET`",
 			Value:  fmt.Sprintf("@yggd-dispatcher-%v", randomString(6)),
 			Hidden: true,
 		},
 		altsrc.NewStringFlag(&cli.StringFlag{
-			Name:  cliClientID,
+			Name:  config.FlagNameClientID,
 			Usage: "Use `VALUE` as the client ID when connecting",
 		}),
 		altsrc.NewStringSliceFlag(&cli.StringSliceFlag{
-			Name:  cliExcludeWorker,
+			Name:  config.FlagNameExcludeWorker,
 			Usage: "Exclude `WORKER` from activation when starting workers",
 		}),
 		altsrc.NewPathFlag(&cli.PathFlag{
-			Name:      cliWorkerConfigDir,
+			Name:      config.FlagNameWorkerConfigDir,
 			Usage:     "Load workers from `DIR`",
 			TakesFile: true,
 			Hidden:    true,
@@ -149,43 +148,43 @@ func main() {
 			return nil
 		}
 
-		DefaultConfig = Config{
-			LogLevel:        c.String(cliLogLevel),
-			ClientID:        c.String(cliClientID),
-			SocketAddr:      c.String(cliSocketAddr),
-			Server:          c.String(cliServer),
-			CertFile:        c.String(cliCertFile),
-			KeyFile:         c.String(cliKeyFile),
-			CARoot:          c.StringSlice(cliCaRoot),
-			PathPrefix:      c.String(cliPathPrefix),
-			Protocol:        c.String(cliProtocol),
-			DataHost:        c.String(cliDataHost),
+		config.DefaultConfig = config.Config{
+			LogLevel:        c.String(config.FlagNameLogLevel),
+			ClientID:        c.String(config.FlagNameClientID),
+			SocketAddr:      c.String(config.FlagNameSocketAddr),
+			Server:          c.String(config.FlagNameServer),
+			CertFile:        c.String(config.FlagNameCertFile),
+			KeyFile:         c.String(config.FlagNameKeyFile),
+			CARoot:          c.StringSlice(config.FlagNameCaRoot),
+			PathPrefix:      c.String(config.FlagNamePathPrefix),
+			Protocol:        c.String(config.FlagNameProtocol),
+			DataHost:        c.String(config.FlagNameDataHost),
 			ExcludeWorkers:  map[string]bool{},
-			WorkerConfigDir: c.String(cliWorkerConfigDir),
+			WorkerConfigDir: c.String(config.FlagNameWorkerConfigDir),
 		}
 
-		tlsConfig, err := DefaultConfig.CreateTLSConfig()
+		tlsConfig, err := config.DefaultConfig.CreateTLSConfig()
 		if err != nil {
 			return cli.Exit(fmt.Errorf("cannot create TLS config: %w", err), 1)
 		}
 
-		TlSEvents, err := DefaultConfig.WatcherUpdate()
+		TlSEvents, err := config.DefaultConfig.WatcherUpdate()
 		if err != nil {
 			return cli.Exit(fmt.Errorf("cannot start watching for certificate changes: %w", err), 1)
 		}
 
-		for _, worker := range c.StringSlice(cliExcludeWorker) {
-			DefaultConfig.ExcludeWorkers[worker] = true
+		for _, worker := range c.StringSlice(config.FlagNameExcludeWorker) {
+			config.DefaultConfig.ExcludeWorkers[worker] = true
 		}
 
 		// Set TopicPrefix globally if the config option is non-zero
-		if DefaultConfig.PathPrefix != "" {
-			yggdrasil.PathPrefix = DefaultConfig.PathPrefix
+		if config.DefaultConfig.PathPrefix != "" {
+			yggdrasil.PathPrefix = config.DefaultConfig.PathPrefix
 		}
 
 		// Set DataHost globally if the config option is non-zero
-		if DefaultConfig.DataHost != "" {
-			yggdrasil.DataHost = DefaultConfig.DataHost
+		if config.DefaultConfig.DataHost != "" {
+			yggdrasil.DataHost = config.DefaultConfig.DataHost
 		}
 
 		// Set up a channel to receive the TERM or INT signal over and clean up
@@ -194,7 +193,7 @@ func main() {
 		signal.Notify(quit, syscall.SIGTERM, syscall.SIGINT)
 
 		// Set up logging
-		level, err := log.ParseLevel(DefaultConfig.LogLevel)
+		level, err := log.ParseLevel(config.DefaultConfig.LogLevel)
 		if err != nil {
 			return cli.Exit(err, 1)
 		}
@@ -212,8 +211,8 @@ func main() {
 		}
 
 		clientIDFile := filepath.Join(yggdrasil.LocalstateDir, yggdrasil.LongName, "client-id")
-		if DefaultConfig.CertFile != "" {
-			CN, err := parseCertCN(DefaultConfig.CertFile)
+		if config.DefaultConfig.CertFile != "" {
+			CN, err := parseCertCN(config.DefaultConfig.CertFile)
 			if err != nil {
 				return cli.Exit(fmt.Errorf("cannot parse certificate: %w", err), 1)
 			}
@@ -222,7 +221,7 @@ func main() {
 			}
 		}
 
-		if DefaultConfig.ClientID == "" {
+		if config.DefaultConfig.ClientID == "" {
 			clientID, err := getClientID(clientIDFile)
 			if err != nil {
 				return cli.Exit(fmt.Errorf("cannot get client-id: %w", err), 1)
@@ -234,7 +233,7 @@ func main() {
 				}
 				clientID = data
 			}
-			DefaultConfig.ClientID = string(clientID)
+			config.DefaultConfig.ClientID = string(clientID)
 		}
 
 		httpClient := http.NewHTTPClient(tlsConfig, UserAgent)
@@ -243,12 +242,12 @@ func main() {
 		d := newDispatcher(httpClient)
 		s := grpc.NewServer()
 		pb.RegisterDispatcherServer(s, d)
-		l, err := net.Listen("unix", DefaultConfig.SocketAddr)
+		l, err := net.Listen("unix", config.DefaultConfig.SocketAddr)
 		if err != nil {
 			return cli.Exit(fmt.Errorf("cannot listen to socket: %w", err), 1)
 		}
 		go func() {
-			log.Infof("listening on socket: %v", DefaultConfig.SocketAddr)
+			log.Infof("listening on socket: %v", config.DefaultConfig.SocketAddr)
 			if err := s.Serve(l); err != nil {
 				log.Errorf("cannot start server: %v", err)
 			}
@@ -259,21 +258,21 @@ func main() {
 		}
 
 		var transporter transport.Transporter
-		switch DefaultConfig.Protocol {
+		switch config.DefaultConfig.Protocol {
 		case "mqtt":
 			var err error
-			transporter, err = transport.NewMQTTTransport(DefaultConfig.ClientID, DefaultConfig.Server, tlsConfig, client.DataReceiveHandlerFunc)
+			transporter, err = transport.NewMQTTTransport(config.DefaultConfig.ClientID, config.DefaultConfig.Server, tlsConfig, client.DataReceiveHandlerFunc)
 			if err != nil {
 				return cli.Exit(fmt.Errorf("cannot create MQTT transport: %w", err), 1)
 			}
 		case "http":
 			var err error
-			transporter, err = transport.NewHTTPTransport(DefaultConfig.ClientID, DefaultConfig.Server, tlsConfig, UserAgent, time.Second*5, client.DataReceiveHandlerFunc)
+			transporter, err = transport.NewHTTPTransport(config.DefaultConfig.ClientID, config.DefaultConfig.Server, tlsConfig, UserAgent, time.Second*5, client.DataReceiveHandlerFunc)
 			if err != nil {
 				return cli.Exit(fmt.Errorf("cannot create HTTP transport: %w", err), 1)
 			}
 		default:
-			return cli.Exit(fmt.Errorf("unsupported transport protocol: %v", DefaultConfig.Protocol), 1)
+			return cli.Exit(fmt.Errorf("unsupported transport protocol: %v", config.DefaultConfig.Protocol), 1)
 		}
 		client.t = transporter
 		if err := client.Connect(); err != nil {
@@ -361,27 +360,27 @@ func main() {
 		go client.ReceiveData()
 
 		// Locate and start worker child processes.
-		if err := os.MkdirAll(DefaultConfig.WorkerConfigDir, 0755); err != nil {
+		if err := os.MkdirAll(config.DefaultConfig.WorkerConfigDir, 0755); err != nil {
 			return cli.Exit(fmt.Errorf("cannot create directory: %w", err), 1)
 		}
 
-		fileInfos, err := ioutil.ReadDir(DefaultConfig.WorkerConfigDir)
+		fileInfos, err := ioutil.ReadDir(config.DefaultConfig.WorkerConfigDir)
 		if err != nil {
 			return cli.Exit(fmt.Errorf("cannot read contents of directory: %w", err), 1)
 		}
 		for _, info := range fileInfos {
-			config, err := loadWorkerConfig(filepath.Join(DefaultConfig.WorkerConfigDir, info.Name()))
+			worker, err := loadWorkerConfig(filepath.Join(config.DefaultConfig.WorkerConfigDir, info.Name()))
 			if err != nil {
 				log.Errorf("cannot load worker config: %v", err)
 				continue
 			}
-			if DefaultConfig.ExcludeWorkers[config.directive] {
-				log.Tracef("skipping excluded worker %v", config.directive)
+			if config.DefaultConfig.ExcludeWorkers[worker.directive] {
+				log.Tracef("skipping excluded worker %v", worker.directive)
 				continue
 			}
-			log.Debugf("starting worker: %v", config.directive)
+			log.Debugf("starting worker: %v", worker.directive)
 			go func() {
-				if err := startWorker(*config, nil, func(pid int) {
+				if err := startWorker(*worker, nil, func(pid int) {
 					d.deadWorkers <- pid
 				}); err != nil {
 					log.Errorf("cannot start worker: %v", err)
@@ -391,7 +390,7 @@ func main() {
 		}
 		// Start a goroutine that watches the worker directory for added or
 		// deleted files. Any "worker" files it detects are started up.
-		go watchWorkerDir(DefaultConfig.WorkerConfigDir, d.deadWorkers)
+		go watchWorkerDir(config.DefaultConfig.WorkerConfigDir, d.deadWorkers)
 
 		// Start a goroutine that receives handler values on a channel and
 		// removes the worker registration entry.
@@ -436,7 +435,7 @@ func main() {
 		return nil
 	}
 	app.EnableBashCompletion = true
-	app.BashComplete = internal.BashComplete
+	app.BashComplete = BashComplete
 
 	if err := app.Run(os.Args); err != nil {
 		log.Fatal(err)
