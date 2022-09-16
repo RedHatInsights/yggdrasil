@@ -20,28 +20,103 @@ type Client struct {
 	d *dispatcher
 }
 
+// NewClient creates a new Client configured with dispatcher and transporter.
+func NewClient(dispatcher *dispatcher, transporter transport.Transporter) *Client {
+	return &Client{
+		d: dispatcher,
+		t: transporter,
+	}
+}
+
+// Connect starts a goroutine receiving values from the client's dispatcher and
+// transmits the data using the transporter.
 func (c *Client) Connect() error {
+	if c.t == nil {
+		return fmt.Errorf("cannot connect client: missing transport")
+	}
+
+	// start receiving values from the dispatcher and transmit them using the
+	// provided transporter.
+	go func() {
+		for msg := range c.d.sendQ {
+			code, metadata, data, err := c.SendDataMessage(&msg, msg.Metadata)
+			if err != nil {
+				log.Errorf("cannot send data message: %v", err)
+				continue
+			}
+			msg.Resp <- struct {
+				Code     int
+				Metadata map[string]string
+				Data     []byte
+			}{
+				Code:     code,
+				Metadata: metadata,
+				Data:     data,
+			}
+		}
+	}()
+
+	// set a transport RxHandlerFunc that calls the client's control and data
+	// receive handler functions.
+	err := c.t.SetRxHandler(func(addr string, metadata map[string]interface{}, data []byte) error {
+		switch addr {
+		case "data":
+			var message yggdrasil.Data
+
+			if err := json.Unmarshal(data, &message); err != nil {
+				return fmt.Errorf("cannot unmarshal data message: %w", err)
+			}
+			if err := c.ReceiveDataMessage(&message); err != nil {
+				return fmt.Errorf("cannot process data message: %w", err)
+			}
+		case "control":
+			var message yggdrasil.Control
+
+			if err := json.Unmarshal(data, &message); err != nil {
+				return fmt.Errorf("cannot unmarshal control message: %w", err)
+			}
+			if err := c.ReceiveControlMessage(&message); err != nil {
+				return fmt.Errorf("cannot process control message: %w", err)
+			}
+		default:
+			return fmt.Errorf("unsupported destination type: %v", addr)
+		}
+		return nil
+	})
+	if err != nil {
+		return fmt.Errorf("cannot set RxHandler: %v", err)
+	}
+
 	return c.t.Connect()
 }
 
-func (c *Client) SendDataMessage(msg *yggdrasil.Data) ([]byte, error) {
-	return c.sendMessage(msg, "data")
+func (c *Client) SendDataMessage(msg *yggdrasil.Data, metadata map[string]string) (int, map[string]string, []byte, error) {
+	return c.sendMessage("data", metadata, msg)
 }
 
-func (c *Client) SendConnectionStatusMessage(msg *yggdrasil.ConnectionStatus) ([]byte, error) {
-	return c.sendMessage(msg, "control")
+func (c *Client) SendConnectionStatusMessage(msg *yggdrasil.ConnectionStatus) (int, map[string]string, []byte, error) {
+	code, metadata, data, err := c.sendMessage("control", nil, msg)
+	if err != nil {
+		return -1, nil, nil, err
+	}
+	return code, metadata, data, nil
 }
 
-func (c *Client) SendEventMessage(msg *yggdrasil.Event) ([]byte, error) {
-	return c.sendMessage(msg, "control")
+func (c *Client) SendEventMessage(msg *yggdrasil.Event) (int, map[string]string, []byte, error) {
+	code, metadata, data, err := c.sendMessage("control", nil, msg)
+	if err != nil {
+		return -1, nil, nil, err
+	}
+	return code, metadata, data, nil
 }
 
-func (c *Client) sendMessage(msg interface{}, dest string) ([]byte, error) {
+// sendMessage marshals msg as data and transmits it via the transport.
+func (c *Client) sendMessage(dest string, metadata map[string]string, msg interface{}) (int, map[string]string, []byte, error) {
 	data, err := json.Marshal(msg)
 	if err != nil {
-		return nil, fmt.Errorf("cannot marshal message: %w", err)
+		return -1, nil, nil, fmt.Errorf("cannot marshal message: %w", err)
 	}
-	return c.t.SendData(data, dest)
+	return c.t.Tx(dest, metadata, data)
 }
 
 // ReceiveDataMessage sends a value to a channel for dispatching to worker processes.
@@ -79,7 +154,7 @@ func (c *Client) ReceiveControlMessage(msg *yggdrasil.Control) error {
 			if err != nil {
 				return fmt.Errorf("cannot marshal event: %w", err)
 			}
-			if _, err := c.t.SendData(data, "control"); err != nil {
+			if _, _, _, err := c.t.Tx("control", nil, data); err != nil {
 				return fmt.Errorf("cannot send data: %w", err)
 			}
 		case yggdrasil.CommandNameDisconnect:
@@ -106,49 +181,6 @@ func (c *Client) ReceiveControlMessage(msg *yggdrasil.Control) error {
 	}
 
 	return nil
-}
-
-func (c *Client) DataReceiveHandlerFunc(data []byte, dest string) {
-	switch dest {
-	case "data":
-		var message yggdrasil.Data
-
-		if err := json.Unmarshal(data, &message); err != nil {
-			log.Errorf("cannot unmarshal data message: %v", err)
-			return
-		}
-		if err := c.ReceiveDataMessage(&message); err != nil {
-			log.Errorf("cannot process data message: %v", err)
-			return
-		}
-	case "control":
-		var message yggdrasil.Control
-
-		if err := json.Unmarshal(data, &message); err != nil {
-			log.Errorf("cannot unmarshal control message: %v", err)
-			return
-		}
-		if err := c.ReceiveControlMessage(&message); err != nil {
-			log.Errorf("cannot process control message: %v", err)
-			return
-		}
-	default:
-		log.Errorf("unsupported destination type: %v", dest)
-		return
-	}
-}
-
-// ReceiveData receives values from workers via a dispatch receive queue and
-// sends them using the configured transport.
-func (c *Client) ReceiveData() {
-	for msg := range c.d.recvQ {
-		res, err := c.SendDataMessage(msg.Data)
-		if err != nil {
-			log.Errorf("cannot send data message: %v", err)
-		}
-		// Do not block this one
-		go func(msg DataMessage) { msg.Response <- res }(msg)
-	}
 }
 
 // ConnectionStatus creates a connection-status message using the current state

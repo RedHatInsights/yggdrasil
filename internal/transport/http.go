@@ -30,14 +30,14 @@ type HTTP struct {
 	clientID        string
 	client          *internalhttp.Client
 	server          string
-	dataHandler     DataReceiveHandlerFunc
+	dataHandler     RxHandlerFunc
 	pollingInterval time.Duration
 	disconnected    atomic.Value
 	userAgent       string
 	isTLS           atomic.Value
 }
 
-func NewHTTPTransport(clientID string, server string, tlsConfig *tls.Config, userAgent string, pollingInterval time.Duration, dataRecvFunc DataReceiveHandlerFunc) (*HTTP, error) {
+func NewHTTPTransport(clientID string, server string, tlsConfig *tls.Config, userAgent string, pollingInterval time.Duration) (*HTTP, error) {
 	disconnected := atomic.Value{}
 	disconnected.Store(false)
 	isTls := atomic.Value{}
@@ -45,7 +45,6 @@ func NewHTTPTransport(clientID string, server string, tlsConfig *tls.Config, use
 	return &HTTP{
 		clientID:        clientID,
 		client:          internalhttp.NewHTTPClient(tlsConfig.Clone(), userAgent),
-		dataHandler:     dataRecvFunc,
 		pollingInterval: pollingInterval,
 		disconnected:    disconnected,
 		server:          server,
@@ -71,7 +70,13 @@ func (t *HTTP) Connect() error {
 					log.Errorf("cannot read response body: %v", err)
 					continue
 				}
-				_ = t.ReceiveData(data, "control")
+				if t.dataHandler != nil {
+					metadata := make(map[string]interface{})
+					for k, v := range resp.Header {
+						metadata[k] = v
+					}
+					_ = t.dataHandler("control", metadata, data)
+				}
 				resp.Body.Close()
 			}
 			time.Sleep(t.pollingInterval)
@@ -94,7 +99,13 @@ func (t *HTTP) Connect() error {
 					log.Errorf("cannot read response body: %v", err)
 					continue
 				}
-				_ = t.ReceiveData(data, "data")
+				if t.dataHandler != nil {
+					metadata := make(map[string]interface{})
+					for k, v := range resp.Header {
+						metadata[k] = v
+					}
+					_ = t.dataHandler("data", metadata, data)
+				}
 				resp.Body.Close()
 			}
 			time.Sleep(t.pollingInterval)
@@ -116,56 +127,43 @@ func (t *HTTP) Disconnect(quiesce uint) {
 	t.disconnected.Store(true)
 }
 
-func (t *HTTP) SendData(data []byte, dest string) ([]byte, error) {
-	return t.send(data, dest)
-}
-
-func (t *HTTP) ReceiveData(data []byte, dest string) error {
-	t.dataHandler(data, dest)
-	return nil
-}
-
-func (t *HTTP) send(message []byte, channel string) ([]byte, error) {
+func (t *HTTP) Tx(addr string, metadata map[string]string, data []byte) (responseCode int, responseMetadata map[string]string, responseData []byte, err error) {
 	if t.disconnected.Load().(bool) {
-		return nil, nil
+		return -1, nil, nil, fmt.Errorf("cannot perform Tx: transport is disconnected")
 	}
-	url := t.getUrl("out", channel)
+	url := t.getUrl("out", addr)
 	headers := map[string]string{
 		"Content-Type": "application/json",
 	}
-	log.Tracef("posting HTTP request body: %s", string(message))
-	res, err := t.client.Post(url, headers, message)
-	if err != nil && res == nil {
-		return nil, fmt.Errorf("cannot do HTTP request: %w", err)
+	log.Tracef("posting HTTP request body: %s", string(data))
+	resp, err := t.client.Post(url, headers, data)
+	if err != nil && resp == nil {
+		return -1, nil, nil, fmt.Errorf("cannot perform HTTP request: %w", err)
 	}
 
-	var response HTTPResponse
-	response.StatusCode = res.StatusCode
-	response.Metadata = make(map[string]string)
-	for k, v := range res.Header {
-		response.Metadata[k] = strings.Join(v, ";")
+	responseCode = resp.StatusCode
+	responseMetadata = make(map[string]string)
+	for k, v := range resp.Header {
+		responseMetadata[k] = strings.Join(v, ";")
 	}
-	body, err := ioutil.ReadAll(res.Body)
+	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return nil, fmt.Errorf("cannot read HTTP response body: %w", err)
+		return -1, nil, nil, fmt.Errorf("cannot read HTTP response body: %w", err)
 	}
-	defer res.Body.Close()
+	defer resp.Body.Close()
 
-	if err := json.Unmarshal(body, &response.Body); err != nil {
-		return nil, fmt.Errorf("cannot marshal HTTP response body: %w", err)
-	}
+	responseData = body
 
-	data, err := json.Marshal(response)
-	if err != nil {
-		return nil, fmt.Errorf("cannot marshal HTTP response: %w", err)
+	if resp.StatusCode >= 400 {
+		err = fmt.Errorf("%v", http.StatusText(resp.StatusCode))
 	}
 
-	var httpError error
-	if res.StatusCode >= 400 {
-		httpError = fmt.Errorf("%v", http.StatusText(res.StatusCode))
-	}
+	return
+}
 
-	return data, httpError
+func (t *HTTP) SetRxHandler(f RxHandlerFunc) error {
+	t.dataHandler = f
+	return nil
 }
 
 func (t *HTTP) getUrl(direction string, channel string) string {
