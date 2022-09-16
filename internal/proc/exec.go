@@ -1,4 +1,4 @@
-package main
+package proc
 
 import (
 	"fmt"
@@ -7,10 +7,10 @@ import (
 	"os/exec"
 )
 
-// startProcess executes file, setting up the environment using the provided
+// StartProcess executes file, setting up the environment using the provided
 // env values. If started is not nil, it is invoked on a goroutine after the
 // process has been started.
-func startProcess(file string, args []string, env []string, started func(pid int, stdout io.ReadCloser, stderr io.ReadCloser)) error {
+func StartProcess(file string, args []string, env []string, started func(pid int, stdout io.ReadCloser, stderr io.ReadCloser)) error {
 	if _, err := os.Stat(file); os.IsNotExist(err) {
 		return fmt.Errorf("cannot find file: %w", err)
 	}
@@ -39,9 +39,9 @@ func startProcess(file string, args []string, env []string, started func(pid int
 	return nil
 }
 
-// waitProcess finds a process with the given pid and waits for it to exit.
+// WaitProcess finds a process with the given pid and waits for it to exit.
 // If died is not nil, it is invoked on a goroutine when the process exits.
-func waitProcess(pid int, died func(pid int, state *os.ProcessState)) error {
+func WaitProcess(pid int, died func(pid int, state *os.ProcessState)) error {
 	process, err := os.FindProcess(pid)
 	if err != nil {
 		return fmt.Errorf("cannot find process with pid %v: %w", pid, err)
@@ -59,8 +59,8 @@ func waitProcess(pid int, died func(pid int, state *os.ProcessState)) error {
 	return nil
 }
 
-// stopProcess finds a process with the given pid and kills it.
-func stopProcess(pid int) error {
+// StopProcess finds a process with the given pid and kills it.
+func StopProcess(pid int) error {
 	process, err := os.FindProcess(pid)
 	if err != nil {
 		return fmt.Errorf("cannot find process with pid %v: %w", pid, err)

@@ -15,6 +15,7 @@ import (
 	"github.com/pelletier/go-toml"
 	"github.com/redhatinsights/yggdrasil"
 	"github.com/redhatinsights/yggdrasil/internal/config"
+	"github.com/redhatinsights/yggdrasil/internal/proc"
 	"github.com/rjeczalik/notify"
 	"golang.org/x/net/http/httpproxy"
 )
@@ -97,7 +98,7 @@ func startWorker(worker workerConfig, started func(pid int), stopped func(pid in
 		time.Sleep(worker.delay)
 	}
 
-	err := startProcess(program, args, env, func(pid int, stdout, stderr io.ReadCloser) {
+	err := proc.StartProcess(program, args, env, func(pid int, stdout, stderr io.ReadCloser) {
 		go func() {
 			for {
 				buf := make([]byte, 4096)
@@ -154,7 +155,7 @@ func startWorker(worker workerConfig, started func(pid int), stopped func(pid in
 			go started(pid)
 		}
 
-		if err := waitProcess(pid, func(pid int, state *os.ProcessState) {
+		if err := proc.WaitProcess(pid, func(pid int, state *os.ProcessState) {
 			log.Infof("worker stopped: %v", pid)
 
 			if state.SystemTime() < time.Duration(1*time.Second) {
@@ -200,7 +201,7 @@ func stopWorker(name string) error {
 	if err != nil {
 		return fmt.Errorf("cannot parse data: %w", err)
 	}
-	if err := stopProcess(int(pid)); err != nil {
+	if err := proc.StopProcess(int(pid)); err != nil {
 		return fmt.Errorf("cannot stop worker: %w", err)
 	}
 	if err := os.Remove(pidFile); err != nil {
