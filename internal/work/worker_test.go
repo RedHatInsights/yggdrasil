@@ -1,4 +1,4 @@
-package main
+package work
 
 import (
 	"testing"
@@ -59,24 +59,24 @@ func TestValidEnvVar(t *testing.T) {
 func TestStartWorker(t *testing.T) {
 	tests := []struct {
 		description string
-		input       workerConfig
+		input       WorkerConfig
 		want        string
 		wantError   error
 	}{
 		{
-			input: workerConfig{
+			input: WorkerConfig{
 				Exec:      "/usr/bin/echo test",
 				Protocol:  "grpc",
 				Env:       []string{},
 				delay:     0,
-				directive: "echo-test",
+				Directive: "echo-test",
 			},
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-			err := startWorker(test.input, nil, nil)
+			err := StartWorker(test.input, nil, nil)
 
 			if test.wantError != nil {
 				if !cmp.Equal(err, test.wantError, cmpopts.EquateErrors()) {

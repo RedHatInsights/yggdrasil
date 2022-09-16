@@ -16,6 +16,7 @@ import (
 	"github.com/redhatinsights/yggdrasil/internal/config"
 	"github.com/redhatinsights/yggdrasil/internal/http"
 	"github.com/redhatinsights/yggdrasil/internal/transport"
+	"github.com/redhatinsights/yggdrasil/internal/work"
 
 	"git.sr.ht/~spc/go-log"
 	"github.com/redhatinsights/yggdrasil"
@@ -206,7 +207,7 @@ func main() {
 		log.Infof("starting %v version %v", app.Name, app.Version)
 
 		log.Trace("attempting to kill any orphaned workers")
-		if err := stopWorkers(); err != nil {
+		if err := work.StopWorkers(); err != nil {
 			return cli.Exit(fmt.Errorf("cannot stop workers: %w", err), 1)
 		}
 
@@ -365,18 +366,18 @@ func main() {
 			return cli.Exit(fmt.Errorf("cannot read contents of directory: %w", err), 1)
 		}
 		for _, info := range fileInfos {
-			worker, err := loadWorkerConfig(filepath.Join(config.DefaultConfig.WorkerConfigDir, info.Name()))
+			worker, err := work.LoadWorkerConfig(filepath.Join(config.DefaultConfig.WorkerConfigDir, info.Name()))
 			if err != nil {
 				log.Errorf("cannot load worker config: %v", err)
 				continue
 			}
-			if config.DefaultConfig.ExcludeWorkers[worker.directive] {
-				log.Tracef("skipping excluded worker %v", worker.directive)
+			if config.DefaultConfig.ExcludeWorkers[worker.Directive] {
+				log.Tracef("skipping excluded worker %v", worker.Directive)
 				continue
 			}
-			log.Debugf("starting worker: %v", worker.directive)
+			log.Debugf("starting worker: %v", worker.Directive)
 			go func() {
-				if err := startWorker(*worker, nil, func(pid int) {
+				if err := work.StartWorker(*worker, nil, func(pid int) {
 					d.deadWorkers <- pid
 				}); err != nil {
 					log.Errorf("cannot start worker: %v", err)
@@ -386,7 +387,7 @@ func main() {
 		}
 		// Start a goroutine that watches the worker directory for added or
 		// deleted files. Any "worker" files it detects are started up.
-		go watchWorkerDir(config.DefaultConfig.WorkerConfigDir, d.deadWorkers)
+		go work.WatchWorkerDir(config.DefaultConfig.WorkerConfigDir, d.deadWorkers)
 
 		// Start a goroutine that receives handler values on a channel and
 		// removes the worker registration entry.
@@ -424,7 +425,7 @@ func main() {
 
 		<-quit
 
-		if err := stopWorkers(); err != nil {
+		if err := work.StopWorkers(); err != nil {
 			return cli.Exit(fmt.Errorf("cannot stop workers: %w", err), 1)
 		}
 

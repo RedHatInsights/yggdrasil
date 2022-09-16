@@ -1,4 +1,4 @@
-package main
+package work
 
 import (
 	"fmt"
@@ -20,36 +20,36 @@ import (
 	"golang.org/x/net/http/httpproxy"
 )
 
-type workerConfig struct {
+type WorkerConfig struct {
 	Exec      string   `toml:"exec"`
 	Protocol  string   `toml:"protocol"`
 	Env       []string `toml:"env"`
 	delay     time.Duration
-	directive string
+	Directive string
 }
 
-// loadWorkerConfig reads the contents of file and parses it into a workerConfig
+// LoadWorkerConfig reads the contents of file and parses it into a workerConfig
 // value.
-func loadWorkerConfig(file string) (*workerConfig, error) {
+func LoadWorkerConfig(file string) (*WorkerConfig, error) {
 	data, err := ioutil.ReadFile(file)
 	if err != nil {
 		return nil, fmt.Errorf("cannot read file: %w", err)
 	}
 
-	var worker workerConfig
+	var worker WorkerConfig
 	if err := toml.Unmarshal(data, &worker); err != nil {
 		return nil, fmt.Errorf("cannot load config: %w", err)
 	}
-	worker.directive = strings.TrimSuffix(filepath.Base(file), filepath.Ext(file))
+	worker.Directive = strings.TrimSuffix(filepath.Base(file), filepath.Ext(file))
 
 	return &worker, nil
 }
 
-// startWorker constructs a command to execute from the given workerConfig,
+// StartWorker constructs a command to execute from the given workerConfig,
 // starts it, and starts a goroutine that waits for the process to exit. If not
 // nil, started is invoked after the process is started. Likewise, when the
 // process is stopped, stopped is invoked.
-func startWorker(worker workerConfig, started func(pid int), stopped func(pid int)) error {
+func StartWorker(worker WorkerConfig, started func(pid int), stopped func(pid int)) error {
 	argv := strings.Split(worker.Exec, " ")
 
 	program := argv[0]
@@ -146,7 +146,7 @@ func startWorker(worker workerConfig, started func(pid int), stopped func(pid in
 			return
 		}
 
-		if err := ioutil.WriteFile(filepath.Join(pidDirPath, worker.directive+".pid"), []byte(fmt.Sprintf("%v", pid)), 0644); err != nil {
+		if err := ioutil.WriteFile(filepath.Join(pidDirPath, worker.Directive+".pid"), []byte(fmt.Sprintf("%v", pid)), 0644); err != nil {
 			log.Errorf("cannot write to file: %v", err)
 			return
 		}
@@ -170,8 +170,8 @@ func startWorker(worker workerConfig, started func(pid int), stopped func(pid in
 				go stopped(pid)
 			}
 
-			if workerExists(worker.directive) {
-				if err := startWorker(worker, started, stopped); err != nil {
+			if workerExists(worker.Directive) {
+				if err := StartWorker(worker, started, stopped); err != nil {
 					log.Errorf("cannot restart worker: %v", err)
 					return
 				}
@@ -188,9 +188,9 @@ func startWorker(worker workerConfig, started func(pid int), stopped func(pid in
 	return nil
 }
 
-// stopWorker looks for a PID file with the given name, parses it as a integer,
+// StopWorker looks for a PID file with the given name, parses it as a integer,
 // assumes it is a process PID and stops the process.
-func stopWorker(name string) error {
+func StopWorker(name string) error {
 	pidFile := filepath.Join(yggdrasil.LocalstateDir, "run", yggdrasil.LongName, "workers", name+".pid")
 
 	data, err := ioutil.ReadFile(pidFile)
@@ -210,9 +210,9 @@ func stopWorker(name string) error {
 	return nil
 }
 
-// stopWorkers reads all pid files from the local state directory and attempts
+// StopWorkers reads all pid files from the local state directory and attempts
 // to stop the worker process.
-func stopWorkers() error {
+func StopWorkers() error {
 	dir := filepath.Join(yggdrasil.LocalstateDir, "run", yggdrasil.LongName, "workers")
 	if err := os.MkdirAll(dir, 0755); err != nil {
 		return fmt.Errorf("cannot create directory: %w", err)
@@ -224,7 +224,7 @@ func stopWorkers() error {
 
 	for _, info := range infos {
 		if strings.HasSuffix(info.Name(), ".pid") {
-			if err := stopWorker(strings.TrimSuffix(info.Name(), ".pid")); err != nil {
+			if err := StopWorker(strings.TrimSuffix(info.Name(), ".pid")); err != nil {
 				return fmt.Errorf("cannot stop worker: %w", err)
 			}
 		}
@@ -233,7 +233,7 @@ func stopWorkers() error {
 	return nil
 }
 
-func watchWorkerDir(dir string, died chan int) {
+func WatchWorkerDir(dir string, died chan int) {
 	c := make(chan notify.EventInfo, 1)
 
 	if err := notify.Watch(dir, c, notify.InCloseWrite, notify.InDelete, notify.InMovedFrom, notify.InMovedTo); err != nil {
@@ -247,27 +247,27 @@ func watchWorkerDir(dir string, died chan int) {
 		switch e.Event() {
 		case notify.InCloseWrite, notify.InMovedTo:
 			log.Tracef("new worker detected: %v", e.Path())
-			worker, err := loadWorkerConfig(e.Path())
+			worker, err := LoadWorkerConfig(e.Path())
 			if err != nil {
 				log.Errorf("cannot load worker config: %v", err)
 			}
-			if config.DefaultConfig.ExcludeWorkers[worker.directive] {
-				log.Tracef("skipping excluded worker %v", worker.directive)
+			if config.DefaultConfig.ExcludeWorkers[worker.Directive] {
+				log.Tracef("skipping excluded worker %v", worker.Directive)
 				continue
 			}
-			log.Debugf("starting worker: %v", worker.directive)
+			log.Debugf("starting worker: %v", worker.Directive)
 			go func() {
-				if err := startWorker(*worker, nil, func(pid int) {
+				if err := StartWorker(*worker, nil, func(pid int) {
 					died <- pid
 				}); err != nil {
-					log.Errorf("cannot start worker %v: %v", worker.directive, err)
+					log.Errorf("cannot start worker %v: %v", worker.Directive, err)
 					return
 				}
 			}()
 		case notify.InDelete, notify.InMovedFrom:
 			name := strings.TrimSuffix(filepath.Base(e.Path()), filepath.Ext(e.Path()))
 
-			if err := stopWorker(name); err != nil {
+			if err := StopWorker(name); err != nil {
 				log.Errorf("cannot kill worker %v: %v", name, err)
 				continue
 			}
