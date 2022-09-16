@@ -10,10 +10,12 @@ import (
 	"log"
 	"net"
 	"net/http"
+	"net/url"
 	"testing"
 	"time"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/redhatinsights/yggdrasil/internal/transport"
 )
 
@@ -71,7 +73,7 @@ func getFreePort() (int, error) {
 	return l.Addr().(*net.TCPAddr).Port, nil
 }
 
-func TestSend(t *testing.T) {
+func TestTx(t *testing.T) {
 	srv := startServer()
 	defer func() {
 		err := srv.Shutdown(context.Background())
@@ -87,90 +89,99 @@ func TestSend(t *testing.T) {
 
 	tests := []struct {
 		description string
-		server      string
-		client      string
-		err         bool
-		response    bool
-		statusCode  int
-		body        json.RawMessage
+		serverAddr  string
+		clientID    string
+		wantError   error
+		want        struct {
+			code     int
+			metadata map[string]string
+			data     []byte
+		}
 	}{
 		{
 			description: "Invalid server",
-			server:      fmt.Sprintf("localhost:%d", freePort),
-			client:      "200",
-			err:         true,
-			response:    false,
+			serverAddr:  fmt.Sprintf("localhost:%d", freePort),
+			clientID:    "200",
+			wantError:   &url.Error{},
 		},
 		{
 			description: "200OK works as expected",
-			server:      server,
-			client:      "200",
-			err:         false,
-			response:    true,
-			statusCode:  200,
-			body:        []byte(`{"status":"OK"}`),
+			serverAddr:  server,
+			clientID:    "200",
+			want: struct {
+				code     int
+				metadata map[string]string
+				data     []byte
+			}{
+				code: 200,
+				metadata: map[string]string{
+					"Content-Length": "15",
+					"Content-Type":   "text/plain; charset=utf-8",
+				},
+				data: []byte(`{"status":"OK"}`),
+			},
 		},
 		{
 			description: "401 works as expected",
-			server:      server,
-			client:      "401",
-			err:         true,
-			response:    true,
-			statusCode:  401,
-			body:        []byte(`{"status":"OK"}`),
+			serverAddr:  server,
+			clientID:    "401",
+			want: struct {
+				code     int
+				metadata map[string]string
+				data     []byte
+			}{
+				code: 401,
+				metadata: map[string]string{
+					"Content-Length": "15",
+					"Content-Type":   "text/plain; charset=utf-8",
+				},
+				data: []byte(`{"status":"OK"}`),
+			},
 		},
 		{
 			description: "500 works as expected",
-			server:      server,
-			client:      "500",
-			err:         true,
-			response:    true,
-			statusCode:  500,
-			body:        []byte(`{"status":"OK"}`),
+			serverAddr:  server,
+			clientID:    "500",
+			want: struct {
+				code     int
+				metadata map[string]string
+				data     []byte
+			}{
+				code: 500,
+				metadata: map[string]string{
+					"Content-Length": "15",
+					"Content-Type":   "text/plain; charset=utf-8",
+				},
+				data: []byte(`{"status":"OK"}`),
+			},
 		},
 	}
 
-	cb := func([]byte, string) {}
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-			httpTransport, err := transport.NewHTTPTransport(test.client, test.server, nil, "testUA", time.Second, cb)
+			httpTransport, err := transport.NewHTTPTransport(test.clientID, test.serverAddr, nil, "testUA", time.Second)
 			if err != nil {
-				t.Error("Cannot create new transport")
+				t.Fatalf("cannot create new transport: %v", err)
 			}
 
-			res, err := httpTransport.SendData([]byte("test"), "test")
+			responseCode, responseMetadata, responseData, err := httpTransport.Tx("test", nil, []byte("test"))
 
-			errorResult := err != nil
-			if !cmp.Equal(errorResult, test.err) {
-				t.Errorf("Error should match %#v != %#v, err:%v", errorResult, test.err, err)
-			}
-			if !test.response {
-				if res != nil {
-					t.Error("It has response when it shouldn't")
+			if test.wantError != nil {
+				if !cmp.Equal(test.wantError, cmpopts.AnyError, cmpopts.EquateErrors()) {
+					t.Errorf("%v != %v", err, test.wantError)
 				}
-				return
-			}
+			} else {
+				if !cmp.Equal(responseCode, test.want.code) {
+					t.Errorf("%v != %v", responseCode, test.want.code)
+				}
 
-			if len(res) == 0 {
-				t.Error("Send should return a valid response")
-			}
+				if !cmp.Equal(responseMetadata, test.want.metadata, cmpopts.IgnoreMapEntries(func(key string, val string) bool { return key == "Date" })) {
+					t.Errorf("%v", cmp.Diff(responseMetadata, test.want.metadata))
+				}
 
-			var parsedResponse transport.HTTPResponse
-			err = json.Unmarshal(res, &parsedResponse)
-			if err != nil {
-				t.Errorf("Cannot unmarshal response, err = %v", err)
-			}
-
-			if !cmp.Equal(parsedResponse.StatusCode, test.statusCode) {
-				t.Errorf("Response statuscode is not the same %#v != %#v", parsedResponse.StatusCode, test.statusCode)
-			}
-
-			if !cmp.Equal(parsedResponse.Body, test.body) {
-				t.Errorf("Response body is not the same %s != %s", parsedResponse.Body, test.body)
-			}
-
-			if len(parsedResponse.Metadata) == 0 {
-				t.Error("Metadata shouldn't be empty")
+				if !cmp.Equal(responseData, test.want.data) {
+					t.Errorf("%v != %v", string(responseData), string(test.want.data))
+				}
 			}
 		})
 	}

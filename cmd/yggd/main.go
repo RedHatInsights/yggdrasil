@@ -261,13 +261,13 @@ func main() {
 		switch config.DefaultConfig.Protocol {
 		case "mqtt":
 			var err error
-			transporter, err = transport.NewMQTTTransport(config.DefaultConfig.ClientID, config.DefaultConfig.Server, tlsConfig, client.DataReceiveHandlerFunc)
+			transporter, err = transport.NewMQTTTransport(config.DefaultConfig.ClientID, config.DefaultConfig.Server, tlsConfig)
 			if err != nil {
 				return cli.Exit(fmt.Errorf("cannot create MQTT transport: %w", err), 1)
 			}
 		case "http":
 			var err error
-			transporter, err = transport.NewHTTPTransport(config.DefaultConfig.ClientID, config.DefaultConfig.Server, tlsConfig, UserAgent, time.Second*5, client.DataReceiveHandlerFunc)
+			transporter, err = transport.NewHTTPTransport(config.DefaultConfig.ClientID, config.DefaultConfig.Server, tlsConfig, UserAgent, time.Second*5)
 			if err != nil {
 				return cli.Exit(fmt.Errorf("cannot create HTTP transport: %w", err), 1)
 			}
@@ -311,7 +311,7 @@ func main() {
 			if err != nil {
 				log.Errorf("cannot get connection status: %v", err)
 			}
-			if _, err := client.SendConnectionStatusMessage(msg); err != nil {
+			if _, _, _, err := client.SendConnectionStatusMessage(msg); err != nil {
 				log.Errorf("cannot send connection status message: %v", err)
 			}
 		}()
@@ -344,7 +344,7 @@ func main() {
 						log.Errorf("cannot get connection status: %v", err)
 						return
 					}
-					if _, err = client.SendConnectionStatusMessage(msg); err != nil {
+					if _, _, _, err = client.SendConnectionStatusMessage(msg); err != nil {
 						log.Errorf("cannot send connection status: %v", err)
 					}
 				}()
@@ -354,10 +354,6 @@ func main() {
 		// Start a goroutine that receives yggdrasil.Data values on a 'send'
 		// channel and dispatches them to worker processes.
 		go d.sendData()
-
-		// Start a goroutine that receives yggdrasil.Data values on a 'recv'
-		// channel and publish them to MQTT.
-		go client.ReceiveData()
 
 		// Locate and start worker child processes.
 		if err := os.MkdirAll(config.DefaultConfig.WorkerConfigDir, 0755); err != nil {
@@ -418,7 +414,7 @@ func main() {
 						if err != nil {
 							log.Errorf("cannot get connection status: %v", err)
 						}
-						if _, err = client.SendConnectionStatusMessage(msg); err != nil {
+						if _, _, _, err = client.SendConnectionStatusMessage(msg); err != nil {
 							log.Errorf("cannot send connection status: %v", err)
 						}
 					}()

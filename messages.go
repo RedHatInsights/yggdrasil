@@ -122,4 +122,9 @@ type Data struct {
 	Directive  string            `json:"directive"`
 	Metadata   map[string]string `json:"metadata"`
 	Content    json.RawMessage   `json:"content"`
+	Resp       chan struct {
+		Code     int
+		Metadata map[string]string
+		Data     []byte
+	}
 }
