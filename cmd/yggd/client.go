@@ -11,6 +11,7 @@ import (
 	"git.sr.ht/~spc/go-log"
 	"github.com/google/uuid"
 	"github.com/redhatinsights/yggdrasil"
+	"github.com/redhatinsights/yggdrasil/internal/config"
 	"github.com/redhatinsights/yggdrasil/internal/transport"
 )
 
@@ -153,7 +154,7 @@ func (c *Client) ReceiveData() {
 // ConnectionStatus creates a connection-status message using the current state
 // of the client.
 func (c *Client) ConnectionStatus() (*yggdrasil.ConnectionStatus, error) {
-	facts, err := yggdrasil.GetCanonicalFacts(DefaultConfig.CertFile)
+	facts, err := yggdrasil.GetCanonicalFacts(config.DefaultConfig.CertFile)
 	if err != nil {
 		return nil, fmt.Errorf("cannot get canonical facts: %w", err)
 	}

@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/redhatinsights/yggdrasil/internal/config"
 	"github.com/redhatinsights/yggdrasil/internal/http"
 
 	"git.sr.ht/~spc/go-log"
@@ -90,13 +91,13 @@ func (d *dispatcher) Register(ctx context.Context, r *pb.RegistrationRequest) (*
 
 func (d *dispatcher) GetConfig(ctx context.Context, _ *pb.Empty) (*pb.Config, error) {
 	return &pb.Config{
-		LogLevel:   DefaultConfig.LogLevel,
-		ClientId:   DefaultConfig.ClientID,
-		SocketAddr: DefaultConfig.SocketAddr,
-		Server:     DefaultConfig.Server,
-		CertFile:   DefaultConfig.CertFile,
-		KeyFile:    DefaultConfig.KeyFile,
-		CaRoot:     strings.Join(DefaultConfig.CARoot, ";"),
+		LogLevel:   config.DefaultConfig.LogLevel,
+		ClientId:   config.DefaultConfig.ClientID,
+		SocketAddr: config.DefaultConfig.SocketAddr,
+		Server:     config.DefaultConfig.Server,
+		CertFile:   config.DefaultConfig.CertFile,
+		KeyFile:    config.DefaultConfig.KeyFile,
+		CaRoot:     strings.Join(config.DefaultConfig.CARoot, ";"),
 	}, nil
 }
 

@@ -1,4 +1,4 @@
-package main
+package config
 
 import (
 	"crypto/tls"
@@ -10,19 +10,21 @@ import (
 )
 
 const (
-	cliLogLevel        = "log-level"
-	cliCertFile        = "cert-file"
-	cliKeyFile         = "key-file"
-	cliCaRoot          = "ca-root"
-	cliServer          = "server"
-	cliSocketAddr      = "socket-addr"
-	cliClientID        = "client-id"
-	cliPathPrefix      = "path-prefix"
-	cliProtocol        = "protocol"
-	cliDataHost        = "data-host"
-	cliExcludeWorker   = "exclude-worker"
-	cliWorkerConfigDir = "worker-config-dir"
+	FlagNameLogLevel        = "log-level"
+	FlagNameCertFile        = "cert-file"
+	FlagNameKeyFile         = "key-file"
+	FlagNameCaRoot          = "ca-root"
+	FlagNameServer          = "server"
+	FlagNameSocketAddr      = "socket-addr"
+	FlagNameClientID        = "client-id"
+	FlagNamePathPrefix      = "path-prefix"
+	FlagNameProtocol        = "protocol"
+	FlagNameDataHost        = "data-host"
+	FlagNameExcludeWorker   = "exclude-worker"
+	FlagNameWorkerConfigDir = "worker-config-dir"
 )
+
+var DefaultConfig Config
 
 // Config contains current configuration state for yggdrasil.
 type Config struct {
