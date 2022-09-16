@@ -1,4 +1,4 @@
-package main
+package proc
 
 import (
 	"io"
@@ -28,7 +28,7 @@ func TestStartProcess(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-			err := startProcess(test.input.file, test.input.args, test.input.env, nil)
+			err := StartProcess(test.input.file, test.input.args, test.input.env, nil)
 			if err != nil {
 				t.Fatalf("unexpected error: %v", err)
 			}
@@ -59,8 +59,8 @@ func TestStopProcess(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-			err := startProcess(test.input.file, test.input.args, test.input.env, func(pid int, stdout, stderr io.ReadCloser) {
-				if err := stopProcess(pid); err != nil {
+			err := StartProcess(test.input.file, test.input.args, test.input.env, func(pid int, stdout, stderr io.ReadCloser) {
+				if err := StopProcess(pid); err != nil {
 					t.Fatalf("unexpected error: %v", err)
 				}
 			})
@@ -95,8 +95,8 @@ func TestWaitProcess(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
 
-			err := startProcess(test.input.file, test.input.args, test.input.env, func(pid int, stdout, stderr io.ReadCloser) {
-				if err := waitProcess(pid, nil); err != nil {
+			err := StartProcess(test.input.file, test.input.args, test.input.env, func(pid int, stdout, stderr io.ReadCloser) {
+				if err := WaitProcess(pid, nil); err != nil {
 					t.Fatalf("unexpected error: %v", err)
 				}
 			})
