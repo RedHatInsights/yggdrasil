@@ -146,12 +146,12 @@ func (t *MQTT) Tx(addr string, metadata map[string]string, data []byte) (respons
 
 	if token := t.client.Publish(topic, 1, false, data); token.Wait() && token.Error() != nil {
 		log.Errorf("failed to publish message: %v", token.Error())
-		return -1, nil, nil, token.Error()
+		return TxResponseErr, nil, nil, token.Error()
 	}
 	log.Debugf("published message to topic %v", topic)
 	log.Tracef("message: %v", string(data))
 
-	return 0, nil, nil, nil
+	return TxResponseOK, nil, nil, nil
 }
 
 // SetRxHandler stores a reference to f, which is then called whenever data is

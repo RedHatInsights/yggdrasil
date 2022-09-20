@@ -1,0 +1,26 @@
+<!DOCTYPE node PUBLIC "-//freedesktop//DTD D-BUS Object Introspection 1.0//EN" "https://specifications.freedesktop.org/dbus/introspect-latest.dtd">
+<node>
+    <!-- 
+        com.redhat.yggdrasil.Worker1:
+
+        A D-Bus interface for the dispatch service to communicate with its
+        workers.
+    -->
+    <interface name="com.redhat.yggdrasil.Worker1">
+        <!--
+            Dispatch passes data to a worker.
+        -->
+        <method name="Dispatch">
+            <arg type="s" name="addr" direction="in" />
+            <arg type="s" name="id" direction="in" />
+            <arg type="a{ss}" name="metadata" direction="in" />
+            <arg type="ay" name="data" direction="in" />
+        </method>
+
+        <!-- 
+            Features are a set of key/value pairs that a worker exposes for the
+            dispatcher to access.
+        -->
+        <property name="Features" type="a{ss}" access="read" />
+    </interface>
+</node>

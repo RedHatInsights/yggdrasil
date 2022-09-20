@@ -129,7 +129,7 @@ func (t *HTTP) Disconnect(quiesce uint) {
 
 func (t *HTTP) Tx(addr string, metadata map[string]string, data []byte) (responseCode int, responseMetadata map[string]string, responseData []byte, err error) {
 	if t.disconnected.Load().(bool) {
-		return -1, nil, nil, fmt.Errorf("cannot perform Tx: transport is disconnected")
+		return TxResponseErr, nil, nil, fmt.Errorf("cannot perform Tx: transport is disconnected")
 	}
 	url := t.getUrl("out", addr)
 	headers := map[string]string{
@@ -138,7 +138,7 @@ func (t *HTTP) Tx(addr string, metadata map[string]string, data []byte) (respons
 	log.Tracef("posting HTTP request body: %s", string(data))
 	resp, err := t.client.Post(url, headers, data)
 	if err != nil && resp == nil {
-		return -1, nil, nil, fmt.Errorf("cannot perform HTTP request: %w", err)
+		return TxResponseErr, nil, nil, fmt.Errorf("cannot perform HTTP request: %w", err)
 	}
 
 	responseCode = resp.StatusCode
@@ -148,7 +148,7 @@ func (t *HTTP) Tx(addr string, metadata map[string]string, data []byte) (respons
 	}
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return -1, nil, nil, fmt.Errorf("cannot read HTTP response body: %w", err)
+		return TxResponseErr, nil, nil, fmt.Errorf("cannot read HTTP response body: %w", err)
 	}
 	defer resp.Body.Close()
 

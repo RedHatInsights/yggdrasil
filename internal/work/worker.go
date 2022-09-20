@@ -21,11 +21,12 @@ import (
 )
 
 type WorkerConfig struct {
-	Exec      string   `toml:"exec"`
-	Protocol  string   `toml:"protocol"`
-	Env       []string `toml:"env"`
-	delay     time.Duration
-	Directive string
+	Exec          string            `toml:"exec"`
+	Env           []string          `toml:"env"`
+	Features      map[string]string `toml:"features"`
+	RemoteContent bool              `toml:"remote_content"`
+	delay         time.Duration
+	Directive     string
 }
 
 // LoadWorkerConfig reads the contents of file and parses it into a workerConfig
@@ -49,7 +50,7 @@ func LoadWorkerConfig(file string) (*WorkerConfig, error) {
 // starts it, and starts a goroutine that waits for the process to exit. If not
 // nil, started is invoked after the process is started. Likewise, when the
 // process is stopped, stopped is invoked.
-func StartWorker(worker WorkerConfig, started func(pid int), stopped func(pid int)) error {
+func StartWorker(worker WorkerConfig, started func(worker *WorkerConfig), stopped func(worker *WorkerConfig)) error {
 	argv := strings.Split(worker.Exec, " ")
 
 	program := argv[0]
@@ -63,6 +64,7 @@ func StartWorker(worker WorkerConfig, started func(pid int), stopped func(pid in
 		"YGG_CONFIG_DIR=" + filepath.Join(yggdrasil.SysconfDir, yggdrasil.LongName),
 		"YGG_LOG_LEVEL=" + log.CurrentLevel().String(),
 		"YGG_CLIENT_ID=" + config.DefaultConfig.ClientID,
+		"DBUS_SESSION_BUS_ADDRESS=" + os.Getenv("DBUS_SESSION_BUS_ADDRESS"),
 	}
 
 	proxy := httpproxy.FromEnvironment()
@@ -74,13 +76,6 @@ func StartWorker(worker WorkerConfig, started func(pid int), stopped func(pid in
 	}
 	if proxy.NoProxy != "" {
 		env = append(env, "NO_PROXY="+proxy.NoProxy)
-	}
-
-	switch worker.Protocol {
-	case "grpc":
-		env = append(env, "YGG_SOCKET_ADDR=unix:"+config.DefaultConfig.SocketAddr)
-	default:
-		return fmt.Errorf("unsupported protocol: %v", worker.Protocol)
 	}
 
 	for _, val := range worker.Env {
@@ -152,7 +147,7 @@ func StartWorker(worker WorkerConfig, started func(pid int), stopped func(pid in
 		}
 
 		if started != nil {
-			go started(pid)
+			go started(&worker)
 		}
 
 		if err := proc.WaitProcess(pid, func(pid int, state *os.ProcessState) {
@@ -167,7 +162,7 @@ func StartWorker(worker WorkerConfig, started func(pid int), stopped func(pid in
 			}
 
 			if stopped != nil {
-				go stopped(pid)
+				go stopped(&worker)
 			}
 
 			if workerExists(worker.Directive) {
@@ -233,7 +228,7 @@ func StopWorkers() error {
 	return nil
 }
 
-func WatchWorkerDir(dir string, died chan int) {
+func WatchWorkerDir(dir string, started func(worker *WorkerConfig), stopped func(worker *WorkerConfig)) {
 	c := make(chan notify.EventInfo, 1)
 
 	if err := notify.Watch(dir, c, notify.InCloseWrite, notify.InDelete, notify.InMovedFrom, notify.InMovedTo); err != nil {
@@ -257,9 +252,7 @@ func WatchWorkerDir(dir string, died chan int) {
 			}
 			log.Debugf("starting worker: %v", worker.Directive)
 			go func() {
-				if err := StartWorker(*worker, nil, func(pid int) {
-					died <- pid
-				}); err != nil {
+				if err := StartWorker(*worker, started, stopped); err != nil {
 					log.Errorf("cannot start worker %v: %v", worker.Directive, err)
 					return
 				}

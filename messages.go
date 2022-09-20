@@ -121,10 +121,15 @@ type Data struct {
 	Sent       time.Time         `json:"sent"`
 	Directive  string            `json:"directive"`
 	Metadata   map[string]string `json:"metadata"`
-	Content    json.RawMessage   `json:"content"`
-	Resp       chan struct {
-		Code     int
-		Metadata map[string]string
-		Data     []byte
-	}
+	Content    []byte            `json:"content"`
+}
+
+// Response messages are published by the server as a response to a data
+// message. This is most often used as a receipt to indicate the receiption of a
+// message by a synchronous request/response transport (such as the HTTP polling
+// transport).
+type Response struct {
+	Code     int               `json:"code"`
+	Metadata map[string]string `json:"metadata"`
+	Data     []byte            `json:"data"`
 }
