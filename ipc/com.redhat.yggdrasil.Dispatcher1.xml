@@ -1,0 +1,42 @@
+<!DOCTYPE node PUBLIC "-//freedesktop//DTD D-BUS Object Introspection 1.0//EN" "https://specifications.freedesktop.org/dbus/introspect-latest.dtd">
+<node>
+    <!-- 
+        com.redhat.yggdrasil.Dispatcher1:
+
+        A D-Bus interface for workers to communicate with the dispatch service.
+    -->
+    <interface name="com.redhat.yggdrasil.Dispatcher1">
+        <!-- 
+            Transmit passes data through the dispatcher to the provided address.
+        -->
+        <method name="Transmit">
+            <arg type="s" name="addr" direction="in" />
+            <arg type="s" name="id" direction="in" />
+            <arg type="a{ss}" name="metadata" direction="in" />
+            <arg type="ay" name="data" direction="in" />
+
+            <arg type="u" name="response_code" direction="out" />
+            <arg type="a{ss}" name="response_metadata" direction="out" />
+            <arg type="ay" name="response_data" direction="out" />
+        </method>
+
+        <!-- 
+            Emitted by the dispatcher when certain conditions arise, such as
+            unexpected network disconnections or control commands received from
+            the operating service.
+
+            The possible values for the 'name' argument are:
+
+            1 = RECEIVED_DISCONNECT
+            Emitted when the dispatcher receives the "disconnect" command.
+        -->
+        <signal name="Event">
+            <arg type="u" name="name" />
+        </signal>
+    </interface>
+    <interface name="org.freedesktop.DBus.Introspectable">
+        <method name="Introspect">
+            <arg name="out" direction="out" type="s" />
+        </method>
+    </interface>
+</node>

@@ -71,6 +71,8 @@ BINS = yggd
 DATA = yggd.bash \
 	   yggd.1.gz \
 	   yggd-USAGE.md \
+	   data/dbus/yggd.conf \
+	   data/dbus/com.redhat.yggdrasil.Dispatcher1.service \
 	   data/systemd/yggd.service \
 	   data/pkgconfig/yggdrasil.pc \
 	   doc/tags.toml
@@ -129,6 +131,9 @@ install: $(BINS) $(DATA)
 	pkg-config --modversion systemd || exit 1
 	install -D -m755 ./yggd $(DESTDIR)$(SBINDIR)/$(SHORTNAME)d
 	[[ -e $(DESTDIR)$(SYSCONFDIR)/$(LONGNAME)/config.toml ]] || install -D -m644 ./data/yggdrasil/config.toml $(DESTDIR)$(SYSCONFDIR)/$(LONGNAME)/config.toml
+	install -D -m644 ./data/dbus/yggd.conf $(DESTDIR)$(DATADIR)/dbus-1/session.d/yggd.conf
+	install -D -m644 ./data/dbus/yggd.conf $(DESTDIR)$(DATADIR)/dbus-1/system.d/yggd.conf
+	install -D -m644 ./data/dbus/com.redhat.yggdrasil.Dispatcher1.service $(DESTDIR)$(DATADIR)/dbus-1/system-services/com.redhat.yggdrasil.Dispatcher1.service
 	install -D -m644 ./data/systemd/yggd.service $(DESTDIR)$(SYSTEMD_SYSTEM_UNIT_DIR)/$(SHORTNAME)d.service
 	install -D -m644 ./yggd.1.gz $(DESTDIR)$(MANDIR)/man1/$(SHORTNAME)d.1.gz
 	install -D -m644 ./yggd.bash $(DESTDIR)$(DATADIR)/bash-completion/completions/$(SHORTNAME)d

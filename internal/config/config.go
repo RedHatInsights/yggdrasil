@@ -35,9 +35,6 @@ type Config struct {
 	// transports.
 	ClientID string
 
-	// SocketAddr is the socket address on which yggd is listening.
-	SocketAddr string
-
 	// Server is a URI to which yggd connects in order to send and receive data.
 	Server string
 

@@ -66,7 +66,6 @@ func TestStartWorker(t *testing.T) {
 		{
 			input: WorkerConfig{
 				Exec:      "/usr/bin/echo test",
-				Protocol:  "grpc",
 				Env:       []string{},
 				delay:     0,
 				Directive: "echo-test",

@@ -2,6 +2,11 @@ package transport
 
 import "crypto/tls"
 
+const (
+	TxResponseErr int = -1
+	TxResponseOK  int = 0
+)
+
 type RxHandlerFunc func(addr string, metadata map[string]interface{}, data []byte) error
 
 // Transporter is an interface representing the ability to send and receive

@@ -1,3 +1,14 @@
+# Path to the worker executable.
 exec = "/usr/local/libexec/yggdrasil/ygg-echo-worker"
-protocol = "grpc"
+
+# Array of KEY=VALUE pairs, exported into the worker's environment at startup.
 env = []
+
+# When receiving data, a true value assumes that content needs to be downloaded
+# from a remote URL before being passed to the worker.
+remote_content = false
+
+# An arbitrary set of key/value pairs that are included in connection-status
+# messages sent by yggd.
+[features]
+version = "1"

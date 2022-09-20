@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"net"
 	"os"
 	"os/signal"
 	"path/filepath"
@@ -20,11 +19,9 @@ import (
 
 	"git.sr.ht/~spc/go-log"
 	"github.com/redhatinsights/yggdrasil"
-	pb "github.com/redhatinsights/yggdrasil/protocol"
 	"github.com/rjeczalik/notify"
 	"github.com/urfave/cli/v2"
 	"github.com/urfave/cli/v2/altsrc"
-	"google.golang.org/grpc"
 )
 
 var (
@@ -95,12 +92,6 @@ func main() {
 			Usage: "Force all HTTP traffic over `HOST`",
 			Value: yggdrasil.DataHost,
 		}),
-		&cli.StringFlag{
-			Name:   config.FlagNameSocketAddr,
-			Usage:  "Force yggd to listen on `SOCKET`",
-			Value:  fmt.Sprintf("@yggd-dispatcher-%v", randomString(6)),
-			Hidden: true,
-		},
 		altsrc.NewStringFlag(&cli.StringFlag{
 			Name:  config.FlagNameClientID,
 			Usage: "Use `VALUE` as the client ID when connecting",
@@ -152,7 +143,6 @@ func main() {
 		config.DefaultConfig = config.Config{
 			LogLevel:        c.String(config.FlagNameLogLevel),
 			ClientID:        c.String(config.FlagNameClientID),
-			SocketAddr:      c.String(config.FlagNameSocketAddr),
 			Server:          c.String(config.FlagNameServer),
 			CertFile:        c.String(config.FlagNameCertFile),
 			KeyFile:         c.String(config.FlagNameKeyFile),
@@ -239,24 +229,8 @@ func main() {
 
 		httpClient := http.NewHTTPClient(tlsConfig, UserAgent)
 
-		// Create gRPC dispatcher service
-		d := newDispatcher(httpClient)
-		s := grpc.NewServer()
-		pb.RegisterDispatcherServer(s, d)
-		l, err := net.Listen("unix", config.DefaultConfig.SocketAddr)
-		if err != nil {
-			return cli.Exit(fmt.Errorf("cannot listen to socket: %w", err), 1)
-		}
-		go func() {
-			log.Infof("listening on socket: %v", config.DefaultConfig.SocketAddr)
-			if err := s.Serve(l); err != nil {
-				log.Errorf("cannot start server: %v", err)
-			}
-		}()
-
-		client := Client{
-			d: d,
-		}
+		// Create Dispatcher service
+		dispatcher := work.NewDispatcher(httpClient)
 
 		var transporter transport.Transporter
 		switch config.DefaultConfig.Protocol {
@@ -275,9 +249,9 @@ func main() {
 		default:
 			return cli.Exit(fmt.Errorf("unsupported transport protocol: %v", config.DefaultConfig.Protocol), 1)
 		}
-		client.t = transporter
+		client := NewClient(dispatcher, transporter)
 		if err := client.Connect(); err != nil {
-			return cli.Exit(fmt.Errorf("cannot connect using transport: %w", err), 1)
+			return cli.Exit(fmt.Errorf("cannot connect client: %w", err), 1)
 		}
 
 		// Start a goroutine that receives values on the 'TLSEvents' channel and
@@ -302,7 +276,7 @@ func main() {
 
 				log.Debug("setting dispatcher HTTP client")
 				httpClient := http.NewHTTPClient(cfg, UserAgent)
-				d.httpClient = httpClient
+				dispatcher.HTTPClient = httpClient
 				log.Info("dispatcher HTTP client updated")
 			}
 		}()
@@ -321,7 +295,7 @@ func main() {
 		// and publishes "connection-status" messages to MQTT.
 		var prevDispatchersHash atomic.Value
 		go func() {
-			for dispatchers := range d.dispatchers {
+			for dispatchers := range dispatcher.Dispatchers {
 				data, err := json.Marshal(dispatchers)
 				if err != nil {
 					log.Errorf("cannot marshal dispatcher map to JSON: %v", err)
@@ -352,9 +326,17 @@ func main() {
 			}
 		}()
 
-		// Start a goroutine that receives yggdrasil.Data values on a 'send'
-		// channel and dispatches them to worker processes.
-		go d.sendData()
+		died := make(chan *work.WorkerConfig)
+
+		workerStarted := func(worker *work.WorkerConfig) {
+			if err := dispatcher.RegisterWorker(worker); err != nil {
+				log.Errorf("cannot register worker: %v", err)
+			}
+		}
+
+		workerStopped := func(worker *work.WorkerConfig) {
+			died <- worker
+		}
 
 		// Locate and start worker child processes.
 		if err := os.MkdirAll(config.DefaultConfig.WorkerConfigDir, 0755); err != nil {
@@ -377,9 +359,7 @@ func main() {
 			}
 			log.Debugf("starting worker: %v", worker.Directive)
 			go func() {
-				if err := work.StartWorker(*worker, nil, func(pid int) {
-					d.deadWorkers <- pid
-				}); err != nil {
+				if err := work.StartWorker(*worker, workerStarted, workerStopped); err != nil {
 					log.Errorf("cannot start worker: %v", err)
 					return
 				}
@@ -387,11 +367,15 @@ func main() {
 		}
 		// Start a goroutine that watches the worker directory for added or
 		// deleted files. Any "worker" files it detects are started up.
-		go work.WatchWorkerDir(config.DefaultConfig.WorkerConfigDir, d.deadWorkers)
+		go work.WatchWorkerDir(config.DefaultConfig.WorkerConfigDir, workerStarted, workerStopped)
 
-		// Start a goroutine that receives handler values on a channel and
+		// Start a goroutine that receives WorkerConfig values on a channel and
 		// removes the worker registration entry.
-		go d.unregisterWorker()
+		go func() {
+			for worker := range died {
+				dispatcher.UnregisterWorker(worker.Directive)
+			}
+		}()
 
 		// Start a goroutine that watches the tags file for write events and
 		// publishes connection status messages when the file changes.
