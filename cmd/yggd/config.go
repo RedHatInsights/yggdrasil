@@ -10,17 +10,18 @@ import (
 )
 
 const (
-	cliLogLevel      = "log-level"
-	cliCertFile      = "cert-file"
-	cliKeyFile       = "key-file"
-	cliCaRoot        = "ca-root"
-	cliServer        = "server"
-	cliSocketAddr    = "socket-addr"
-	cliClientID      = "client-id"
-	cliPathPrefix    = "path-prefix"
-	cliProtocol      = "protocol"
-	cliDataHost      = "data-host"
-	cliExcludeWorker = "exclude-worker"
+	cliLogLevel        = "log-level"
+	cliCertFile        = "cert-file"
+	cliKeyFile         = "key-file"
+	cliCaRoot          = "ca-root"
+	cliServer          = "server"
+	cliSocketAddr      = "socket-addr"
+	cliClientID        = "client-id"
+	cliPathPrefix      = "path-prefix"
+	cliProtocol        = "protocol"
+	cliDataHost        = "data-host"
+	cliExcludeWorker   = "exclude-worker"
+	cliWorkerConfigDir = "worker-config-dir"
 )
 
 // Config contains current configuration state for yggdrasil.
@@ -64,6 +65,10 @@ type Config struct {
 	// ExcludeWorkers contains worker names to be excluded from starting when
 	// yggd starts.
 	ExcludeWorkers map[string]bool
+
+	// WorkerConfigDir is a path to a directory containing worker configuration
+	// files. This directory is read during worker discovery and startup.
+	WorkerConfigDir string
 }
 
 func (conf *Config) CreateTLSConfig() (*tls.Config, error) {
