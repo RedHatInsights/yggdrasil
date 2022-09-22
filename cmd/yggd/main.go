@@ -109,6 +109,13 @@ func main() {
 			Name:  cliExcludeWorker,
 			Usage: "Exclude `WORKER` from activation when starting workers",
 		}),
+		altsrc.NewPathFlag(&cli.PathFlag{
+			Name:      cliWorkerConfigDir,
+			Usage:     "Load workers from `DIR`",
+			TakesFile: true,
+			Hidden:    true,
+			Value:     filepath.Join(yggdrasil.SysconfDir, yggdrasil.LongName, "workers"),
+		}),
 	}
 
 	// This BeforeFunc will load flag values from a config file only if the
@@ -143,17 +150,18 @@ func main() {
 		}
 
 		DefaultConfig = Config{
-			LogLevel:       c.String(cliLogLevel),
-			ClientID:       c.String(cliClientID),
-			SocketAddr:     c.String(cliSocketAddr),
-			Server:         c.String(cliServer),
-			CertFile:       c.String(cliCertFile),
-			KeyFile:        c.String(cliKeyFile),
-			CARoot:         c.StringSlice(cliCaRoot),
-			PathPrefix:     c.String(cliPathPrefix),
-			Protocol:       c.String(cliProtocol),
-			DataHost:       c.String(cliDataHost),
-			ExcludeWorkers: map[string]bool{},
+			LogLevel:        c.String(cliLogLevel),
+			ClientID:        c.String(cliClientID),
+			SocketAddr:      c.String(cliSocketAddr),
+			Server:          c.String(cliServer),
+			CertFile:        c.String(cliCertFile),
+			KeyFile:         c.String(cliKeyFile),
+			CARoot:          c.StringSlice(cliCaRoot),
+			PathPrefix:      c.String(cliPathPrefix),
+			Protocol:        c.String(cliProtocol),
+			DataHost:        c.String(cliDataHost),
+			ExcludeWorkers:  map[string]bool{},
+			WorkerConfigDir: c.String(cliWorkerConfigDir),
 		}
 
 		tlsConfig, err := DefaultConfig.CreateTLSConfig()
@@ -353,17 +361,16 @@ func main() {
 		go client.ReceiveData()
 
 		// Locate and start worker child processes.
-		workerPath := filepath.Join(yggdrasil.SysconfDir, yggdrasil.LongName, "workers")
-		if err := os.MkdirAll(workerPath, 0755); err != nil {
+		if err := os.MkdirAll(DefaultConfig.WorkerConfigDir, 0755); err != nil {
 			return cli.Exit(fmt.Errorf("cannot create directory: %w", err), 1)
 		}
 
-		fileInfos, err := ioutil.ReadDir(workerPath)
+		fileInfos, err := ioutil.ReadDir(DefaultConfig.WorkerConfigDir)
 		if err != nil {
 			return cli.Exit(fmt.Errorf("cannot read contents of directory: %w", err), 1)
 		}
 		for _, info := range fileInfos {
-			config, err := loadWorkerConfig(filepath.Join(workerPath, info.Name()))
+			config, err := loadWorkerConfig(filepath.Join(DefaultConfig.WorkerConfigDir, info.Name()))
 			if err != nil {
 				log.Errorf("cannot load worker config: %v", err)
 				continue
@@ -384,7 +391,7 @@ func main() {
 		}
 		// Start a goroutine that watches the worker directory for added or
 		// deleted files. Any "worker" files it detects are started up.
-		go watchWorkerDir(workerPath, d.deadWorkers)
+		go watchWorkerDir(DefaultConfig.WorkerConfigDir, d.deadWorkers)
 
 		// Start a goroutine that receives handler values on a channel and
 		// removes the worker registration entry.
