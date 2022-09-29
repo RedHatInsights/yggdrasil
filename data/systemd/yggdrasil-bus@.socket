@@ -1,0 +1,8 @@
+[Unit]
+Description=yggdrasil Dispatcher Bus Socket
+
+[Socket]
+ListenStream=@yggd_%i
+
+[Install]
+WantedBy=sockets.target

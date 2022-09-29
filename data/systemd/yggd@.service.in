@@ -1,0 +1,13 @@
+[Unit]
+Description=@BRANDNAME@ daemon
+Documentation=https://github.com/redhatinsights/yggdrasil
+After=network-online.target
+Requires=network-online.target yggdrasil-bus@%i.service
+
+[Service]
+Type=simple
+Environment=DBUS_SESSION_BUS_ADDRESS=unix:abstract=yggd_%i
+ExecStart=@SBINDIR@/@SHORTNAME@d --config @SYSCONFDIR@/@LONGNAME@/@LONGNAME@-%i.toml
+
+[Install]
+WantedBy=multi-user.target

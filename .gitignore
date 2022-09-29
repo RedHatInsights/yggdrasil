@@ -6,6 +6,7 @@
 /yggd
 /data/pkgconfig/yggdrasil.pc
 /data/systemd/yggd.service
+/data/systemd/yggd@.service
 /yggd-USAGE.md
 /yggd.1.gz
 /yggd.bash

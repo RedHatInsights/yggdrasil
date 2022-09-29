@@ -74,6 +74,9 @@ DATA = yggd.bash \
 	   data/dbus/yggd.conf \
 	   data/dbus/com.redhat.yggdrasil.Dispatcher1.service \
 	   data/systemd/yggd.service \
+	   data/systemd/yggd@.service \
+	   data/systemd/yggdrasil-bus@.service \
+	   data/systemd/yggdrasil-bus@.socket \
 	   data/pkgconfig/yggdrasil.pc \
 	   doc/tags.toml
 
@@ -135,6 +138,9 @@ install: $(BINS) $(DATA)
 	install -D -m644 ./data/dbus/yggd.conf $(DESTDIR)$(DATADIR)/dbus-1/system.d/yggd.conf
 	install -D -m644 ./data/dbus/com.redhat.yggdrasil.Dispatcher1.service $(DESTDIR)$(DATADIR)/dbus-1/system-services/com.redhat.yggdrasil.Dispatcher1.service
 	install -D -m644 ./data/systemd/yggd.service $(DESTDIR)$(SYSTEMD_SYSTEM_UNIT_DIR)/$(SHORTNAME)d.service
+	install -D -m644 ./data/systemd/yggd@.service $(DESTDIR)$(SYSTEMD_SYSTEM_UNIT_DIR)/$(SHORTNAME)d@.service
+	install -D -m644 ./data/systemd/yggdrasil-bus@.socket $(DESTDIR)$(SYSTEMD_SYSTEM_UNIT_DIR)/$(LONGNAME)-bus@.socket
+	install -D -m644 ./data/systemd/yggdrasil-bus@.service $(DESTDIR)$(SYSTEMD_SYSTEM_UNIT_DIR)/$(LONGNAME)-bus@.service
 	install -D -m644 ./yggd.1.gz $(DESTDIR)$(MANDIR)/man1/$(SHORTNAME)d.1.gz
 	install -D -m644 ./yggd.bash $(DESTDIR)$(DATADIR)/bash-completion/completions/$(SHORTNAME)d
 	install -D -m644 ./data/pkgconfig/yggdrasil.pc $(DESTDIR)$(PREFIX)/share/pkgconfig/$(LONGNAME).pc
