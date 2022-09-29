@@ -1,0 +1,10 @@
+[Unit]
+Description=D-Bus Message Bus for yggdrasil
+After=yggdrasil-bus@%i.socket
+Requires=yggdrasil-bus@%i.socket
+
+[Service]
+Type=notify
+Environment=DBUS_SESSION_BUS_ADDRESS=unix:abstract=yggd_%i
+ExecStart=/usr/bin/dbus-broker-launch --scope user
+ExecReload=/usr/bin/busctl --address=unix:abstract=yggd_%i call org.freedesktop.DBus /org/freedesktop/DBus org.freedesktop.DBus ReloadConfig
