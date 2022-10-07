@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"os/signal"
+	"syscall"
 
 	"git.sr.ht/~spc/go-log"
 
@@ -115,6 +117,48 @@ func main() {
 						return nil
 					},
 				},
+			},
+		},
+		{
+			Name:   "benchmark",
+			Hidden: !DeveloperBuild,
+			Flags: []cli.Flag{
+				&cli.StringFlag{
+					Name:    "broker",
+					Aliases: []string{"b"},
+					Usage:   "set broker to `URI`",
+				},
+				&cli.StringFlag{
+					Name:    "topic-in",
+					Aliases: []string{"t"},
+					Usage:   "set inbound topic to `STRING`",
+				},
+				&cli.StringFlag{
+					Name:    "topic-out",
+					Aliases: []string{"T"},
+					Usage:   "set outbound topic to `STRING`",
+				},
+				&cli.IntFlag{
+					Name:    "count",
+					Aliases: []string{"c"},
+					Usage:   "publish `INT` messages",
+					Value:   100,
+				},
+				&cli.DurationFlag{
+					Name:    "message-delay",
+					Aliases: []string{"m"},
+					Usage:   "wait `DURATION` between publishing each message",
+				},
+			},
+			Action: func(c *cli.Context) error {
+				quit := make(chan os.Signal, 1)
+				signal.Notify(quit, syscall.SIGTERM, syscall.SIGINT, syscall.SIGQUIT)
+
+				benchmark(c.String("broker"), c.String("topic-in"), c.String("topic-out"), c.Int("count"), c.Duration("message-delay"))
+
+				<-quit
+
+				return nil
 			},
 		},
 	}
