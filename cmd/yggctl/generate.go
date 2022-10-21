@@ -10,16 +10,6 @@ import (
 )
 
 func generateDataMessage(messageType yggdrasil.MessageType, responseTo string, directive string, content []byte, metadata map[string]string, version int) (*yggdrasil.Data, error) {
-	var data interface{}
-	if err := json.Unmarshal(content, &data); err != nil {
-		return nil, fmt.Errorf("cannot unmarshal content: %v", err)
-	}
-
-	body, err := json.Marshal(data)
-	if err != nil {
-		return nil, fmt.Errorf("cannot marshal data: %v", err)
-	}
-
 	msg := yggdrasil.Data{
 		Type:       messageType,
 		MessageID:  uuid.New().String(),
@@ -28,7 +18,7 @@ func generateDataMessage(messageType yggdrasil.MessageType, responseTo string, d
 		Sent:       time.Now(),
 		Directive:  directive,
 		Metadata:   metadata,
-		Content:    body,
+		Content:    content,
 	}
 
 	return &msg, nil
