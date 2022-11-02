@@ -77,23 +77,23 @@ argument. See the `Makefile` or `constants.go` for a complete list.
 ## Debugging `yggd`
 
 `yggd` can be run within the Delve debugger to make development easier. Install
-`dlv` in the client if it is not already installed:
+`dlv` in the guest if it is not already installed:
 
 ```
 sudo go install github.com/go-delve/delve/cmd/dlv@latest
+```
+
+You may need to open TCP port 2345 on the guest. For example, to open the
+port using firewalld, run:
+
+```
+sudo firewall-cmd --zone public --add-port 2345/tcp --permanent
 ```
 
 Start `dlv` using the `debug` command:
 
 ```
 sudo /root/go/bin/dlv debug --api-version 2 --headless --listen 0.0.0.0:2345 ./cmd/yggd -- --config ./data/yggdrasil/config.toml
-```
-
-Note: you may need to open TCP prot 2345 on the guest. For example, to open the
-port using firewalld, run:
-
-```
-sudo firewall-cmd --zone public --add-port 2345/tcp --permanent
 ```
 
 Next, from your host, connect to the dlv server, using either `dlv attach` or by
@@ -110,6 +110,8 @@ creating a launch configuration in Visual Studio Code:
     "host": "192.168.122.98"
 }
 ```
+
+Make sure to replace "host" with your virtual machine's IP address.
 
 # Useful Utilities
 
@@ -211,7 +213,7 @@ yggctl generate data-message --directive echo hello | pub -broker tcp://test.mos
   particular should follow this guideline. You never know under which condition
   a library function will be called, so excessive logging should be avoided.
 * Code useful to `cmd/*` packages or external third-party packages should exist
-  in the top-level `yggdrasil` package.
+  in the top-level package.
 * Code useful to `cmd/*` packages, but not external packages should exist in the
   top-level `internal` package.
 * Code should exist in a package only if it can be useful when imported
@@ -219,6 +221,16 @@ yggctl generate data-message --directive echo hello | pub -broker tcp://test.mos
 * Code can exist in a package if it provides an alternative interface to
   another package, and the two packages cannot be imported together.
 
-# Contact Us
+## Required Reading
+
+* [Effective Go](https://go.dev/doc/effective_go)
+* [CodeReviewComments](https://github.com/golang/go/wiki/CodeReviewComments)
+* [Go Proverbs](https://go-proverbs.github.io/)
+
+In addition to these 3 "classics", [A collection of Go style
+guides](https://golangexample.com/a-collection-of-go-style-guides/) contains a
+wealth of resources on writing idiomatic Go.
+
+# Contact
 
 Chat on Matrix: [#yggd:matrix.org](https://matrix.to/#/#yggd:matrix.org).
