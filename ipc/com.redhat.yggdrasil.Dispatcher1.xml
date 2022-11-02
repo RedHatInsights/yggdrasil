@@ -2,16 +2,31 @@
 <node>
     <!-- 
         com.redhat.yggdrasil.Dispatcher1:
+        @short_description: Dispatcher object interface
 
-        A D-Bus interface for workers to communicate with the dispatch service.
+        The Dispatcher1 interface exposes methods and signals suitable for
+        communicating with the yggdrasil dispatcher object.
     -->
     <interface name="com.redhat.yggdrasil.Dispatcher1">
         <!-- 
-            Transmit passes data through the dispatcher to the provided address.
+            Transmit:
+            @addr: Address (typically the worker directive name) of the message.
+            @id: Unique ID of the received message.
+            @response_to: Unique ID of the message this message is in reply to,
+              if any.
+            @metadata: Optional key-value pairs included in the message.
+            @data: The message content.
+            @response_code: Optional numeric value indicating response status.
+            @response_metadata: Optional key-value pairs included in the
+              response.
+            @response_data: Optional data included in the response.
+
+            Sends data to the dispatcher.
         -->
         <method name="Transmit">
             <arg type="s" name="addr" direction="in" />
             <arg type="s" name="id" direction="in" />
+            <arg type="s" name="response_to" direction="in" />
             <arg type="a{ss}" name="metadata" direction="in" />
             <arg type="ay" name="data" direction="in" />
 
@@ -21,6 +36,9 @@
         </method>
 
         <!-- 
+            Event:
+            @name: Name of the event.
+
             Emitted by the dispatcher when certain conditions arise, such as
             unexpected network disconnections or control commands received from
             the operating service.
@@ -34,6 +52,7 @@
             <arg type="u" name="name" />
         </signal>
     </interface>
+
     <interface name="org.freedesktop.DBus.Introspectable">
         <method name="Introspect">
             <arg name="out" direction="out" type="s" />
