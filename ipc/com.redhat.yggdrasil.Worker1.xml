@@ -2,25 +2,43 @@
 <node>
     <!-- 
         com.redhat.yggdrasil.Worker1:
+        @short_description: Worker object interface
 
-        A D-Bus interface for the dispatch service to communicate with its
-        workers.
+        The Worker1 interface exposes methods and properties suitable for
+        communicating with yggdrasil worker objects.
     -->
     <interface name="com.redhat.yggdrasil.Worker1">
         <!--
-            Dispatch passes data to a worker.
+            Dispatch:
+            @addr: Address (typically the worker directive name) of the received
+              message.
+            @id: Unique ID of the received message.
+            @response_to: Unique ID of the message this message is in reply to,
+              if any.
+            @metadata: Optional key-value pairs included in the message.
+            @data: The message content.
+
+            Sends data to the worker.
         -->
         <method name="Dispatch">
             <arg type="s" name="addr" direction="in" />
             <arg type="s" name="id" direction="in" />
+            <arg type="s" name="response_to" direction="in" />
             <arg type="a{ss}" name="metadata" direction="in" />
             <arg type="ay" name="data" direction="in" />
         </method>
 
         <!-- 
-            Features are a set of key/value pairs that a worker exposes for the
-            dispatcher to access.
+            Features:
+
+            A set of key/value pairs that a worker exposes.
         -->
         <property name="Features" type="a{ss}" access="read" />
+    </interface>
+
+    <interface name="org.freedesktop.DBus.Introspectable">
+        <method name="Introspect">
+            <arg name="out" direction="out" type="s" />
+        </method>
     </interface>
 </node>

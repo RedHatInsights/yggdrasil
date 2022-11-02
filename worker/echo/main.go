@@ -1,19 +1,37 @@
 package main
 
 import (
+	"fmt"
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"git.sr.ht/~spc/go-log"
 
-	"github.com/godbus/dbus/v5"
-	"github.com/godbus/dbus/v5/introspect"
-	"github.com/godbus/dbus/v5/prop"
-	"github.com/redhatinsights/yggdrasil/ipc"
+	"github.com/redhatinsights/yggdrasil/worker"
 )
 
-var yggdDispatchSocketAddr string
+// echo opens a new dbus connection and calls the
+// com.redhat.yggdrasil.Dispatcher1.Transmit method, returning the metadata and
+// data it received.
+func echo(w *worker.Worker, addr string, id string, metadata map[string]string, data []byte) error {
+	responseCode, responseMetadata, responseData, err := w.Transmit(addr, id, metadata, data)
+	if err != nil {
+		return fmt.Errorf("cannot call Transmit: %w", err)
+	}
+
+	// Log the responses received from the Dispatcher, if any.
+	log.Infof("responseCode = %v", responseCode)
+	log.Infof("responseMetadata = %#v", responseMetadata)
+	log.Infof("responseData = %v", responseData)
+
+	if err := w.SetFeature("DispatchedAt", time.Now().Format(time.RFC3339)); err != nil {
+		return fmt.Errorf("cannot set feature: %w", err)
+	}
+
+	return nil
+}
 
 func main() {
 	// Get the log level specified by yggd via the YGG_LOG_LEVEL environment
@@ -26,64 +44,9 @@ func main() {
 		log.SetLevel(level)
 	}
 
-	// Connect to the bus, either the system bus or a private session bus,
-	// depending on whether DBUS_SESSION_BUS_ADDRESS is set in the environment.
-	var conn *dbus.Conn
-	var err error
-	if os.Getenv("DBUS_SESSION_BUS_ADDRESS") != "" {
-		log.Debugf("connecting to private bus: %v", os.Getenv("DBUS_SESSION_BUS_ADDRESS"))
-		conn, err = dbus.Connect(os.Getenv("DBUS_SESSION_BUS_ADDRESS"))
-	} else {
-		conn, err = dbus.ConnectSystemBus()
-	}
+	w, err := worker.NewWorker("echo", map[string]string{"DispatchedAt": ""}, echo)
 	if err != nil {
-		log.Fatalf("error: cannot connect to bus: %v", err)
-	}
-
-	// Create the worker.
-	worker := Worker{
-		conn: conn,
-		Features: map[string]string{
-			"DispatchedAt": "",
-		},
-	}
-
-	// Export properties onto the bus as an org.freedesktop.DBus.Properties
-	// interface.
-	propertySpec := prop.Map{
-		"com.redhat.yggdrasil.Worker1": {
-			"Features": {
-				Value:    worker.Features,
-				Writable: false,
-				Emit:     prop.EmitTrue,
-			},
-		},
-	}
-
-	_, err = prop.Export(conn, "/com/redhat/yggdrasil/Worker1/echo", propertySpec)
-	if err != nil {
-		log.Fatalf("cannot export com.redhat.yggdrasil.Worker1 properties: %v", err)
-	}
-
-	// Export worker onto the bus, implementing the com.redhat.yggdrasil.Worker1
-	// and org.freedesktop.DBus.Introspectable interfaces. The path name the
-	// worker exports includes the directive name (in this case "echo").
-	if err := conn.Export(&worker, "/com/redhat/yggdrasil/Worker1/echo", "com.redhat.yggdrasil.Worker1"); err != nil {
-		log.Fatalf("cannot export com.redhat.yggdrasil.Worker1 interface: %v", err)
-	}
-
-	if err := conn.Export(introspect.Introspectable(ipc.InterfaceWorker), "/com/redhat/yggdrasil/Worker1/echo", "org.freedesktop.DBus.Introspectable"); err != nil {
-		log.Fatalf("cannot export org.freedesktop.DBus.Introspectable interface: %v", err)
-	}
-
-	// Request ownership of the well-known bus address
-	// com.redhat.yggdrasil.Worker1.echo.
-	reply, err := conn.RequestName("com.redhat.yggdrasil.Worker1.echo", dbus.NameFlagDoNotQueue)
-	if err != nil {
-		log.Fatalf("error: cannot request name on bus: %v", err)
-	}
-	if reply != dbus.RequestNameReplyPrimaryOwner {
-		log.Fatalf("error: failed to request ownership of name on bus")
+		log.Fatalf("error: cannot create worker: %v", err)
 	}
 
 	// Set up a channel to receive the TERM or INT signal over and clean up
@@ -91,5 +54,7 @@ func main() {
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGTERM, syscall.SIGINT)
 
-	<-quit
+	if err := w.Connect(quit); err != nil {
+		log.Fatalf("error: cannot connect: %v", err)
+	}
 }
