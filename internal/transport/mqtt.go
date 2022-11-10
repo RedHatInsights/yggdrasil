@@ -4,6 +4,7 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
+	"os"
 	"time"
 
 	"git.sr.ht/~spc/go-log"
@@ -24,6 +25,10 @@ type MQTT struct {
 // set of MQTT topics.
 func NewMQTTTransport(clientID string, broker string, tlsConfig *tls.Config, dataRecvFunc DataReceiveHandlerFunc) (*MQTT, error) {
 	var t MQTT
+
+	if _, ok := os.LookupEnv("MQTT_DEBUG"); ok {
+		mqtt.DEBUG = log.New(os.Stderr, "[MQTT_DEBUG] ", log.LstdFlags, log.LevelDebug)
+	}
 
 	opts := mqtt.NewClientOptions()
 	opts.AddBroker(broker)
