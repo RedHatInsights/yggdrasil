@@ -212,6 +212,10 @@ func main() {
 			}
 		}()
 
+		if _, ok := os.LookupEnv("MQTT_DEBUG"); ok {
+			mqtt.DEBUG = log.New(os.Stderr, "[MQTT_DEBUG] ", log.LstdFlags, log.LevelDebug)
+		}
+
 		// Create and configure MQTT client
 		mqttClientOpts := mqtt.NewClientOptions()
 		for _, broker := range c.StringSlice("broker") {
