@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bufio"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -99,22 +98,42 @@ func startWorker(config workerConfig, started func(pid int), stopped func(pid in
 
 	err := startProcess(program, args, env, func(pid int, stdout, stderr io.ReadCloser) {
 		go func() {
-			scanner := bufio.NewScanner(stdout)
-			for scanner.Scan() {
-				log.Debugf("%v: %v", program, scanner.Text())
-			}
-			if err := scanner.Err(); err != nil {
-				log.Errorf("cannot read from stdout: %v", err)
+			for {
+				buf := make([]byte, 4096)
+				n, err := stdout.Read(buf)
+				if n > 0 {
+					log.Tracef("[%v] %v", program, strings.TrimRight(string(buf), "\n\x00"))
+				}
+				if err != nil {
+					switch err {
+					case io.EOF:
+						log.Debugf("%v stdout reached EOF: %v", program, err)
+						return
+					default:
+						log.Errorf("cannot read from stdout: %v", err)
+						continue
+					}
+				}
 			}
 		}()
 
 		go func() {
-			scanner := bufio.NewScanner(stderr)
-			for scanner.Scan() {
-				log.Warnf("%v: %v", program, scanner.Text())
-			}
-			if err := scanner.Err(); err != nil {
-				log.Errorf("cannot read from stderr: %v", err)
+			for {
+				buf := make([]byte, 4096)
+				n, err := stderr.Read(buf)
+				if n > 0 {
+					log.Tracef("[%v] %v", program, strings.TrimRight(string(buf), "\n\x00"))
+				}
+				if err != nil {
+					switch err {
+					case io.EOF:
+						log.Debugf("%v stderr reached EOF: %v", program, err)
+						return
+					default:
+						log.Errorf("cannot read from stderr: %v", err)
+						continue
+					}
+				}
 			}
 		}()
 
