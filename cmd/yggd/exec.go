@@ -1,8 +1,8 @@
 package main
 
 import (
-	"bufio"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"os"
 	"os/exec"
@@ -54,22 +54,42 @@ func startProcess(file string, env []string, delay time.Duration, died chan int)
 	log.Debugf("started process: %v", cmd.Process.Pid)
 
 	go func() {
-		scanner := bufio.NewScanner(stdout)
-		for scanner.Scan() {
-			log.Tracef("[%v] %v", file, scanner.Text())
-		}
-		if err := scanner.Err(); err != nil {
-			log.Errorf("cannot read from stdout: %v", err)
+		for {
+			buf := make([]byte, 4096)
+			n, err := stdout.Read(buf)
+			if n > 0 {
+				log.Tracef("[%v] %v", file, strings.TrimRight(string(buf), "\n\x00"))
+			}
+			if err != nil {
+				switch err {
+				case io.EOF:
+					log.Debugf("%v stdout reached EOF: %v", file, err)
+					return
+				default:
+					log.Errorf("cannot read from stdout: %v", err)
+					continue
+				}
+			}
 		}
 	}()
 
 	go func() {
-		scanner := bufio.NewScanner(stderr)
-		for scanner.Scan() {
-			log.Errorf("[%v] %v", file, scanner.Text())
-		}
-		if err := scanner.Err(); err != nil {
-			log.Errorf("cannot read from stderr: %v", err)
+		for {
+			buf := make([]byte, 4096)
+			n, err := stderr.Read(buf)
+			if n > 0 {
+				log.Errorf("[%v] %v", file, strings.TrimRight(string(buf), "\n\x00"))
+			}
+			if err != nil {
+				switch err {
+				case io.EOF:
+					log.Debugf("%v stderr reached EOF: %v", file, err)
+					return
+				default:
+					log.Errorf("cannot read from stderr: %v", err)
+					continue
+				}
+			}
 		}
 	}()
 
