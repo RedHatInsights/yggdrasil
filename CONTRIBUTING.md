@@ -19,20 +19,20 @@
 
 ### Terminal 1
 
-Start `yggd`, connecting it to the broker `test.mosquitto.org` over an
-unencrypted TCP connection, log judiciously to `stdout`, and bind to the socket
-address `@yggd`.
+Start `yggd` on the user's session bus, connecting it to the broker
+`test.mosquitto.org` over an unencrypted TCP connection, log judiciously to
+`stdout`.
 
 ```
-sudo go run ./cmd/yggd --server tcp://test.mosquitto.org:8883 --log-level trace --socket-addr @yggd
+go run ./cmd/yggd --server tcp://test.mosquitto.org:8883 --log-level trace --client-id $(hostname)
 ```
 
 ### Terminal 2
 
-Start an `echo` worker, connecting to the specified UNIX domain socket.
+Start an `echo` worker.
 
 ```
-sudo YGG_SOCKET_ADDR=unix:@yggd go run ./worker/echo
+sudo go run ./worker/echo
 ```
 
 ### Terminal 3
@@ -51,6 +51,24 @@ Publish a "PING" command to the `yggd` "control/in" topic.
 yggctl generate control-message --type command '{"command":"ping"}' | pub -broker tcp://test.mosquitto.org:8883 -topic yggdrasil/$CLIENT_ID/control/in
 ```
 
+## Running `yggd` on the system bus
+
+This quickstart assumes yggdrasil will communicate with workers over the user's
+private session D-Bus service. To run `yggd` on the system bus, install the
+D-Bus security policy allowing root to own the appropriate names on the system
+bus.
+
+```
+install -D -m644 ./data/dbus/yggd.conf /usr/share/dbus-1/system.d/yggd.conf
+```
+
+Then start `yggd`, ensuring the environment variable `DBUS_SESSION_BUS_ADDRESS`
+is undefined.
+
+```
+sudo go run ./cmd/yggd --server tcp://test.mosquitto.org:8883 --log-level trace --client-id $(hostname)
+```
+
 # Running `yggd`
 
 `yggd` can be compiled using the include `Makefile`, or can be run directly with
@@ -60,14 +78,6 @@ the `data/yggdrasil` directory.
 
 ```
 sudo go run ./cmd/yggd --config ./data/yggdrasil/config.toml
-```
-
-By default, `yggd` looks for workers in `/usr/local/libexec/yggdrasil`. This
-location can be changed by compiling `yggd` with the included `Makefile`, or by
-specifying a value for `yggdrasil.LibexecDir` as a linker argument:
-
-```
-go run -ldflags "-X 'github.com/redhatinsights/yggdrasil.LibexecDir=/usr/libexec/yggdrasil'" ./cmd/yggd
 ```
 
 Many default paths (such as Prefix, BinDir, LocalstateDir, etc), as well as some
@@ -132,24 +142,13 @@ See the output of `yggctl --help` for available commands.
 
 ## `worker/echo`
 
-`echo` is a very simple reference implementation for a gRPC-based worker written
-in Go. 
+`echo` is a very simple reference implementation of a worker written in Go.
 
-If you ran `yggd` with a specified `--socket-addr` value, you can connect the
-`echo` worker directly to your running `yggd` process by specifying the
-`YGG_SOCKET_ADDR` environment variable:
+If you ran `yggd` on a private session bus, you must run the `echo` worker on
+the same bus by specifying the `DBUS_SESSION_BUS_ADDRESS` environment variable:
 
 ```
-sudo YGG_SOCKET_ADDR=unix:@yggd go run ./worker/echo
-```
-
-Alternatively, you can compile the echo worker and install it into `yggd`'s
-worker directory (defaults to `/usr/local/libexec/yggdrasil` unless overridden
-at compile time).
-
-```
-go build -o echo-worker ./worker/echo
-sudo install -D -m 755 echo-worker /usr/local/libexec/yggdrasil/
+sudo DBUS_SESSION_BUS_ADDRESS=unix:abstract=yggd_demo go run ./worker/echo
 ```
 
 ## `mqttcli`
