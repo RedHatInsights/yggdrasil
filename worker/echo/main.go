@@ -44,7 +44,7 @@ func main() {
 		log.SetLevel(level)
 	}
 
-	w, err := worker.NewWorker("echo", map[string]string{"DispatchedAt": ""}, echo)
+	w, err := worker.NewWorker("echo", false, map[string]string{"DispatchedAt": "", "Version": "1"}, echo)
 	if err != nil {
 		log.Fatalf("error: cannot create worker: %v", err)
 	}

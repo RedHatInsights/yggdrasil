@@ -124,6 +124,7 @@ func (d *Dispatcher) Connect() error {
 					continue
 				}
 				directive := strings.TrimPrefix(dest, "com.redhat.yggdrasil.Worker1.")
+
 				if _, has := changedProperties["Features"]; has {
 					d.features.Set(directive, changedProperties["Features"].Value().(map[string]string))
 					d.Dispatchers <- d.FlattenDispatchers()
@@ -136,13 +137,14 @@ func (d *Dispatcher) Connect() error {
 	// via the Worker D-Bus interface.
 	go func() {
 		for data := range d.Inbound {
-			worker, has := d.workers.Get(data.Directive)
-			if !has {
-				log.Warnf("cannot find worker for directive: %v", data.Directive)
+			obj := conn.Object("com.redhat.yggdrasil.Worker1."+data.Directive, dbus.ObjectPath(filepath.Join("/com/redhat/yggdrasil/Worker1/", data.Directive)))
+			r, err := obj.GetProperty("com.redhat.yggdrasil.Worker1.RemoteContent")
+			if err != nil {
+				log.Errorf("cannot get property 'com.redhat.yggdrasil.Worker1.RemoteContent': %v", err)
 				continue
 			}
 
-			if worker.RemoteContent {
+			if r.Value().(bool) {
 				URL, err := url.Parse(string(data.Content))
 				if err != nil {
 					log.Errorf("cannot parse content as URL: %v", err)
@@ -169,13 +171,12 @@ func (d *Dispatcher) Connect() error {
 				data.Content = content
 			}
 
-			obj := conn.Object("com.redhat.yggdrasil.Worker1."+worker.Directive, dbus.ObjectPath(filepath.Join("/com/redhat/yggdrasil/Worker1/", worker.Directive)))
 			call := obj.Call("com.redhat.yggdrasil.Worker1.Dispatch", 0, data.Directive, data.MessageID, data.Metadata, data.Content)
 			if err := call.Store(); err != nil {
 				log.Errorf("cannot call Dispatch method on worker: %v", err)
 				continue
 			}
-			log.Debugf("send message %v to worker %v", data.MessageID, worker.Directive)
+			log.Debugf("send message %v to worker %v", data.MessageID, data.Directive)
 		}
 	}()
 
@@ -190,32 +191,11 @@ func (d *Dispatcher) DisconnectWorkers() {
 
 func (d *Dispatcher) FlattenDispatchers() map[string]map[string]string {
 	dispatchers := make(map[string]map[string]string)
-	d.workers.Visit(func(k string, v *WorkerConfig) {
-		dispatchers[k] = v.Features
+	d.features.Visit(func(k string, v map[string]string) {
+		dispatchers[k] = v
 	})
 
 	return dispatchers
-}
-
-func (d *Dispatcher) RegisterWorker(worker *WorkerConfig) error {
-	if _, has := d.workers.Get(worker.Directive); has {
-		log.Errorf("cannot register worker")
-		return fmt.Errorf("cannot register worker")
-	}
-	d.workers.Set(worker.Directive, worker)
-	log.Infof("worker registered: %v", worker.Directive)
-	log.Debugf("worker registered: %+v", worker)
-
-	d.Dispatchers <- d.FlattenDispatchers()
-
-	return nil
-}
-
-func (d *Dispatcher) UnregisterWorker(directive string) {
-	d.workers.Del(directive)
-	log.Infof("unregistered worker: %v", directive)
-
-	d.Dispatchers <- d.FlattenDispatchers()
 }
 
 func (d *Dispatcher) EmitEvent(event DispatcherEvent) error {
@@ -234,10 +214,10 @@ func (d *Dispatcher) Transmit(sender dbus.Sender, addr string, messageID string,
 	obj := d.conn.Object("com.redhat.yggdrasil.Worker1."+directive, dbus.ObjectPath(filepath.Join("/com/redhat/yggdrasil/Worker1/", directive)))
 	r, err := obj.GetProperty("com.redhat.yggdrasil.Worker1.RemoteContent")
 	if err != nil {
-		return TransmitResponseErr, nil, nil, newDBusError("Transmit", "cannot get property 'com.redhat.yggdrasil.Worker1.RemoteContent'")
+		return -1, nil, nil, newDBusError("Transmit", "cannot get property 'com.redhat.yggdrasil.Worker1.RemoteContent'")
 	}
 
-	if workerConfig.RemoteContent {
+	if r.Value().(bool) {
 		URL, err := url.Parse(addr)
 		if err != nil {
 			return TransmitResponseErr, nil, nil, newDBusError("Transmit", fmt.Sprintf("cannot parse addr as URL: %v", err))

@@ -4,7 +4,6 @@ import (
 	"crypto/sha256"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"os/signal"
 	"path/filepath"
@@ -196,11 +195,6 @@ func main() {
 
 		log.Infof("starting %v version %v", app.Name, app.Version)
 
-		log.Trace("attempting to kill any orphaned workers")
-		if err := work.StopWorkers(); err != nil {
-			return cli.Exit(fmt.Errorf("cannot stop workers: %w", err), 1)
-		}
-
 		clientIDFile := filepath.Join(yggdrasil.LocalstateDir, yggdrasil.LongName, "client-id")
 		if config.DefaultConfig.CertFile != "" {
 			CN, err := parseCertCN(config.DefaultConfig.CertFile)
@@ -326,57 +320,6 @@ func main() {
 			}
 		}()
 
-		died := make(chan *work.WorkerConfig)
-
-		workerStarted := func(worker *work.WorkerConfig) {
-			if err := dispatcher.RegisterWorker(worker); err != nil {
-				log.Errorf("cannot register worker: %v", err)
-			}
-		}
-
-		workerStopped := func(worker *work.WorkerConfig) {
-			died <- worker
-		}
-
-		// Locate and start worker child processes.
-		if err := os.MkdirAll(config.DefaultConfig.WorkerConfigDir, 0755); err != nil {
-			return cli.Exit(fmt.Errorf("cannot create directory: %w", err), 1)
-		}
-
-		fileInfos, err := ioutil.ReadDir(config.DefaultConfig.WorkerConfigDir)
-		if err != nil {
-			return cli.Exit(fmt.Errorf("cannot read contents of directory: %w", err), 1)
-		}
-		for _, info := range fileInfos {
-			worker, err := work.LoadWorkerConfig(filepath.Join(config.DefaultConfig.WorkerConfigDir, info.Name()))
-			if err != nil {
-				log.Errorf("cannot load worker config: %v", err)
-				continue
-			}
-			if config.DefaultConfig.ExcludeWorkers[worker.Directive] {
-				log.Tracef("skipping excluded worker %v", worker.Directive)
-				continue
-			}
-			log.Debugf("starting worker: %v", worker.Directive)
-			go func() {
-				if err := work.StartWorker(*worker, workerStarted, workerStopped); err != nil {
-					log.Errorf("cannot start worker: %v", err)
-					return
-				}
-			}()
-		}
-		// Start a goroutine that watches the worker directory for added or
-		// deleted files. Any "worker" files it detects are started up.
-		go work.WatchWorkerDir(config.DefaultConfig.WorkerConfigDir, workerStarted, workerStopped)
-
-		// Start a goroutine that receives WorkerConfig values on a channel and
-		// removes the worker registration entry.
-		go func() {
-			for worker := range died {
-				dispatcher.UnregisterWorker(worker.Directive)
-			}
-		}()
-
 		// Start a goroutine that watches the tags file for write events and
 		// publishes connection status messages when the file changes.
 		go func() {
@@ -408,10 +351,6 @@ func main() {
 		}()
 
 		<-quit
-
-		if err := work.StopWorkers(); err != nil {
-			return cli.Exit(fmt.Errorf("cannot stop workers: %w", err), 1)
-		}
 
 		return nil
 	}

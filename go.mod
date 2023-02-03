@@ -11,7 +11,6 @@ require (
 	github.com/pelletier/go-toml v1.9.3
 	github.com/rjeczalik/notify v0.9.2
 	github.com/urfave/cli/v2 v2.3.0
-	golang.org/x/net v0.0.0-20201031054903-ff519b6c9102
 )
 
 require (
@@ -20,8 +19,8 @@ require (
 	github.com/gorilla/websocket v1.4.2 // indirect
 	github.com/russross/blackfriday/v2 v2.0.1 // indirect
 	github.com/shurcooL/sanitized_anchor_name v1.0.0 // indirect
+	golang.org/x/net v0.0.0-20201031054903-ff519b6c9102 // indirect
 	golang.org/x/sys v0.0.0-20200930185726-fdedc70b468f // indirect
-	golang.org/x/text v0.3.3 // indirect
 	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1 // indirect
 	gopkg.in/yaml.v2 v2.2.3 // indirect
 )
