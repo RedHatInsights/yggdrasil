@@ -9,8 +9,6 @@ import (
 	"os"
 	"path/filepath"
 	"time"
-
-	"github.com/google/uuid"
 )
 
 func init() {
@@ -64,17 +62,7 @@ func createClientID(file string) ([]byte, error) {
 		return nil, fmt.Errorf("cannot create client-id: %w", err)
 	}
 
-	hostname, err := os.Hostname()
-	if err != nil {
-		return nil, fmt.Errorf("cannot get hostname: %w", err)
-	}
-
-	generatedUUID, err := uuid.NewUUID()
-	if err != nil {
-		return nil, fmt.Errorf("cannot generate UUID: %w", err)
-	}
-
-	data := []byte(hostname + "-" + generatedUUID.String())
+	data := []byte(randomString(64))
 
 	if err := setClientID(data, file); err != nil {
 		return nil, fmt.Errorf("cannot set client-id: %w", err)
