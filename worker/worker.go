@@ -18,27 +18,29 @@ type RxFunc func(w *Worker, addr string, id string, metadata map[string]string, 
 
 // Worker implements the com.redhat.yggdrasil.Worker1 interface.
 type Worker struct {
-	directive  string
-	features   map[string]string
-	rx         RxFunc
-	conn       *dbus.Conn
-	objectPath dbus.ObjectPath
-	busName    string
+	directive     string
+	features      map[string]string
+	remoteContent bool
+	rx            RxFunc
+	conn          *dbus.Conn
+	objectPath    dbus.ObjectPath
+	busName       string
 }
 
 // NewWorker creates a new worker.
-func NewWorker(directive string, features map[string]string, rx RxFunc) (*Worker, error) {
+func NewWorker(directive string, remoteContent bool, features map[string]string, rx RxFunc) (*Worker, error) {
 	r := regexp.MustCompile("-")
 	if r.Match([]byte(directive)) {
 		return nil, fmt.Errorf("invalid directive '%v'", directive)
 	}
 
 	w := Worker{
-		directive:  directive,
-		features:   features,
-		rx:         rx,
-		objectPath: dbus.ObjectPath(path.Join("/com/redhat/yggdrasil/Worker1", directive)),
-		busName:    fmt.Sprintf("com.redhat.yggdrasil.Worker1.%v", directive),
+		directive:     directive,
+		features:      features,
+		remoteContent: remoteContent,
+		rx:            rx,
+		objectPath:    dbus.ObjectPath(path.Join("/com/redhat/yggdrasil/Worker1", directive)),
+		busName:       fmt.Sprintf("com.redhat.yggdrasil.Worker1.%v", directive),
 	}
 
 	return &w, nil
@@ -68,6 +70,11 @@ func (w *Worker) Connect(quit <-chan os.Signal) error {
 		"com.redhat.yggdrasil.Worker1": {
 			"Features": {
 				Value:    w.features,
+				Writable: false,
+				Emit:     prop.EmitTrue,
+			},
+			"RemoteContent": {
+				Value:    w.remoteContent,
 				Writable: false,
 				Emit:     prop.EmitTrue,
 			},
