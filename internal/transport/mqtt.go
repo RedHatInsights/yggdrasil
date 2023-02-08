@@ -19,12 +19,16 @@ type MQTT struct {
 	client         mqtt.Client
 	receiveHandler RxHandlerFunc
 	opts           *mqtt.ClientOptions
+	events         chan TransporterEvent
+	eventHandler   EventHandlerFunc
 }
 
 // NewMQTTTransport creates a transport suitable for transmitting data over a
 // set of MQTT topics.
 func NewMQTTTransport(clientID string, broker string, tlsConfig *tls.Config) (*MQTT, error) {
 	var t MQTT
+
+	t.events = make(chan TransporterEvent)
 
 	if _, ok := os.LookupEnv("MQTT_DEBUG"); ok {
 		mqtt.DEBUG = log.New(os.Stderr, "[MQTT_DEBUG] ", log.LstdFlags, log.LevelDebug)
@@ -36,6 +40,8 @@ func NewMQTTTransport(clientID string, broker string, tlsConfig *tls.Config) (*M
 	opts.SetTLSConfig(tlsConfig.Clone())
 	opts.SetCleanSession(true)
 	opts.SetOnConnectHandler(func(c mqtt.Client) {
+		t.events <- TransporterEventConnected
+
 		opts := c.OptionsReader()
 		for _, url := range opts.Servers() {
 			log.Tracef("connected to broker: %v", url)
@@ -82,6 +88,8 @@ func NewMQTTTransport(clientID string, broker string, tlsConfig *tls.Config) (*M
 
 	opts.SetConnectionLostHandler(func(c mqtt.Client, e error) {
 		log.Errorf("connection lost unexpectedly: %v", e)
+
+		t.events <- TransporterEventDisconnected
 	})
 
 	data, err := json.Marshal(&yggdrasil.ConnectionStatus{
@@ -113,6 +121,15 @@ func NewMQTTTransport(clientID string, broker string, tlsConfig *tls.Config) (*M
 // Connect connects an MQTT client to the configured broker and waits for the
 // connection to open.
 func (t *MQTT) Connect() error {
+	go func() {
+		for event := range t.events {
+			if t.eventHandler == nil {
+				continue
+			}
+			t.eventHandler(event)
+		}
+	}()
+
 	if token := t.client.Connect(); token.Wait() && token.Error() != nil {
 		return fmt.Errorf("cannot connect to broker: %w", token.Error())
 	}
@@ -158,5 +175,10 @@ func (t *MQTT) Tx(addr string, metadata map[string]string, data []byte) (respons
 // received over the inbound data topic.
 func (t *MQTT) SetRxHandler(f RxHandlerFunc) error {
 	t.receiveHandler = f
+	return nil
+}
+
+func (t *MQTT) SetEventHandler(f EventHandlerFunc) error {
+	t.eventHandler = f
 	return nil
 }
