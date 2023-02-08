@@ -18,14 +18,6 @@ import (
 	"github.com/redhatinsights/yggdrasil/ipc"
 )
 
-type DispatcherEvent uint
-
-const (
-	DispatcherEventReceivedDisconnect   DispatcherEvent = 1
-	DispatcherEventUnexpectedDisconnect DispatcherEvent = 2
-	DispatcherEventConnectionRestored   DispatcherEvent = 3
-)
-
 const (
 	TransmitResponseErr int = -1
 	TransmitResponseOK  int = 0
@@ -184,7 +176,7 @@ func (d *Dispatcher) Connect() error {
 }
 
 func (d *Dispatcher) DisconnectWorkers() {
-	if err := d.EmitEvent(DispatcherEventReceivedDisconnect); err != nil {
+	if err := d.EmitEvent(ipc.DispatcherEventReceivedDisconnect); err != nil {
 		log.Errorf("cannot emit event: %v", err)
 	}
 }
@@ -198,7 +190,7 @@ func (d *Dispatcher) FlattenDispatchers() map[string]map[string]string {
 	return dispatchers
 }
 
-func (d *Dispatcher) EmitEvent(event DispatcherEvent) error {
+func (d *Dispatcher) EmitEvent(event ipc.DispatcherEvent) error {
 	return d.conn.Emit("/com/redhat/yggdrasil/Dispatcher1", "com.redhat.yggdrasil.Dispatcher1.Event", event)
 }
 
