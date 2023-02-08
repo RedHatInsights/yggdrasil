@@ -15,12 +15,13 @@ var (
 	// BrandName is a long-form description.
 	BrandName string
 
-	// PathPrefix is used as a prefix to all transport layer path names in the
-	// client.
-	PathPrefix string
+	// DefaultPathPrefix is the default value used as a prefix to all transport
+	// layer path names in the client.
+	DefaultPathPrefix string
 
-	// DataHost is used to force sending all HTTP traffic to a specific host.
-	DataHost string
+	// DefaultDataHost is the default value used to force sending all HTTP
+	// traffic to a specific host.
+	DefaultDataHost string
 
 	// Provider is used when constructing user-facing string output to identify
 	// the agency providing the connection broker.
@@ -87,9 +88,6 @@ func init() {
 	}
 	if BrandName == "" {
 		BrandName = "yggdrasil"
-	}
-	if PathPrefix == "" {
-		PathPrefix = "yggdrasil"
 	}
 	if Provider == "" {
 		Provider = "the cloud"

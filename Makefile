@@ -19,7 +19,7 @@ BRANDNAME   := yggdrasil
 PKGNAME   := yggdrasil
 VERSION   := 0.2.98
 # Used as the prefix for MQTT topic names
-TOPICPREFIX := yggdrasil
+DEFAULTPATHPREFIX := yggdrasil
 # Used to force sending all HTTP traffic to a specific host.
 DATAHOST := 
 # Used to identify the agency providing the connection broker.
@@ -57,8 +57,8 @@ LDFLAGS += -X 'github.com/redhatinsights/yggdrasil.DatarootDir=$(DATAROOTDIR)'
 LDFLAGS += -X 'github.com/redhatinsights/yggdrasil.ManDir=$(MANDIR)'
 LDFLAGS += -X 'github.com/redhatinsights/yggdrasil.DocDir=$(DOCDIR)'
 LDFLAGS += -X 'github.com/redhatinsights/yggdrasil.LocalstateDir=$(LOCALSTATEDIR)'
-LDFLAGS += -X 'github.com/redhatinsights/yggdrasil.TopicPrefix=$(TOPICPREFIX)'
-LDFLAGS += -X 'github.com/redhatinsights/yggdrasil.DataHost=$(DATAHOST)'
+LDFLAGS += -X 'github.com/redhatinsights/yggdrasil.DefaultPathPrefix=$(DEFAULTPATHPREFIX)'
+LDFLAGS += -X 'github.com/redhatinsights/yggdrasil.DefaultDataHost=$(DATAHOST)'
 LDFLAGS += -X 'github.com/redhatinsights/yggdrasil.Provider=$(PROVIDER)'
 
 BUILDFLAGS ?=
@@ -114,7 +114,7 @@ data: $(DATA)
 		-e 's,[@]BRANDNAME[@],$(BRANDNAME),g' \
 		-e 's,[@]VERSION[@],$(VERSION),g' \
 		-e 's,[@]PACKAGE[@],$(PKGNAME),g' \
-		-e 's,[@]TOPICPREFIX[@],$(TOPICPREFIX),g' \
+		-e 's,[@]DEFAULTPATHPREFIX[@],$(DEFAULTPATHPREFIX),g' \
 		-e 's,[@]DATAHOST[@],$(DATAHOST),g' \
 		-e 's,[@]PROVIDER[@],$(PROVIDER),g' \
 		-e 's,[@]PREFIX[@],$(PREFIX),g' \

@@ -11,6 +11,7 @@ import (
 	mqtt "github.com/eclipse/paho.mqtt.golang"
 	"github.com/google/uuid"
 	"github.com/redhatinsights/yggdrasil"
+	"github.com/redhatinsights/yggdrasil/internal/config"
 )
 
 // MQTT is a Transporter that sends and receives data and control
@@ -50,12 +51,12 @@ func NewMQTTTransport(clientID string, broker string, tlsConfig *tls.Config) (*M
 		// Publish a throwaway message in case the topic does not exist;
 		// this is a workaround for the Akamai MQTT broker implementation.
 		go func() {
-			topic := fmt.Sprintf("%v/%v/data/out", yggdrasil.PathPrefix, opts.ClientID())
+			topic := fmt.Sprintf("%v/%v/data/out", config.DefaultConfig.PathPrefix, opts.ClientID())
 			c.Publish(topic, 0, false, []byte{})
 		}()
 
 		var topic string
-		topic = fmt.Sprintf("%v/%v/data/in", yggdrasil.PathPrefix, opts.ClientID())
+		topic = fmt.Sprintf("%v/%v/data/in", config.DefaultConfig.PathPrefix, opts.ClientID())
 		c.Subscribe(topic, 1, func(c mqtt.Client, m mqtt.Message) {
 			go func() {
 				if t.receiveHandler == nil {
@@ -68,7 +69,7 @@ func NewMQTTTransport(clientID string, broker string, tlsConfig *tls.Config) (*M
 		})
 		log.Tracef("subscribed to topic: %v", topic)
 
-		topic = fmt.Sprintf("%v/%v/control/in", yggdrasil.PathPrefix, opts.ClientID())
+		topic = fmt.Sprintf("%v/%v/control/in", config.DefaultConfig.PathPrefix, opts.ClientID())
 		c.Subscribe(topic, 1, func(c mqtt.Client, m mqtt.Message) {
 			go func() {
 				if t.receiveHandler == nil {
@@ -110,7 +111,7 @@ func NewMQTTTransport(clientID string, broker string, tlsConfig *tls.Config) (*M
 		return nil, fmt.Errorf("cannot marshal message to JSON: %w", err)
 	}
 
-	opts.SetBinaryWill(fmt.Sprintf("%v/%v/control/out", yggdrasil.PathPrefix, opts.ClientID), data, 1, false)
+	opts.SetBinaryWill(fmt.Sprintf("%v/%v/control/out", config.DefaultConfig.PathPrefix, opts.ClientID), data, 1, false)
 
 	t.opts = opts
 	t.client = mqtt.NewClient(opts)
@@ -159,7 +160,7 @@ func (t *MQTT) Disconnect(quiesce uint) {
 // with addr.
 func (t *MQTT) Tx(addr string, metadata map[string]string, data []byte) (responseCode int, responseMetadata map[string]string, responseData []byte, err error) {
 	opts := t.client.OptionsReader()
-	topic := fmt.Sprintf("%v/%v/%v/out", yggdrasil.PathPrefix, opts.ClientID(), addr)
+	topic := fmt.Sprintf("%v/%v/%v/out", config.DefaultConfig.PathPrefix, opts.ClientID(), addr)
 
 	if token := t.client.Publish(topic, 1, false, data); token.Wait() && token.Error() != nil {
 		log.Errorf("failed to publish message: %v", token.Error())

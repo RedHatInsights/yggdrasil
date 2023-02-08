@@ -12,7 +12,7 @@ import (
 	"time"
 
 	"git.sr.ht/~spc/go-log"
-	"github.com/redhatinsights/yggdrasil"
+	"github.com/redhatinsights/yggdrasil/internal/config"
 	internalhttp "github.com/redhatinsights/yggdrasil/internal/http"
 )
 
@@ -192,7 +192,7 @@ func (t *HTTP) getUrl(direction string, channel string) string {
 	if t.isTLS.Load().(bool) {
 		protocol = "https"
 	}
-	path := filepath.Join(yggdrasil.PathPrefix, channel, t.clientID, direction)
+	path := filepath.Join(config.DefaultConfig.PathPrefix, channel, t.clientID, direction)
 
 	return fmt.Sprintf("%s://%s/%s", protocol, t.server, path)
 }

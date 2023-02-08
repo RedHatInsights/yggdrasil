@@ -13,6 +13,7 @@ import (
 	"github.com/godbus/dbus/v5"
 	"github.com/godbus/dbus/v5/introspect"
 	"github.com/redhatinsights/yggdrasil"
+	"github.com/redhatinsights/yggdrasil/internal/config"
 	internalhttp "github.com/redhatinsights/yggdrasil/internal/http"
 	"github.com/redhatinsights/yggdrasil/internal/sync"
 	"github.com/redhatinsights/yggdrasil/ipc"
@@ -142,8 +143,8 @@ func (d *Dispatcher) Connect() error {
 					log.Errorf("cannot parse content as URL: %v", err)
 					continue
 				}
-				if yggdrasil.DataHost != "" {
-					URL.Host = yggdrasil.DataHost
+				if config.DefaultConfig.DataHost != "" {
+					URL.Host = config.DefaultConfig.DataHost
 				}
 
 				resp, err := d.HTTPClient.Get(URL.String())
@@ -215,8 +216,8 @@ func (d *Dispatcher) Transmit(sender dbus.Sender, addr string, messageID string,
 			return TransmitResponseErr, nil, nil, newDBusError("Transmit", fmt.Sprintf("cannot parse addr as URL: %v", err))
 		}
 		if URL.Scheme != "" {
-			if yggdrasil.DataHost != "" {
-				URL.Host = yggdrasil.DataHost
+			if config.DefaultConfig.DataHost != "" {
+				URL.Host = config.DefaultConfig.DataHost
 			}
 			resp, err := d.HTTPClient.Post(URL.String(), metadata, data)
 			if err != nil {

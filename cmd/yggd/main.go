@@ -65,7 +65,7 @@ func main() {
 		}),
 		altsrc.NewStringFlag(&cli.StringFlag{
 			Name:   config.FlagNamePathPrefix,
-			Value:  yggdrasil.PathPrefix,
+			Value:  yggdrasil.DefaultPathPrefix,
 			Hidden: true,
 			Usage:  "Use `PREFIX` as the transport layer path name prefix",
 		}),
@@ -89,7 +89,7 @@ func main() {
 		altsrc.NewStringFlag(&cli.StringFlag{
 			Name:  config.FlagNameDataHost,
 			Usage: "Force all HTTP traffic over `HOST`",
-			Value: yggdrasil.DataHost,
+			Value: yggdrasil.DefaultDataHost,
 		}),
 		altsrc.NewStringFlag(&cli.StringFlag{
 			Name:  config.FlagNameClientID,
@@ -165,16 +165,6 @@ func main() {
 
 		for _, worker := range c.StringSlice(config.FlagNameExcludeWorker) {
 			config.DefaultConfig.ExcludeWorkers[worker] = true
-		}
-
-		// Set TopicPrefix globally if the config option is non-zero
-		if config.DefaultConfig.PathPrefix != "" {
-			yggdrasil.PathPrefix = config.DefaultConfig.PathPrefix
-		}
-
-		// Set DataHost globally if the config option is non-zero
-		if config.DefaultConfig.DataHost != "" {
-			yggdrasil.DataHost = config.DefaultConfig.DataHost
 		}
 
 		// Set up a channel to receive the TERM or INT signal over and clean up
