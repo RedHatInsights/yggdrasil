@@ -4,7 +4,6 @@ import (
 	"crypto/x509"
 	"encoding/pem"
 	"fmt"
-	"io/ioutil"
 	"math/rand"
 	"os"
 	"path/filepath"
@@ -30,7 +29,7 @@ func parseCertCN(filename string) (string, error) {
 	var asn1Data []byte
 	switch filepath.Ext(filename) {
 	case ".pem":
-		data, err := ioutil.ReadFile(filename)
+		data, err := os.ReadFile(filename)
 		if err != nil {
 			return "", err
 		}
@@ -42,7 +41,7 @@ func parseCertCN(filename string) (string, error) {
 		asn1Data = append(asn1Data, block.Bytes...)
 	default:
 		var err error
-		asn1Data, err = ioutil.ReadFile(filename)
+		asn1Data, err = os.ReadFile(filename)
 		if err != nil {
 			return "", err
 		}
@@ -77,7 +76,7 @@ func setClientID(data []byte, file string) error {
 		return fmt.Errorf("cannot create directory: %w", err)
 	}
 
-	if err := ioutil.WriteFile(file, data, 0600); err != nil {
+	if err := os.WriteFile(file, data, 0600); err != nil {
 		return fmt.Errorf("cannot write file: %w", err)
 	}
 
@@ -90,7 +89,7 @@ func getClientID(file string) ([]byte, error) {
 	if _, err := os.Stat(file); os.IsNotExist(err) {
 		return nil, nil
 	}
-	data, err := ioutil.ReadFile(file)
+	data, err := os.ReadFile(file)
 	if err != nil {
 		return nil, fmt.Errorf("cannot read file: %w", err)
 	}

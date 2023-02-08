@@ -4,7 +4,7 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"path/filepath"
 	"strings"
@@ -78,7 +78,7 @@ func (t *HTTP) Connect() error {
 				log.Tracef("cannot get HTTP request: %v", err)
 			}
 			if resp != nil {
-				data, err := ioutil.ReadAll(resp.Body)
+				data, err := io.ReadAll(resp.Body)
 				if err != nil {
 					log.Errorf("cannot read response body: %v", err)
 					continue
@@ -107,7 +107,7 @@ func (t *HTTP) Connect() error {
 			}
 
 			if resp != nil {
-				data, err := ioutil.ReadAll(resp.Body)
+				data, err := io.ReadAll(resp.Body)
 				if err != nil {
 					log.Errorf("cannot read response body: %v", err)
 					continue
@@ -162,7 +162,7 @@ func (t *HTTP) Tx(addr string, metadata map[string]string, data []byte) (respons
 	for k, v := range resp.Header {
 		responseMetadata[k] = strings.Join(v, ";")
 	}
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return TxResponseErr, nil, nil, fmt.Errorf("cannot read HTTP response body: %w", err)
 	}

@@ -3,7 +3,7 @@ package config
 import (
 	"crypto/tls"
 	"fmt"
-	"io/ioutil"
+	"os"
 
 	"git.sr.ht/~spc/go-log"
 	"github.com/rjeczalik/notify"
@@ -76,19 +76,19 @@ func (conf *Config) CreateTLSConfig() (*tls.Config, error) {
 	rootCAs := make([][]byte, 0)
 
 	if conf.CertFile != "" && conf.KeyFile != "" {
-		certData, err = ioutil.ReadFile(conf.CertFile)
+		certData, err = os.ReadFile(conf.CertFile)
 		if err != nil {
 			return nil, fmt.Errorf("cannot read cert-file '%v': %w", conf.CertFile, err)
 		}
 
-		keyData, err = ioutil.ReadFile(conf.KeyFile)
+		keyData, err = os.ReadFile(conf.KeyFile)
 		if err != nil {
 			return nil, fmt.Errorf("cannot read key-file '%v': %w", conf.KeyFile, err)
 		}
 	}
 
 	for _, file := range conf.CARoot {
-		data, err := ioutil.ReadFile(file)
+		data, err := os.ReadFile(file)
 		if err != nil {
 			return nil, fmt.Errorf("cannot read ca-file '%v': %w", file, err)
 		}
