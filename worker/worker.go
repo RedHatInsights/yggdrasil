@@ -16,6 +16,10 @@ import (
 // RxFunc is a function type that gets called each time the worker receives data.
 type RxFunc func(w *Worker, addr string, id string, metadata map[string]string, data []byte) error
 
+// EventHandlerFunc is a function type that gets called each time the worker
+// receives a com.redhat.yggdrasil.Dispatcher1.Event signal.
+type EventHandlerFunc func(e ipc.DispatcherEvent)
+
 // Worker implements the com.redhat.yggdrasil.Worker1 interface.
 type Worker struct {
 	directive     string
@@ -25,10 +29,11 @@ type Worker struct {
 	conn          *dbus.Conn
 	objectPath    dbus.ObjectPath
 	busName       string
+	eventHandler  EventHandlerFunc
 }
 
 // NewWorker creates a new worker.
-func NewWorker(directive string, remoteContent bool, features map[string]string, rx RxFunc) (*Worker, error) {
+func NewWorker(directive string, remoteContent bool, features map[string]string, rx RxFunc, events EventHandlerFunc) (*Worker, error) {
 	r := regexp.MustCompile("-")
 	if r.Match([]byte(directive)) {
 		return nil, fmt.Errorf("invalid directive '%v'", directive)
@@ -41,6 +46,7 @@ func NewWorker(directive string, remoteContent bool, features map[string]string,
 		rx:            rx,
 		objectPath:    dbus.ObjectPath(path.Join("/com/redhat/yggdrasil/Worker1", directive)),
 		busName:       fmt.Sprintf("com.redhat.yggdrasil.Worker1.%v", directive),
+		eventHandler:  events,
 	}
 
 	return &w, nil
@@ -105,6 +111,21 @@ func (w *Worker) Connect(quit <-chan os.Signal) error {
 	if reply != dbus.RequestNameReplyPrimaryOwner {
 		return fmt.Errorf("request name failed")
 	}
+
+	signals := make(chan *dbus.Signal)
+	w.conn.Signal(signals)
+	go func() {
+		for s := range signals {
+			switch s.Name {
+			case "com.redhat.yggdrasil.Dispatcher1.Event":
+				event := s.Body[0].(uint)
+				if w.eventHandler == nil {
+					continue
+				}
+				w.eventHandler(ipc.DispatcherEvent(event))
+			}
+		}
+	}()
 
 	<-quit
 

@@ -14,6 +14,7 @@ import (
 	"github.com/redhatinsights/yggdrasil/internal/config"
 	"github.com/redhatinsights/yggdrasil/internal/transport"
 	"github.com/redhatinsights/yggdrasil/internal/work"
+	"github.com/redhatinsights/yggdrasil/ipc"
 )
 
 type Client struct {
@@ -92,11 +93,11 @@ func (c *Client) Connect() error {
 	_ = c.transporter.SetEventHandler(func(e transport.TransporterEvent) {
 		switch e {
 		case transport.TransporterEventConnected:
-			if err := c.dispatcher.EmitEvent(work.DispatcherEventConnectionRestored); err != nil {
+			if err := c.dispatcher.EmitEvent(ipc.DispatcherEventConnectionRestored); err != nil {
 				log.Errorf("cannot emit event: %v", err)
 			}
 		case transport.TransporterEventDisconnected:
-			if err := c.dispatcher.EmitEvent(work.DispatcherEventUnexpectedDisconnect); err != nil {
+			if err := c.dispatcher.EmitEvent(ipc.DispatcherEventUnexpectedDisconnect); err != nil {
 				log.Errorf("cannot emit event: %v", err)
 			}
 		}

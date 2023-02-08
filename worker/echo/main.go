@@ -9,6 +9,7 @@ import (
 
 	"git.sr.ht/~spc/go-log"
 
+	"github.com/redhatinsights/yggdrasil/ipc"
 	"github.com/redhatinsights/yggdrasil/worker"
 )
 
@@ -33,6 +34,13 @@ func echo(w *worker.Worker, addr string, id string, metadata map[string]string, 
 	return nil
 }
 
+func events(event ipc.DispatcherEvent) {
+	switch event {
+	case ipc.DispatcherEventReceivedDisconnect:
+		os.Exit(1)
+	}
+}
+
 func main() {
 	// Get the log level specified by yggd via the YGG_LOG_LEVEL environment
 	// variable.
@@ -44,7 +52,7 @@ func main() {
 		log.SetLevel(level)
 	}
 
-	w, err := worker.NewWorker("echo", false, map[string]string{"DispatchedAt": "", "Version": "1"}, echo)
+	w, err := worker.NewWorker("echo", false, map[string]string{"DispatchedAt": "", "Version": "1"}, echo, events)
 	if err != nil {
 		log.Fatalf("error: cannot create worker: %v", err)
 	}
