@@ -141,39 +141,10 @@ specific configuration file as the value of the `--config` argument:
 
 ## Workers
 
-In order for `yggd` to locate and launch a worker, a configuration file must be
-installed into the `workerconfdir`. This path is defined at compile time as
-`$SYSCONFDIR/$LONGNAME/workers`. The name of this file, trimming the `.toml`
-suffix, is known as the worker "directive". This value must be unique among all
-workers connected to a given dispatcher and message bus. This value is the
-destination name through which a worker is uniquely identified when data is
-received by `yggd`.
-
-_yggdrasil_ includes a pkg-config module named "yggdrasil", enabling worker
-developers to look up the worker config directory at build time:
-
-```
-$ pkg-config --variable workerconfdir yggdrasil
-/etc/yggdrasil/workers
-```
-
-The following table includes valid fields for a worker configuration file:
-
-| **Field**        | **Value** | **Description** |
-| ----------       | --------- | --------------- |
-| `exec`           | `string`  | Path to an executable that is assumed to be the worker program (required). |
-| `env`            | `array`   | Any additional values that a worker needs injected into its runtime enviroment before starting up. `PATH` and all variables beginning with `YGG_` are forbidden and may not be overridden. |
-| `remote_content` | `bool`    | A `true` value assumes that content needs to be downloaded from a remote URL before being passed to the worker. |
-| `features`       | `table`   | An arbitrary set of key/value pairs that are included in connection-status messages sent by the dispatcher. |
-
-An example of a worker configuration file can be see in the example `echo`
-worker directory: `./workers/echo/config.toml`.
-
-### Worker Programs
-
 A functional worker program must connect to the message bus as determined by the
-`DBUS_SESSION_BUS_ADDRESS` environment variable, defaulting to the system bus if
-the variable is empty or undefined. Once connected to the bus:
+`DBUS_STARTER_BUS_TYPE` environment variable, connecting to a session bus if the
+value is "session", otherwise connecting to the system bus. Once connected to
+the bus:
 
 * The program must export an object on the bus that implements the
   `com.redhat.yggdrasil.Worker1` interface.
@@ -186,4 +157,8 @@ the variable is empty or undefined. Once connected to the bus:
 A worker can transmit data back to a destination by calling the
 `com.redhat.yggdrasil.Dispatcher1.Transmit` method.
 
-See `worker/echo` for a working implementation of a worker program.
+Package `worker` implements the above requirements implicitly, enabling workers
+to be written without needing to worry about much of the D-Bus requirements
+outlined above.
+
+See `worker/echo` for a reference implementation of a worker program.
