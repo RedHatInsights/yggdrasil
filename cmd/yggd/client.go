@@ -89,6 +89,19 @@ func (c *Client) Connect() error {
 		return fmt.Errorf("cannot set RxHandler: %v", err)
 	}
 
+	_ = c.transporter.SetEventHandler(func(e transport.TransporterEvent) {
+		switch e {
+		case transport.TransporterEventConnected:
+			if err := c.dispatcher.EmitEvent(work.DispatcherEventConnectionRestored); err != nil {
+				log.Errorf("cannot emit event: %v", err)
+			}
+		case transport.TransporterEventDisconnected:
+			if err := c.dispatcher.EmitEvent(work.DispatcherEventUnexpectedDisconnect); err != nil {
+				log.Errorf("cannot emit event: %v", err)
+			}
+		}
+	})
+
 	return c.transporter.Connect()
 }
 

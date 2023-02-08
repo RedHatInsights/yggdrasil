@@ -7,6 +7,15 @@ const (
 	TxResponseOK  int = 0
 )
 
+type TransporterEvent uint
+
+const (
+	TransporterEventConnected    TransporterEvent = 0
+	TransporterEventDisconnected TransporterEvent = 1
+)
+
+type EventHandlerFunc func(e TransporterEvent)
+
 type RxHandlerFunc func(addr string, metadata map[string]interface{}, data []byte) error
 
 // Transporter is an interface representing the ability to send and receive
@@ -33,4 +42,8 @@ type Transporter interface {
 	// ReloadTLSConfig forces the transport to replace its TLS configuration
 	// with tlsConfig.
 	ReloadTLSConfig(tlsConfig *tls.Config) error
+
+	// SetEventHandler stores a reference to f, which is then called whenever an
+	// event occurs in the transporter.
+	SetEventHandler(f EventHandlerFunc) error
 }

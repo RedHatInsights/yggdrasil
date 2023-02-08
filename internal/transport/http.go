@@ -35,6 +35,8 @@ type HTTP struct {
 	disconnected    atomic.Value
 	userAgent       string
 	isTLS           atomic.Value
+	events          chan TransporterEvent
+	eventHandler    EventHandlerFunc
 }
 
 func NewHTTPTransport(clientID string, server string, tlsConfig *tls.Config, userAgent string, pollingInterval time.Duration) (*HTTP, error) {
@@ -50,11 +52,22 @@ func NewHTTPTransport(clientID string, server string, tlsConfig *tls.Config, use
 		server:          server,
 		userAgent:       userAgent,
 		isTLS:           isTls,
+		events:          make(chan TransporterEvent),
 	}, nil
 }
 
 func (t *HTTP) Connect() error {
 	t.disconnected.Store(false)
+
+	go func() {
+		for event := range t.events {
+			if t.eventHandler == nil {
+				continue
+			}
+			t.eventHandler(event)
+		}
+	}()
+
 	go func() {
 		for {
 			if t.disconnected.Load().(bool) {
@@ -112,6 +125,8 @@ func (t *HTTP) Connect() error {
 		}
 	}()
 
+	t.events <- TransporterEventConnected
+
 	return nil
 }
 
@@ -125,6 +140,7 @@ func (t *HTTP) ReloadTLSConfig(tlsConfig *tls.Config) error {
 func (t *HTTP) Disconnect(quiesce uint) {
 	time.Sleep(time.Millisecond * time.Duration(quiesce))
 	t.disconnected.Store(true)
+	t.events <- TransporterEventDisconnected
 }
 
 func (t *HTTP) Tx(addr string, metadata map[string]string, data []byte) (responseCode int, responseMetadata map[string]string, responseData []byte, err error) {
@@ -163,6 +179,11 @@ func (t *HTTP) Tx(addr string, metadata map[string]string, data []byte) (respons
 
 func (t *HTTP) SetRxHandler(f RxHandlerFunc) error {
 	t.dataHandler = f
+	return nil
+}
+
+func (t *HTTP) SetEventHandler(f EventHandlerFunc) error {
+	t.eventHandler = f
 	return nil
 }
 

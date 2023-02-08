@@ -47,6 +47,12 @@
 
             1 = RECEIVED_DISCONNECT
             Emitted when the dispatcher receives the "disconnect" command.
+
+            2 = UNEXPECTED_DISCONNECT
+            Emitted when the transport unexpected disconnects from the network.
+
+            3 = CONNECTION_RESTORED
+            Emitted when the transport reconnects to the network.
         -->
         <signal name="Event">
             <arg type="u" name="name" />
