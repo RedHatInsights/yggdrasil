@@ -69,7 +69,7 @@ type ConnectionStatus struct {
 	Version    int         `json:"version"`
 	Sent       time.Time   `json:"sent"`
 	Content    struct {
-		CanonicalFacts CanonicalFacts               `json:"canonical_facts"`
+		CanonicalFacts map[string]interface{}       `json:"canonical_facts"`
 		Dispatchers    map[string]map[string]string `json:"dispatchers"`
 		State          ConnectionState              `json:"state"`
 		Tags           map[string]string            `json:"tags,omitempty"`

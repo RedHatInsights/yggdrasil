@@ -22,6 +22,7 @@ const (
 	FlagNameDataHost        = "data-host"
 	FlagNameExcludeWorker   = "exclude-worker"
 	FlagNameWorkerConfigDir = "worker-config-dir"
+	FlagNameCanonicalFacts  = "canonical-facts"
 )
 
 var DefaultConfig = Config{
@@ -70,6 +71,10 @@ type Config struct {
 	// WorkerConfigDir is a path to a directory containing worker configuration
 	// files. This directory is read during worker discovery and startup.
 	WorkerConfigDir string
+
+	// CanonicalFacts is a path to a JSON file containing "canonical facts",
+	// a set of facts about the system used to uniquely identify it.
+	CanonicalFacts string
 }
 
 func (conf *Config) CreateTLSConfig() (*tls.Config, error) {

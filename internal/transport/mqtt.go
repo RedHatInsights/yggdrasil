@@ -99,7 +99,7 @@ func NewMQTTTransport(clientID string, broker string, tlsConfig *tls.Config) (*M
 		Version:   1,
 		Sent:      time.Now(),
 		Content: struct {
-			CanonicalFacts yggdrasil.CanonicalFacts     "json:\"canonical_facts\""
+			CanonicalFacts map[string]interface{}       "json:\"canonical_facts\""
 			Dispatchers    map[string]map[string]string "json:\"dispatchers\""
 			State          yggdrasil.ConnectionState    "json:\"state\""
 			Tags           map[string]string            "json:\"tags,omitempty\""

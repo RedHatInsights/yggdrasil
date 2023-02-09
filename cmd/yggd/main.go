@@ -106,6 +106,11 @@ func main() {
 			Hidden:    true,
 			Value:     filepath.Join(yggdrasil.SysconfDir, yggdrasil.LongName, "workers"),
 		}),
+		altsrc.NewPathFlag(&cli.PathFlag{
+			Name:      config.FlagNameCanonicalFacts,
+			Usage:     "Read canonical facts from `FILE`",
+			TakesFile: true,
+		}),
 	}
 
 	// This BeforeFunc will load flag values from a config file only if the
@@ -151,6 +156,7 @@ func main() {
 			DataHost:        c.String(config.FlagNameDataHost),
 			ExcludeWorkers:  map[string]bool{},
 			WorkerConfigDir: c.String(config.FlagNameWorkerConfigDir),
+			CanonicalFacts:  c.String(config.FlagNameCanonicalFacts),
 		}
 
 		tlsConfig, err := config.DefaultConfig.CreateTLSConfig()
@@ -265,15 +271,44 @@ func main() {
 			}
 		}()
 
+		// Publish connection-status in a goroutine
 		go func() {
 			msg, err := client.ConnectionStatus()
 			if err != nil {
-				log.Errorf("cannot get connection status: %v", err)
+				log.Fatalf("cannot get connection status: %v", err)
 			}
 			if _, _, _, err := client.SendConnectionStatusMessage(msg); err != nil {
 				log.Errorf("cannot send connection status message: %v", err)
 			}
 		}()
+
+		// Start a goroutine watching for changes to the CanonicalFacts file and
+		// publish a new connection-status message if the file changes.
+		if config.DefaultConfig.CanonicalFacts != "" {
+			go func() {
+				c := make(chan notify.EventInfo, 1)
+				if err := notify.Watch(config.DefaultConfig.CanonicalFacts, c, notify.InCloseWrite); err != nil {
+					log.Infof("cannot start watching '%v': %v", config.DefaultConfig.CanonicalFacts, err)
+					return
+				}
+				defer notify.Stop(c)
+
+				for e := range c {
+					switch e.Event() {
+					case notify.InCloseWrite:
+						go func() {
+							msg, err := client.ConnectionStatus()
+							if err != nil {
+								log.Fatalf("cannot get connection status: %v", err)
+							}
+							if _, _, _, err := client.SendConnectionStatusMessage(msg); err != nil {
+								log.Errorf("cannot send connection status message: %v", err)
+							}
+						}()
+					}
+				}
+			}()
+		}
 
 		// Start a goroutine that receives values on the 'dispatchers' channel
 		// and publishes "connection-status" messages to MQTT.
@@ -300,8 +335,7 @@ func main() {
 				go func() {
 					msg, err := client.ConnectionStatus()
 					if err != nil {
-						log.Errorf("cannot get connection status: %v", err)
-						return
+						log.Fatalf("cannot get connection status: %v", err)
 					}
 					if _, _, _, err = client.SendConnectionStatusMessage(msg); err != nil {
 						log.Errorf("cannot send connection status: %v", err)
@@ -330,7 +364,7 @@ func main() {
 					go func() {
 						msg, err := client.ConnectionStatus()
 						if err != nil {
-							log.Errorf("cannot get connection status: %v", err)
+							log.Fatalf("cannot get connection status: %v", err)
 						}
 						if _, _, _, err = client.SendConnectionStatusMessage(msg); err != nil {
 							log.Errorf("cannot send connection status: %v", err)

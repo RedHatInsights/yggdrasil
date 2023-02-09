@@ -202,9 +202,16 @@ func (c *Client) ReceiveControlMessage(msg *yggdrasil.Control) error {
 // ConnectionStatus creates a connection-status message using the current state
 // of the client.
 func (c *Client) ConnectionStatus() (*yggdrasil.ConnectionStatus, error) {
-	facts, err := yggdrasil.GetCanonicalFacts(config.DefaultConfig.CertFile)
-	if err != nil {
-		return nil, fmt.Errorf("cannot get canonical facts: %w", err)
+	var facts map[string]interface{}
+
+	if config.DefaultConfig.CanonicalFacts != "" {
+		data, err := os.ReadFile(config.DefaultConfig.CanonicalFacts)
+		if err != nil {
+			log.Errorf("cannot read canonical facts file: %v", err)
+		}
+		if err := json.Unmarshal(data, &facts); err != nil {
+			log.Errorf("cannot unmarshal canonical facts: %v", err)
+		}
 	}
 
 	tagsFilePath := filepath.Join(yggdrasil.SysconfDir, yggdrasil.LongName, "tags.toml")
@@ -224,12 +231,12 @@ func (c *Client) ConnectionStatus() (*yggdrasil.ConnectionStatus, error) {
 		Version:   1,
 		Sent:      time.Now(),
 		Content: struct {
-			CanonicalFacts yggdrasil.CanonicalFacts     "json:\"canonical_facts\""
+			CanonicalFacts map[string]interface{}       "json:\"canonical_facts\""
 			Dispatchers    map[string]map[string]string "json:\"dispatchers\""
 			State          yggdrasil.ConnectionState    "json:\"state\""
 			Tags           map[string]string            "json:\"tags,omitempty\""
 		}{
-			CanonicalFacts: *facts,
+			CanonicalFacts: facts,
 			Dispatchers:    c.dispatcher.FlattenDispatchers(),
 			State:          yggdrasil.ConnectionStateOnline,
 			Tags:           tagMap,
