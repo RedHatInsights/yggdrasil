@@ -24,7 +24,9 @@ const (
 	FlagNameWorkerConfigDir = "worker-config-dir"
 )
 
-var DefaultConfig Config
+var DefaultConfig = Config{
+	PathPrefix: "yggdrasil",
+}
 
 // Config contains current configuration state for yggdrasil.
 type Config struct {
