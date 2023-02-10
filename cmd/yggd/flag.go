@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 
+	"git.sr.ht/~spc/go-log"
 	"github.com/urfave/cli/v2"
 )
 
@@ -11,7 +12,9 @@ import (
 // and then recursively calls itself on each subcommand.
 func BashCompleteCommand(cmd *cli.Command, w io.Writer) {
 	for _, name := range cmd.Names() {
-		fmt.Fprintf(w, "%v\n", name)
+		if _, err := fmt.Fprintf(w, "%v\n", name); err != nil {
+			log.Errorf("cannot print command name: %v", err)
+		}
 	}
 
 	PrintFlagNames(cmd.VisibleFlags(), w)
@@ -26,9 +29,13 @@ func PrintFlagNames(flags []cli.Flag, w io.Writer) {
 	for _, flag := range flags {
 		for _, name := range flag.Names() {
 			if len(name) > 1 {
-				fmt.Fprintf(w, "--%v\n", name)
+				if _, err := fmt.Fprintf(w, "--%v\n", name); err != nil {
+					log.Errorf("cannot print flag names: %v", err)
+				}
 			} else {
-				fmt.Fprintf(w, "-%v\n", name)
+				if _, err := fmt.Fprintf(w, "-%v\n", name); err != nil {
+					log.Errorf("cannot print flag names: %v", err)
+				}
 			}
 		}
 	}

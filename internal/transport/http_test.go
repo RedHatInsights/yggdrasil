@@ -25,7 +25,7 @@ func startServer() *http.Server {
 			"status": "OK",
 		}
 		resBytes, _ := json.Marshal(data)
-		fmt.Fprintf(w, "%s", resBytes)
+		_, _ = fmt.Fprintf(w, "%s", resBytes)
 	}
 	port, err := getFreePort()
 	if err != nil {
