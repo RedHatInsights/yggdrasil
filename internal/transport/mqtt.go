@@ -26,7 +26,7 @@ type MQTT struct {
 
 // NewMQTTTransport creates a transport suitable for transmitting data over a
 // set of MQTT topics.
-func NewMQTTTransport(clientID string, broker string, tlsConfig *tls.Config) (*MQTT, error) {
+func NewMQTTTransport(clientID string, brokers []string, tlsConfig *tls.Config) (*MQTT, error) {
 	var t MQTT
 
 	t.events = make(chan TransporterEvent)
@@ -36,7 +36,9 @@ func NewMQTTTransport(clientID string, broker string, tlsConfig *tls.Config) (*M
 	}
 
 	opts := mqtt.NewClientOptions()
-	opts.AddBroker(broker)
+	for _, broker := range brokers {
+		opts.AddBroker(broker)
+	}
 	opts.SetClientID(clientID)
 	opts.SetTLSConfig(tlsConfig.Clone())
 	opts.SetCleanSession(true)

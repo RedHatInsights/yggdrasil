@@ -37,7 +37,7 @@ type Config struct {
 	ClientID string
 
 	// Server is a URI to which yggd connects in order to send and receive data.
-	Server string
+	Server []string
 
 	// CertFile is a path to a public certificate, optionally used along with
 	// KeyFile to authenticate connections.
