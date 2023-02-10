@@ -74,7 +74,7 @@ func main() {
 			Usage: "Transmit data remotely using `PROTOCOL` ('mqtt' or 'http')",
 			Value: "mqtt",
 		}),
-		altsrc.NewStringFlag(&cli.StringFlag{
+		altsrc.NewStringSliceFlag(&cli.StringSliceFlag{
 			Name:  config.FlagNameServer,
 			Usage: "Connect the client to the specified `URI`",
 		}),
@@ -136,7 +136,7 @@ func main() {
 		config.DefaultConfig = config.Config{
 			LogLevel:       c.String(config.FlagNameLogLevel),
 			ClientID:       c.String(config.FlagNameClientID),
-			Server:         c.String(config.FlagNameServer),
+			Server:         c.StringSlice(config.FlagNameServer),
 			CertFile:       c.String(config.FlagNameCertFile),
 			KeyFile:        c.String(config.FlagNameKeyFile),
 			CARoot:         c.StringSlice(config.FlagNameCaRoot),
@@ -215,7 +215,7 @@ func main() {
 			}
 		case "http":
 			var err error
-			transporter, err = transport.NewHTTPTransport(config.DefaultConfig.ClientID, config.DefaultConfig.Server, tlsConfig, UserAgent, time.Second*5)
+			transporter, err = transport.NewHTTPTransport(config.DefaultConfig.ClientID, config.DefaultConfig.Server[0], tlsConfig, UserAgent, time.Second*5)
 			if err != nil {
 				return cli.Exit(fmt.Errorf("cannot create HTTP transport: %w", err), 1)
 			}
