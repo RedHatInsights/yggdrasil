@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"time"
 
+	"git.sr.ht/~spc/go-log"
 	"github.com/pelletier/go-toml"
 )
 
@@ -65,7 +66,11 @@ func readTagsFile(file string) (map[string]string, error) {
 	if err != nil {
 		return nil, fmt.Errorf("cannot open '%v' for reading: %w", file, err)
 	}
-	defer f.Close()
+	defer func() {
+		if err := f.Close(); err != nil {
+			log.Errorf("cannot close tags file: %v", err)
+		}
+	}()
 
 	tags, err := readTags(f)
 	if err != nil {
