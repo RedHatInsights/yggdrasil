@@ -7,7 +7,9 @@ import (
 )
 
 func newTLSConfig(certPEMBlock []byte, keyPEMBlock []byte, CARootPEMBlocks [][]byte) (*tls.Config, error) {
-	config := &tls.Config{}
+	config := &tls.Config{
+		MinVersion: tls.VersionTLS13,
+	}
 
 	if len(certPEMBlock) > 0 && len(keyPEMBlock) > 0 {
 		cert, err := tls.X509KeyPair(certPEMBlock, keyPEMBlock)
