@@ -95,17 +95,6 @@ func main() {
 			Name:  config.FlagNameClientID,
 			Usage: "Use `VALUE` as the client ID when connecting",
 		}),
-		altsrc.NewStringSliceFlag(&cli.StringSliceFlag{
-			Name:  config.FlagNameExcludeWorker,
-			Usage: "Exclude `WORKER` from activation when starting workers",
-		}),
-		altsrc.NewPathFlag(&cli.PathFlag{
-			Name:      config.FlagNameWorkerConfigDir,
-			Usage:     "Load workers from `DIR`",
-			TakesFile: true,
-			Hidden:    true,
-			Value:     filepath.Join(yggdrasil.SysconfDir, yggdrasil.LongName, "workers"),
-		}),
 		altsrc.NewPathFlag(&cli.PathFlag{
 			Name:      config.FlagNameCanonicalFacts,
 			Usage:     "Read canonical facts from `FILE`",
@@ -145,18 +134,16 @@ func main() {
 		}
 
 		config.DefaultConfig = config.Config{
-			LogLevel:        c.String(config.FlagNameLogLevel),
-			ClientID:        c.String(config.FlagNameClientID),
-			Server:          c.String(config.FlagNameServer),
-			CertFile:        c.String(config.FlagNameCertFile),
-			KeyFile:         c.String(config.FlagNameKeyFile),
-			CARoot:          c.StringSlice(config.FlagNameCaRoot),
-			PathPrefix:      c.String(config.FlagNamePathPrefix),
-			Protocol:        c.String(config.FlagNameProtocol),
-			DataHost:        c.String(config.FlagNameDataHost),
-			ExcludeWorkers:  map[string]bool{},
-			WorkerConfigDir: c.String(config.FlagNameWorkerConfigDir),
-			CanonicalFacts:  c.String(config.FlagNameCanonicalFacts),
+			LogLevel:       c.String(config.FlagNameLogLevel),
+			ClientID:       c.String(config.FlagNameClientID),
+			Server:         c.String(config.FlagNameServer),
+			CertFile:       c.String(config.FlagNameCertFile),
+			KeyFile:        c.String(config.FlagNameKeyFile),
+			CARoot:         c.StringSlice(config.FlagNameCaRoot),
+			PathPrefix:     c.String(config.FlagNamePathPrefix),
+			Protocol:       c.String(config.FlagNameProtocol),
+			DataHost:       c.String(config.FlagNameDataHost),
+			CanonicalFacts: c.String(config.FlagNameCanonicalFacts),
 		}
 
 		tlsConfig, err := config.DefaultConfig.CreateTLSConfig()
@@ -167,10 +154,6 @@ func main() {
 		TlSEvents, err := config.DefaultConfig.WatcherUpdate()
 		if err != nil {
 			return cli.Exit(fmt.Errorf("cannot start watching for certificate changes: %w", err), 1)
-		}
-
-		for _, worker := range c.StringSlice(config.FlagNameExcludeWorker) {
-			config.DefaultConfig.ExcludeWorkers[worker] = true
 		}
 
 		// Set up a channel to receive the TERM or INT signal over and clean up

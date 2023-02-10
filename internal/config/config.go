@@ -10,19 +10,17 @@ import (
 )
 
 const (
-	FlagNameLogLevel        = "log-level"
-	FlagNameCertFile        = "cert-file"
-	FlagNameKeyFile         = "key-file"
-	FlagNameCaRoot          = "ca-root"
-	FlagNameServer          = "server"
-	FlagNameSocketAddr      = "socket-addr"
-	FlagNameClientID        = "client-id"
-	FlagNamePathPrefix      = "path-prefix"
-	FlagNameProtocol        = "protocol"
-	FlagNameDataHost        = "data-host"
-	FlagNameExcludeWorker   = "exclude-worker"
-	FlagNameWorkerConfigDir = "worker-config-dir"
-	FlagNameCanonicalFacts  = "canonical-facts"
+	FlagNameLogLevel       = "log-level"
+	FlagNameCertFile       = "cert-file"
+	FlagNameKeyFile        = "key-file"
+	FlagNameCaRoot         = "ca-root"
+	FlagNameServer         = "server"
+	FlagNameSocketAddr     = "socket-addr"
+	FlagNameClientID       = "client-id"
+	FlagNamePathPrefix     = "path-prefix"
+	FlagNameProtocol       = "protocol"
+	FlagNameDataHost       = "data-host"
+	FlagNameCanonicalFacts = "canonical-facts"
 )
 
 var DefaultConfig = Config{
@@ -63,14 +61,6 @@ type Config struct {
 	// DataHost is a hostname value to interject into all HTTP requests when
 	// handling data retrieval for "detachedContent" workers.
 	DataHost string
-
-	// ExcludeWorkers contains worker names to be excluded from starting when
-	// yggd starts.
-	ExcludeWorkers map[string]bool
-
-	// WorkerConfigDir is a path to a directory containing worker configuration
-	// files. This directory is read during worker discovery and startup.
-	WorkerConfigDir string
 
 	// CanonicalFacts is a path to a JSON file containing "canonical facts",
 	// a set of facts about the system used to uniquely identify it.
