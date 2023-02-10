@@ -72,7 +72,7 @@ func createClientID(file string) ([]byte, error) {
 
 // setClientID writes data to the client ID file.
 func setClientID(data []byte, file string) error {
-	if err := os.MkdirAll(filepath.Dir(file), 0755); err != nil {
+	if err := os.MkdirAll(filepath.Dir(file), 0750); err != nil {
 		return fmt.Errorf("cannot create directory: %w", err)
 	}
 
