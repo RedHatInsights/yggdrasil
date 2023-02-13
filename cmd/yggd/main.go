@@ -174,7 +174,7 @@ func main() {
 
 		log.Infof("starting %v version %v", app.Name, app.Version)
 
-		clientIDFile := filepath.Join(yggdrasil.LocalstateDir, yggdrasil.LongName, "client-id")
+		clientIDFile := filepath.Join(yggdrasil.LocalstateDir, "lib", yggdrasil.LongName, "client-id")
 		if config.DefaultConfig.CertFile != "" {
 			CN, err := parseCertCN(config.DefaultConfig.CertFile)
 			if err != nil {
