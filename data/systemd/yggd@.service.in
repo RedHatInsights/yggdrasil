@@ -5,8 +5,10 @@ After=network-online.target
 Requires=network-online.target yggdrasil-bus@%i.service
 
 [Service]
-Type=notify
+Type=dbus
+BusName=com.redhat.yggdrasil.Dispatcher1
 NotifyAccess=main
+Environment=DBUS_STARTER_BUS_TYPE=session
 Environment=DBUS_SESSION_BUS_ADDRESS=unix:abstract=yggd_%i
 ExecStart=@SBINDIR@/@SHORTNAME@d --config @SYSCONFDIR@/@LONGNAME@/@LONGNAME@-%i.toml
 

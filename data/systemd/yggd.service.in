@@ -5,7 +5,8 @@ After=network-online.target
 Requires=network-online.target
 
 [Service]
-Type=notify
+Type=dbus
+BusName=com.redhat.yggdrasil.Dispatcher1
 NotifyAccess=main
 ExecStart=@SBINDIR@/@SHORTNAME@d
 
