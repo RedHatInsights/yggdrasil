@@ -4,6 +4,7 @@ go 1.18
 
 require (
 	git.sr.ht/~spc/go-log v0.0.0-20210409014304-ce6a6f3602dc
+	github.com/coreos/go-systemd/v22 v22.5.0
 	github.com/eclipse/paho.mqtt.golang v1.3.5
 	github.com/godbus/dbus/v5 v5.1.0
 	github.com/google/go-cmp v0.5.6
@@ -15,7 +16,6 @@ require (
 
 require (
 	github.com/BurntSushi/toml v0.3.1 // indirect
-	github.com/coreos/go-systemd/v22 v22.5.0 // indirect
 	github.com/cpuguy83/go-md2man/v2 v2.0.0 // indirect
 	github.com/gorilla/websocket v1.4.2 // indirect
 	github.com/russross/blackfriday/v2 v2.0.1 // indirect
