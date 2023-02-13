@@ -15,6 +15,7 @@ require (
 
 require (
 	github.com/BurntSushi/toml v0.3.1 // indirect
+	github.com/coreos/go-systemd/v22 v22.5.0 // indirect
 	github.com/cpuguy83/go-md2man/v2 v2.0.0 // indirect
 	github.com/gorilla/websocket v1.4.2 // indirect
 	github.com/russross/blackfriday/v2 v2.0.1 // indirect

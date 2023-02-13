@@ -11,6 +11,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/coreos/go-systemd/v22/daemon"
 	"github.com/redhatinsights/yggdrasil/internal/config"
 	"github.com/redhatinsights/yggdrasil/internal/http"
 	"github.com/redhatinsights/yggdrasil/internal/transport"
@@ -356,6 +357,23 @@ func main() {
 				}
 			}
 		}()
+
+		watchdogDuration, err := daemon.SdWatchdogEnabled(false)
+		if err != nil {
+			log.Errorf("cannot get watchdog duration: %v", err)
+		}
+		go func() {
+			for {
+				if _, err := daemon.SdNotify(false, daemon.SdNotifyWatchdog); err != nil {
+					log.Errorf("cannot call sd_notify: %v", err)
+				}
+				time.Sleep(watchdogDuration / 2)
+			}
+		}()
+
+		if _, err := daemon.SdNotify(false, daemon.SdNotifyReady); err != nil {
+			log.Errorf("cannot call sd_notify: %v", err)
+		}
 
 		<-quit
 

@@ -5,7 +5,8 @@ After=network-online.target
 Requires=network-online.target
 
 [Service]
-Type=simple
+Type=notify
+NotifyAccess=main
 ExecStart=@SBINDIR@/@SHORTNAME@d
 
 [Install]
