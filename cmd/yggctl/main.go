@@ -8,6 +8,7 @@ import (
 	"git.sr.ht/~spc/go-log"
 
 	"github.com/redhatinsights/yggdrasil"
+	"github.com/redhatinsights/yggdrasil/internal/constants"
 	"github.com/urfave/cli/v2"
 )
 
@@ -15,9 +16,9 @@ var DeveloperBuild = true
 
 func main() {
 	app := cli.NewApp()
-	app.Name = yggdrasil.ShortName + "ctl"
-	app.Version = yggdrasil.Version
-	app.Usage = "control and interact with " + yggdrasil.ShortName + "d"
+	app.Name = "yggctl"
+	app.Version = constants.Version
+	app.Usage = "control and interact with yggd"
 
 	app.Flags = []cli.Flag{
 		&cli.BoolFlag{

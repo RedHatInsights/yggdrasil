@@ -12,6 +12,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/redhatinsights/yggdrasil"
 	"github.com/redhatinsights/yggdrasil/internal/config"
+	"github.com/redhatinsights/yggdrasil/internal/constants"
 	"github.com/redhatinsights/yggdrasil/internal/transport"
 	"github.com/redhatinsights/yggdrasil/internal/work"
 	"github.com/redhatinsights/yggdrasil/ipc"
@@ -214,7 +215,7 @@ func (c *Client) ConnectionStatus() (*yggdrasil.ConnectionStatus, error) {
 		}
 	}
 
-	tagsFilePath := filepath.Join(yggdrasil.SysconfDir, yggdrasil.LongName, "tags.toml")
+	tagsFilePath := filepath.Join(constants.ConfigDir, "tags.toml")
 
 	var tagMap map[string]string
 	if _, err := os.Stat(tagsFilePath); !os.IsNotExist(err) {

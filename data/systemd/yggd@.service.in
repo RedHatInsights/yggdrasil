@@ -1,5 +1,5 @@
 [Unit]
-Description=@BRANDNAME@ daemon
+Description=yggdrasil socket service (%i)
 Documentation=https://github.com/redhatinsights/yggdrasil
 After=network-online.target
 Requires=network-online.target yggdrasil-bus@%i.service
@@ -10,7 +10,7 @@ BusName=com.redhat.yggdrasil.Dispatcher1
 NotifyAccess=main
 Environment=DBUS_STARTER_BUS_TYPE=session
 Environment=DBUS_SESSION_BUS_ADDRESS=unix:abstract=yggd_%i
-ExecStart=@SBINDIR@/@SHORTNAME@d --config @SYSCONFDIR@/@LONGNAME@/@LONGNAME@-%i.toml
+ExecStart=@sbindir@/yggd --config @configdir@/yggdrasil-%i.toml
 
 [Install]
 WantedBy=multi-user.target

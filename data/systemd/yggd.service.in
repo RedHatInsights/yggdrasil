@@ -1,5 +1,5 @@
 [Unit]
-Description=@BRANDNAME@ daemon
+Description=yggdrasil system service
 Documentation=https://github.com/redhatinsights/yggdrasil
 After=network-online.target
 Requires=network-online.target
@@ -8,7 +8,7 @@ Requires=network-online.target
 Type=dbus
 BusName=com.redhat.yggdrasil.Dispatcher1
 NotifyAccess=main
-ExecStart=@SBINDIR@/@SHORTNAME@d
+ExecStart=@sbindir@/yggd
 
 [Install]
 WantedBy=multi-user.target

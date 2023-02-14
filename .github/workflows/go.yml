@@ -23,10 +23,10 @@ jobs:
           go-version: ${{ matrix.go }}
 
       - name: Go build (source)
-        run: make
+        run: go build -v ./...
 
       - name: Go build (tests)
-        run: make tests
+        run: go test -v ./...
 
       - name: Go vet
-        run: make vet
+        run: go vet -v ./...

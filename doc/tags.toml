@@ -1,9 +1,9 @@
 # tags.toml
 #
-# Any key/value pairs defined here will be loaded by @SHORTNAME@d and published
+# Any key/value pairs defined here will be loaded by yggd and published
 # to the broker during initialization.
 #
-# A limited number of value types are permitted as tags by @LONGNAME@.
+# A limited number of value types are permitted as tags by yggdrasil.
 # Currently, strings, integers, booleans, floats, Local Date, Local Time,
 # Offset Date-Time and Local Date-Time values are supported.
 #

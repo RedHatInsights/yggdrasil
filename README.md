@@ -8,58 +8,27 @@ exchanging data with its worker processes through a D-Bus message broker.
 
 ## Installation
 
-The easiest way to install yggdrasil is by using the include `Makefile`. Because
+The easiest way to compile and install yggdrasil is using `meson`. Because
 yggdrasil runs as a privileged system daemon, systemd unit files and D-Bus
 policy files must be installed in specific directories in order for the service
 to start.
 
-The default target will build all _yggdrasil_ binaries and ancillary data files.
-The `Makefile` also includes an `install` target to install the binaries and
-data into distribution-appropriate locations. To override the installation
-directory (commonly referred to as the `DESTDIR`), set the `DESTDIR` variable
-when running the `install` target. Additional variables can be used to further
-configure the installation prefix and related directories.
-
-```
-PREFIX        ?= /usr/local
-BINDIR        ?= $(PREFIX)/bin
-SBINDIR       ?= $(PREFIX)/sbin
-LIBEXECDIR    ?= $(PREFIX)/libexec
-SYSCONFDIR    ?= $(PREFIX)/etc
-DATADIR       ?= $(PREFIX)/share
-DATAROOTDIR   ?= $(PREFIX)/share
-MANDIR        ?= $(DATADIR)/man
-DOCDIR        ?= $(PREFIX)/doc
-LOCALSTATEDIR ?= $(PREFIX)/var
-```
-
-Any of these variables can be overridden by passing a value to `make`. For
-example:
+Generally, it is recommended to follow your distribution's packaging guidelines
+for compiling Go programs and installing projects using `meson`. What follows is
+a generally acceptable set of steps to setup, compile and install yggdrasil
+using `meson`.
 
 ```bash
-make PREFIX=/usr SYSCONFDIR=/etc LOCALSTATEDIR=/var
-make PREFIX=/usr SYSCONFDIR=/etc LOCALSTATEDIR=/var DESTDIR=/tmp/rpmbuildroot install
+# Set up the project according to distribution-specific directory locations
+meson setup --prefix /usr/local --sysconfdir /etc --localstatedir /var builddir
+# Compile
+meson compile -C builddir
+# Install
+meson install -C builddir
 ```
 
-### Branding
-
-_yggdrasil_ can be rebranded by setting some additional `make` variables:
-
-```
-SHORTNAME := ygg       # Used as a prefix to binary names. Cannot contain spaces.
-LONGNAME  := yggdrasil # Used as file and directory names. Cannot contain spaces.
-SUMMARY   := yggdrasil # Used as a long-form description. Can contain spaces and punctuation.
-```
-
-For example, to brand _yggdrasil_ as `bunnies`, compile as follows:
-
-```bash
-make PREFIX=/usr SYSCONFDIR=/etc LOCALSTATEDIR=/var SHORTNAME=bnns LONGNAME=bunnies SUMMARY="Bunnies have a way of proliferating." install
-```
-
-This will build `yggd`, but install it into `DESTDIR` as `bnnsd`. Accordingly,
-the systemd service will be named `bunnies.service` with a `Description=`
-directive of "Bunnies have a way of proliferating.".
+`meson` includes an optional `--destdir` to its `install` subcommand to aid in
+packaging.
 
 ## Configuration
 

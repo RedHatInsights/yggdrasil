@@ -1,0 +1,2 @@
+option('default_data_host', type: 'string')
+option('vendor', type: 'boolean', value: false)
