@@ -13,6 +13,7 @@ import (
 
 	"github.com/coreos/go-systemd/v22/daemon"
 	"github.com/redhatinsights/yggdrasil/internal/config"
+	"github.com/redhatinsights/yggdrasil/internal/constants"
 	"github.com/redhatinsights/yggdrasil/internal/http"
 	"github.com/redhatinsights/yggdrasil/internal/transport"
 	"github.com/redhatinsights/yggdrasil/internal/work"
@@ -25,14 +26,14 @@ import (
 )
 
 var (
-	UserAgent = yggdrasil.LongName + "/" + yggdrasil.Version
+	UserAgent = "yggd/" + constants.Version
 )
 
 func main() {
 	app := cli.NewApp()
-	app.Name = yggdrasil.ShortName + "d"
-	app.Version = yggdrasil.Version
-	app.Usage = "connect the system to " + yggdrasil.Provider
+	app.Name = "yggd"
+	app.Version = constants.Version
+	app.Usage = "connect the system to the network in order to send and receive messages"
 
 	defaultConfigFilePath, err := yggdrasil.ConfigPath()
 	if err != nil {
@@ -66,7 +67,7 @@ func main() {
 		}),
 		altsrc.NewStringFlag(&cli.StringFlag{
 			Name:   config.FlagNamePathPrefix,
-			Value:  yggdrasil.DefaultPathPrefix,
+			Value:  constants.DefaultPathPrefix,
 			Hidden: true,
 			Usage:  "Use `PREFIX` as the transport layer path name prefix",
 		}),
@@ -90,7 +91,7 @@ func main() {
 		altsrc.NewStringFlag(&cli.StringFlag{
 			Name:  config.FlagNameDataHost,
 			Usage: "Force all HTTP traffic over `HOST`",
-			Value: yggdrasil.DefaultDataHost,
+			Value: constants.DefaultDataHost,
 		}),
 		altsrc.NewStringFlag(&cli.StringFlag{
 			Name:  config.FlagNameClientID,
@@ -175,7 +176,7 @@ func main() {
 
 		log.Infof("starting %v version %v", app.Name, app.Version)
 
-		clientIDFile := filepath.Join(yggdrasil.LocalstateDir, "lib", yggdrasil.LongName, "client-id")
+		clientIDFile := filepath.Join(constants.StateDir, "client-id")
 		if config.DefaultConfig.CertFile != "" {
 			CN, err := parseCertCN(config.DefaultConfig.CertFile)
 			if err != nil {
@@ -333,7 +334,7 @@ func main() {
 		go func() {
 			c := make(chan notify.EventInfo, 1)
 
-			fp := filepath.Join(yggdrasil.SysconfDir, yggdrasil.LongName, "tags.toml")
+			fp := filepath.Join(constants.ConfigDir, "tags.toml")
 
 			if err := notify.Watch(fp, c, notify.InCloseWrite, notify.InDelete); err != nil {
 				log.Infof("cannot start watching '%v': %v", fp, err)
