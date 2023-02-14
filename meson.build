@@ -3,6 +3,10 @@ project('yggdrasil',
 
 go = find_program('go')
 
+if get_option('vendor')
+  meson.add_dist_script(join_paths('build-aux', 'vendor.sh'))
+endif
+
 goldflags = ''
 goldflags += ' -X "github.com/redhatinsights/yggdrasil/internal/constants.Version=' + meson.project_version() + '"'
 goldflags += ' -X "github.com/redhatinsights/yggdrasil/internal/constants.DefaultPathPrefix=' + meson.project_name() + '"'
@@ -27,10 +31,6 @@ subdir('cmd/yggctl')
 subdir('cmd/yggd')
 subdir('data')
 subdir('doc')
-if get_option('vendor')
-  run_command(go, 'mod', 'vendor')
-  subdir('vendor')
-endif
 
 summary(
   {
