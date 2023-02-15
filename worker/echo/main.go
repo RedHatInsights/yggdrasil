@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"os"
 	"os/signal"
@@ -42,15 +43,18 @@ func events(event ipc.DispatcherEvent) {
 }
 
 func main() {
-	// Get the log level specified by yggd via the YGG_LOG_LEVEL environment
-	// variable.
-	if logLevel, has := os.LookupEnv("YGG_LOG_LEVEL"); has {
-		level, err := log.ParseLevel(logLevel)
-		if err != nil {
-			log.Fatalf("error: cannot parse log level: %v", err)
-		}
-		log.SetLevel(level)
+	var (
+		logLevel string
+	)
+
+	flag.StringVar(&logLevel, "log-level", "error", "set log level")
+	flag.Parse()
+
+	level, err := log.ParseLevel(logLevel)
+	if err != nil {
+		log.Fatalf("error: cannot parse log level: %v", err)
 	}
+	log.SetLevel(level)
 
 	w, err := worker.NewWorker("echo", false, map[string]string{"DispatchedAt": "", "Version": "1"}, echo, events)
 	if err != nil {
