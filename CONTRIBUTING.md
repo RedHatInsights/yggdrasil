@@ -32,7 +32,7 @@ go run ./cmd/yggd --server tcp://test.mosquitto.org:8883 --log-level trace --cli
 Start an `echo` worker.
 
 ```
-sudo go run ./worker/echo
+go run ./worker/echo
 ```
 
 ### Terminal 3
@@ -71,8 +71,8 @@ sudo go run ./cmd/yggd --server tcp://test.mosquitto.org:8883 --log-level trace 
 
 # Running `yggd`
 
-`yggd` can be compiled using the include `Makefile`, or can be run directly with
-the `go run` command. It can read configuration values from a file by running
+`yggd` can be compiled using meson, or can be run directly with the `go run`
+command. It can read configuration values from a file by running
 `yggd` with the `--config` option. A sample configuration file is included in
 the `data/yggdrasil` directory.
 

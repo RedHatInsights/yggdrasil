@@ -77,29 +77,32 @@ booleans, floats, Local Date, Local Time, Offset Date-Time and Local Date-Time).
 ## Running
 
 yggdrasil uses D-Bus as an IPC framework to enable communication between workers
-and the dispatcher. `yggd` can run on either the system bus (the default) or a
-session bus. Connecting to a session bus is enabled either implicitly by setting
-the `DBUS_SESSION_BUS_ADDRESS` environment variable or explicitly by running
-`yggd` with the `--bus-address` flag. In either case, a D-Bus policy is
-installed that denies non-root D-Bus clients from sending messages to both the
-dispatcher and the workers.
+and the dispatcher, as well as exporting an API enabling other services to
+interact with it. `yggd` follows the normal logic for determining which bus to
+connect to. It will attempt to connect to the session bus if
+`DBUS_SESSION_BUS_ADDRESS` is defined. Otherwise, it will attempt to connect to
+the system bus. On the system bus, if the process is not running as root, the
+installed D-Bus security policy will deny the process from claiming the
+`com.redhat.Yggdrasil1` and `com.redhat.yggdrasil.Dispatcher1` names, and the
+process will exit.
 
-The systemd unit `yggd.service` starts `yggd`, connecting it to the system bus.
+The systemd unit `yggrasil.service` starts `yggd`, using the logic described
+above.
 
 ```
-systemctl enable --now yggd
+systemctl enable --now yggdrasil
 ```
 
 Multiple instances of `yggd` can be run by using the templated systemd units.
 Each instance requires  a private D-Bus session. The socket and broker are
 started with `yggdrasil-bus@.socket` and `yggdrasil-bus@.service`, respectively.
-A templated yggd unit is available to automatically connect yggd to the D-Bus
-broker started by `yggdrasil-bus@.service`.
+A templated yggdrasil unit is available to automatically connect yggd to the
+D-Bus broker started by `yggdrasil-bus@.service`.
 
 ```
 systemctl enable --now yggdrasil-bus@bunnies.socket
 systemctl enable --now yggdrasil-bus@bunnies.service
-systemctl enable --now yggd@bunnies.service
+systemctl enable --now yggdrasil@bunnies.service
 ```
 
 This will define and create an abstract UNIX domain socket named `yggd_bunnies`.
@@ -111,8 +114,8 @@ specific configuration file as the value of the `--config` argument:
 ## Workers
 
 A functional worker program must connect to the message bus as determined by the
-`DBUS_STARTER_BUS_TYPE` environment variable, connecting to a session bus if the
-value is "session", otherwise connecting to the system bus. Once connected to
+`DBUS_SESSION_BUS_ADDRESS` environment variable, connecting to a session bus if
+the value is defined, otherwise connecting to the system bus. Once connected to
 the bus:
 
 * The program must export an object on the bus that implements the

@@ -8,7 +8,7 @@ for how a worker could be developed.
 
 The worker can run directly without needing to install it first (`go run .`).
 By default, the worker will attempt to connect to an appropriate D-Bus (session
-or system), depending on whether `DBUS_STARTER_BUS_TYPE` is set to "session".
+or system), depending on whether `DBUS_SESSION_BUS_ADDRESS` is defined.
 
 # D-Bus Service Activation
 

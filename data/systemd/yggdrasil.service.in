@@ -1,13 +1,14 @@
 [Unit]
 Description=yggdrasil system service
-Documentation=https://github.com/redhatinsights/yggdrasil
+Documentation=https://github.com/RedHatInsights/yggdrasil
 After=network-online.target
 Requires=network-online.target
 
 [Service]
 Type=dbus
-BusName=com.redhat.yggdrasil.Dispatcher1
+BusName=com.redhat.Yggdrasil1
 NotifyAccess=main
+WatchdogSec=300
 ExecStart=@sbindir@/yggd
 
 [Install]

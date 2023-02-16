@@ -1,4 +1,0 @@
-[D-BUS Service]
-Name=com.redhat.yggdrasil.Dispatcher1
-Exec=@sbindir@/yggd
-SystemdService=yggd.service

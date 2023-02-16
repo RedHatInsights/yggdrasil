@@ -15,7 +15,6 @@ const (
 	FlagNameKeyFile        = "key-file"
 	FlagNameCaRoot         = "ca-root"
 	FlagNameServer         = "server"
-	FlagNameSocketAddr     = "socket-addr"
 	FlagNameClientID       = "client-id"
 	FlagNamePathPrefix     = "path-prefix"
 	FlagNameProtocol       = "protocol"

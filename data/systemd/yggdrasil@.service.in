@@ -1,14 +1,13 @@
 [Unit]
 Description=yggdrasil socket service (%i)
-Documentation=https://github.com/redhatinsights/yggdrasil
+Documentation=https://github.com/RedHatInsights/yggdrasil
 After=network-online.target
 Requires=network-online.target yggdrasil-bus@%i.service
 
 [Service]
-Type=dbus
-BusName=com.redhat.yggdrasil.Dispatcher1
+Type=notify
 NotifyAccess=main
-Environment=DBUS_STARTER_BUS_TYPE=session
+WatchdogSec=300
 Environment=DBUS_SESSION_BUS_ADDRESS=unix:abstract=yggd_%i
 ExecStart=@sbindir@/yggd --config @configdir@/yggdrasil-%i.toml
 

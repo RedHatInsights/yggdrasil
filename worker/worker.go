@@ -60,8 +60,8 @@ func NewWorker(directive string, remoteContent bool, features map[string]string,
 func (w *Worker) Connect(quit <-chan os.Signal) error {
 	var err error
 
-	if os.Getenv("DBUS_STARTER_BUS_TYPE") == "session" {
-		log.Debugf("connecting to private bus: %v", os.Getenv("DBUS_SESSION_BUS_ADDRESS"))
+	if os.Getenv("DBUS_SESSION_BUS_ADDRESS") != "" {
+		log.Debugf("connecting to session bus: %v", os.Getenv("DBUS_SESSION_BUS_ADDRESS"))
 		w.conn, err = dbus.ConnectSessionBus()
 	} else {
 		w.conn, err = dbus.ConnectSystemBus()
