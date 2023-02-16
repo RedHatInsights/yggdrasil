@@ -1,0 +1,4 @@
+[D-BUS Service]
+Name=com.redhat.Yggdrasil1
+Exec=@sbindir@/yggd
+SystemdService=yggdrasil.service

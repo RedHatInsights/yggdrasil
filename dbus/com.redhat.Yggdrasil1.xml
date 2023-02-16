@@ -1,0 +1,27 @@
+<!DOCTYPE node PUBLIC "-//freedesktop//DTD D-BUS Object Introspection 1.0//EN" "https://specifications.freedesktop.org/dbus/introspect-latest.dtd">
+<node>
+    <!-- 
+        com.redhat.Yggdrasil1:
+        @short_description: Yggdrasil object interface
+
+        The Yggdrasil1 interface exposes methods and signals enabling
+        programmatic interaction with the yggdrasil system service.
+    -->
+    <interface name="com.redhat.Yggdrasil1">
+        <!-- 
+            Dispatch:
+            @directive: worker identifier for which the data is destined.
+            @id: Unique ID of the message.
+            @metadata: Optional key-value pairs included in the message.
+            @data: The message content
+
+            Sends data to the worker identified by the given directive.
+        -->
+        <method name="Dispatch">
+            <arg type="s" name="directive" direction="in" />
+            <arg type="s" name="id" direction="in" />
+            <arg type="a{ss}" name="metadata" direction="in" />
+            <arg type="ay" name="data" direction="in" />
+        </method>
+    </interface>
+</node>

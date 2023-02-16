@@ -23,9 +23,9 @@ var (
 // Installation directory prefix and paths. Values have hard-coded defaults but
 // can be changed at compile time by overriding the variable with an ldflag.
 var (
-	PrefixDir     string = "/usr/local"
-	SysconfDir    string = filepath.Join(PrefixDir, "etc")
-	LocalstateDir string = filepath.Join(PrefixDir, "var")
+	PrefixDir     string
+	SysconfDir    string
+	LocalstateDir string
 
 	// ConfigDir is a path to a location where configuration data is assumed to
 	// be stored. For non-root users, this is set to $XDG_CONFIG_HOME. Otherwise,

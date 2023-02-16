@@ -3,6 +3,10 @@ project('yggdrasil',
 
 go = find_program('go')
 
+dbus = dependency('dbus-1')
+systemd = dependency('systemd')
+bash_completion = dependency('bash-completion')
+
 if get_option('vendor')
   meson.add_dist_script(join_paths('build-aux', 'vendor.sh'))
 endif
@@ -23,19 +27,26 @@ gobuildflags = [
 ]
 
 config_data = configuration_data({
-  'sbindir': get_option('sbindir'),
-  'configdir': join_paths(get_option('sysconfdir'), meson.project_name())
+  'sbindir': join_paths(get_option('prefix'), get_option('sbindir')),
+  'configdir': join_paths(get_option('sysconfdir'), meson.project_name()),
+  'libexecdir': join_paths(get_option('prefix'), get_option('libexecdir'))
 })
 
 subdir('cmd/yggctl')
 subdir('cmd/yggd')
 subdir('data')
+subdir('dbus')
 subdir('doc')
+
+if get_option('examples')
+  subdir('worker/echo')
+endif
 
 summary(
   {
     'default_data_host': get_option('default_data_host'),
     'vendor': get_option('vendor'),
+    'examples': get_option('examples')
   },
   section: 'Options'
 )

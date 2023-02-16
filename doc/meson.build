@@ -1,5 +1,3 @@
-bash_completion = dependency('bash-completion')
-
 install_data('tags.toml',
   install_dir: join_paths(get_option('prefix'), get_option('datadir'), 'doc', meson.project_name())
 )

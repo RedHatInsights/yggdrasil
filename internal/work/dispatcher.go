@@ -55,30 +55,30 @@ func NewDispatcher(client *internalhttp.Client) *Dispatcher {
 	}
 }
 
-// Connect examines the environment for a private D-Bus address and connects to
-// it if found. Otherwise, it connects to the system bus.
+// Connect connects the dispatcher to an appropriate D-Bus broker and begins
+// processing messages received on the inbound channel.
 func (d *Dispatcher) Connect() error {
-	var conn *dbus.Conn
 	var err error
-	if os.Getenv("DBUS_STARTER_BUS_TYPE") == "session" {
-		log.Debugf("connecting to private bus: %v", os.Getenv("DBUS_SESSION_BUS_ADDRESS"))
-		conn, err = dbus.ConnectSessionBus()
+	if os.Getenv("DBUS_SESSION_BUS_ADDRESS") != "" {
+		log.Debugf("connecting to session bus for worker IPC: %v", os.Getenv("DBUS_SESSION_BUS_ADDRESS"))
+		d.conn, err = dbus.ConnectSessionBus()
 	} else {
-		conn, err = dbus.ConnectSystemBus()
+		log.Debug("connecting to system bus for worker IPC")
+		d.conn, err = dbus.ConnectSystemBus()
 	}
 	if err != nil {
 		return fmt.Errorf("cannot connect to bus: %w", err)
 	}
 
-	if err := conn.Export(d, "/com/redhat/yggdrasil/Dispatcher1", "com.redhat.yggdrasil.Dispatcher1"); err != nil {
+	if err := d.conn.Export(d, "/com/redhat/yggdrasil/Dispatcher1", "com.redhat.yggdrasil.Dispatcher1"); err != nil {
 		return fmt.Errorf("cannot export com.redhat.yggdrasil.Dispatcher1 interface: %v", err)
 	}
 
-	if err := conn.Export(introspect.Introspectable(ipc.InterfaceDispatcher), "/com/redhat/yggdrasil/Dispatcher1", "org.freedesktop.DBus.Introspectable"); err != nil {
+	if err := d.conn.Export(introspect.Introspectable(ipc.InterfaceDispatcher), "/com/redhat/yggdrasil/Dispatcher1", "org.freedesktop.DBus.Introspectable"); err != nil {
 		return fmt.Errorf("cannot export org.freedesktop.DBus.Introspectable interface: %v", err)
 	}
 
-	reply, err := conn.RequestName("com.redhat.yggdrasil.Dispatcher1", dbus.NameFlagDoNotQueue)
+	reply, err := d.conn.RequestName("com.redhat.yggdrasil.Dispatcher1", dbus.NameFlagDoNotQueue)
 	if err != nil {
 		return fmt.Errorf("cannot request name on bus: %v", err)
 	}
@@ -88,18 +88,17 @@ func (d *Dispatcher) Connect() error {
 	}
 
 	log.Infof("exported /com/redhat/yggdrasil/Dispatcher1 on bus")
-	d.conn = conn
 
 	// Add a match signal on the
 	// org.freedesktop.DBus.Properties.PropertiesChanged signal.
-	if err := conn.AddMatchSignal(dbus.WithMatchPathNamespace("/com/redhat/yggdrasil/Worker1"), dbus.WithMatchInterface("org.freedesktop.DBus.Properties"), dbus.WithMatchMember("PropertiesChanged")); err != nil {
+	if err := d.conn.AddMatchSignal(dbus.WithMatchPathNamespace("/com/redhat/yggdrasil/Worker1"), dbus.WithMatchInterface("org.freedesktop.DBus.Properties"), dbus.WithMatchMember("PropertiesChanged")); err != nil {
 		return fmt.Errorf("cannot add signal match: %v", err)
 	}
 
 	// start goroutine that receives values on the signals channel and handles
 	// them appropriately.
 	signals := make(chan *dbus.Signal)
-	conn.Signal(signals)
+	d.conn.Signal(signals)
 	go func() {
 		for s := range signals {
 			log.Tracef("received signal: %#v", s)
@@ -176,6 +175,24 @@ func (d *Dispatcher) dispatch(data yggdrasil.Data) error {
 	}
 	log.Debugf("send message %v to worker %v", data.MessageID, data.Directive)
 
+	return nil
+}
+
+// Dispatch implements the com.redhat.Yggdrasil1.Dispatch method.
+func (d *Dispatcher) Dispatch(directive string, messageID string, metadata map[string]string, data []byte) *dbus.Error {
+	msg := yggdrasil.Data{
+		Type:       yggdrasil.MessageTypeData,
+		MessageID:  messageID,
+		ResponseTo: "",
+		Version:    1,
+		Sent:       time.Now(),
+		Directive:  directive,
+		Metadata:   metadata,
+		Content:    data,
+	}
+	if err := d.dispatch(msg); err != nil {
+		return newDBusError("Dispatch", fmt.Sprintf("cannot dispatch to directive: %v", err))
+	}
 	return nil
 }
 

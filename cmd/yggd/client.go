@@ -9,8 +9,11 @@ import (
 	"time"
 
 	"git.sr.ht/~spc/go-log"
+	"github.com/godbus/dbus/v5"
+	"github.com/godbus/dbus/v5/introspect"
 	"github.com/google/uuid"
 	"github.com/redhatinsights/yggdrasil"
+	internaldbus "github.com/redhatinsights/yggdrasil/dbus"
 	"github.com/redhatinsights/yggdrasil/internal/config"
 	"github.com/redhatinsights/yggdrasil/internal/constants"
 	"github.com/redhatinsights/yggdrasil/internal/transport"
@@ -103,6 +106,35 @@ func (c *Client) Connect() error {
 			}
 		}
 	})
+
+	var conn *dbus.Conn
+	if os.Getenv("DBUS_SESSION_BUS_ADDRESS") != "" {
+		log.Debugf("connecting to session bus: %v", os.Getenv("DBUS_SESSION_BUS_ADDRESS"))
+		conn, err = dbus.ConnectSessionBus()
+	} else {
+		log.Debug("connecting to system bus")
+		conn, err = dbus.ConnectSystemBus()
+	}
+	if err != nil {
+		return fmt.Errorf("cannot connect to bus: %v", err)
+	}
+
+	if err := conn.Export(c.dispatcher, "/com/redhat/Yggdrasil1", "com.redhat.Yggdrasil1"); err != nil {
+		return fmt.Errorf("cannot export com.redhat.Yggdrasil1 interface: %v", err)
+	}
+
+	if err := conn.Export(introspect.Introspectable(internaldbus.InterfaceYggdrasil), "/com/redhat/Yggdrasil1", "org.freedesktop.DBus.Introspectable"); err != nil {
+		return fmt.Errorf("cannot export org.freedesktop.DBus.Introspectable interface: %v", err)
+	}
+
+	reply, err := conn.RequestName("com.redhat.Yggdrasil1", dbus.NameFlagDoNotQueue)
+	if err != nil {
+		return fmt.Errorf("cannot request name on bus: %v", err)
+	}
+	if reply != dbus.RequestNameReplyPrimaryOwner {
+		return fmt.Errorf("name already taken")
+	}
+	log.Infof("exported /com/redhat/Yggdrasil1 on bus")
 
 	return c.transporter.Connect()
 }
