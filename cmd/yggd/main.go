@@ -363,14 +363,16 @@ func main() {
 		if err != nil {
 			log.Errorf("cannot get watchdog duration: %v", err)
 		}
-		go func() {
-			for {
-				if _, err := daemon.SdNotify(false, daemon.SdNotifyWatchdog); err != nil {
-					log.Errorf("cannot call sd_notify: %v", err)
+		if watchdogDuration > 0 {
+			go func() {
+				for {
+					if _, err := daemon.SdNotify(false, daemon.SdNotifyWatchdog); err != nil {
+						log.Errorf("cannot call sd_notify: %v", err)
+					}
+					time.Sleep(watchdogDuration / 2)
 				}
-				time.Sleep(watchdogDuration / 2)
-			}
-		}()
+			}()
+		}
 
 		if _, err := daemon.SdNotify(false, daemon.SdNotifyReady); err != nil {
 			log.Errorf("cannot call sd_notify: %v", err)
