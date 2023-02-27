@@ -158,6 +158,16 @@ func (w *Worker) Transmit(addr string, id string, metadata map[string]string, da
 	return
 }
 
+// EmitEvent emits a WorkerEvent, including an optional message.
+func (w *Worker) EmitEvent(event ipc.WorkerEvent, message string) error {
+	args := []interface{}{event}
+	if message != "" {
+		args = append(args, message)
+	}
+	log.Debugf("emitting event %v", event)
+	return w.conn.Emit(dbus.ObjectPath(path.Join("/com/redhat/yggdrasil/Worker1", w.directive)), "com.redhat.yggdrasil.Worker1.Event", args...)
+}
+
 // dispatch implements com.redhat.yggdrasil.Worker1.dispatch by calling the
 // worker's RxFunc in a goroutine.
 func (w *Worker) dispatch(addr string, id string, metadata map[string]string, data []byte) *dbus.Error {
@@ -167,9 +177,16 @@ func (w *Worker) dispatch(addr string, id string, metadata map[string]string, da
 	log.Tracef("metadata = %#v", metadata)
 	log.Tracef("data = %v", data)
 
+	if err := w.EmitEvent(ipc.WorkerEventBegin, ""); err != nil {
+		return dbus.NewError("com.redhat.yggdrasil.Worker1.EventError", []interface{}{err.Error()})
+	}
+
 	go func() {
 		if err := w.rx(w, addr, id, metadata, data); err != nil {
 			log.Errorf("cannot call rx: %v", err)
+		}
+		if err := w.EmitEvent(ipc.WorkerEventEnd, ""); err != nil {
+			log.Errorf("cannot emit event: %v", err)
 		}
 	}()
 

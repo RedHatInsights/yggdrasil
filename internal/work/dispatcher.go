@@ -95,6 +95,10 @@ func (d *Dispatcher) Connect() error {
 		return fmt.Errorf("cannot add signal match: %v", err)
 	}
 
+	if err := d.conn.AddMatchSignal(dbus.WithMatchPathNamespace("/com/redhat/yggdrasil/Worker1"), dbus.WithMatchInterface("com.redhat.yggdrasil.Worker1"), dbus.WithMatchMember("Event")); err != nil {
+		return fmt.Errorf("cannot add signal match: %v", err)
+	}
+
 	// start goroutine that receives values on the signals channel and handles
 	// them appropriately.
 	signals := make(chan *dbus.Signal)
@@ -120,6 +124,23 @@ func (d *Dispatcher) Connect() error {
 				if _, has := changedProperties["Features"]; has {
 					d.features.Set(directive, changedProperties["Features"].Value().(map[string]string))
 					d.Dispatchers <- d.FlattenDispatchers()
+				}
+			case "com.redhat.yggdrasil.Worker1.Event":
+				eventName, ok := s.Body[0].(uint32)
+				if !ok {
+					log.Errorf("cannot convert %T to uint32", s.Body[0])
+					continue
+				}
+				switch ipc.WorkerEvent(eventName) {
+				case ipc.WorkerEventBegin, ipc.WorkerEventEnd:
+					log.Debugf("worker emitted event: %v", ipc.WorkerEvent(eventName))
+				case ipc.WorkerEventWorking:
+					eventMessage, ok := s.Body[1].(string)
+					if !ok {
+						log.Errorf("cannot convert %T to string", s.Body[1])
+						continue
+					}
+					log.Debugf("worker emitted event: %v with message '%v'", ipc.WorkerEvent(eventName), eventMessage)
 				}
 			}
 		}

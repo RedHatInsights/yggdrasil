@@ -18,6 +18,10 @@ import (
 // com.redhat.yggdrasil.Dispatcher1.Transmit method, returning the metadata and
 // data it received.
 func echo(w *worker.Worker, addr string, id string, metadata map[string]string, data []byte) error {
+	if err := w.EmitEvent(ipc.WorkerEventWorking, fmt.Sprintf("echoing %v", data)); err != nil {
+		return fmt.Errorf("cannot call EmitEvent: %w", err)
+	}
+
 	responseCode, responseMetadata, responseData, err := w.Transmit(addr, id, metadata, data)
 	if err != nil {
 		return fmt.Errorf("cannot call Transmit: %w", err)

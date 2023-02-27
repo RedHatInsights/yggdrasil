@@ -24,3 +24,31 @@ const (
 
 //go:embed com.redhat.yggdrasil.Worker1.xml
 var InterfaceWorker string
+
+type WorkerEvent uint
+
+const (
+
+	// Emitted when the worker "accepts" a dispatched message and begins
+	// "working".
+	WorkerEventBegin WorkerEvent = 1
+
+	// Emitted when the worker finishes "working".
+	WorkerEventEnd WorkerEvent = 2
+
+	// Emitted when the worker wishes to continue to announce it is
+	// working.
+	WorkerEventWorking WorkerEvent = 3
+)
+
+func (e WorkerEvent) String() string {
+	switch e {
+	case 1:
+		return "BEGIN"
+	case 2:
+		return "END"
+	case 3:
+		return "WORKING"
+	}
+	return ""
+}

@@ -41,6 +41,32 @@
              fetched from a remote location before dispatch.
         -->
         <property name="RemoteContent" type="b" access="read" />
+
+        <!-- 
+            Event:
+            @name: Name of the event.
+            @message: Optional message included with the event.
+
+            Emitted by a worker when certain conditions arise, such as beginning
+            or ending work.
+
+            The possible values for the 'name' argument are:
+
+            1 = BEGIN
+            Emitted when the worker "accepts" a dispatched message and begins
+            "working".
+            
+            2 = END
+            Emitted when the worker finishes "working".
+
+            3 = WORKING
+            Emitted when the worker wishes to continue to announce it is
+            working.
+        -->
+        <signal name="Event">
+            <arg type="u" name="name" />
+            <arg type="s" name="message" />
+        </signal>
     </interface>
 
     <interface name="org.freedesktop.DBus.Introspectable">
