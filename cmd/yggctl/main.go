@@ -12,6 +12,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/redhatinsights/yggdrasil"
 	"github.com/redhatinsights/yggdrasil/internal/constants"
+	"github.com/redhatinsights/yggdrasil/ipc"
 	"github.com/urfave/cli/v2"
 )
 
@@ -180,6 +181,62 @@ func main() {
 
 				fmt.Printf("Dispatched message %v to worker %v\n", id, c.String("worker"))
 
+				return nil
+			},
+		},
+		{
+			Name:        "listen",
+			Usage:       "Listen to worker event output",
+			Description: "The listen command waits for events emitted by the specified worker and prints them to the console.",
+			Flags: []cli.Flag{
+				&cli.StringFlag{
+					Name:     "worker",
+					Aliases:  []string{"w"},
+					Usage:    "Listen for events emitted by `WORKER`",
+					Required: true,
+				},
+			},
+			Action: func(ctx *cli.Context) error {
+				var conn *dbus.Conn
+				var err error
+
+				if os.Getenv("DBUS_SESSION_BUS_ADDRESS") != "" {
+					conn, err = dbus.ConnectSessionBus()
+				} else {
+					conn, err = dbus.ConnectSystemBus()
+				}
+				if err != nil {
+					return cli.Exit(fmt.Errorf("cannot connect to bus: %w", err), 1)
+				}
+
+				if err := conn.AddMatchSignal(); err != nil {
+					return cli.Exit(fmt.Errorf("cannot add match signal: %w", err), 1)
+				}
+
+				signals := make(chan *dbus.Signal)
+				conn.Signal(signals)
+				for s := range signals {
+					switch s.Name {
+					case "com.redhat.Yggdrasil1.WorkerEvent":
+						worker, ok := s.Body[0].(string)
+						if !ok {
+							return cli.Exit(fmt.Errorf("cannot cast %T as string", s.Body[0]), 1)
+						}
+						name, ok := s.Body[1].(uint32)
+						if !ok {
+							return cli.Exit(fmt.Errorf("cannot cat %T as uint32", s.Body[1]), 1)
+						}
+						var message string
+						if len(s.Body) > 2 {
+							message, ok = s.Body[2].(string)
+							if !ok {
+								return cli.Exit(fmt.Errorf("cannot cast %T as string", s.Body[0]), 1)
+							}
+						}
+						log.Printf("%v: %v: %v", worker, ipc.WorkerEvent(name), message)
+
+					}
+				}
 				return nil
 			},
 		},

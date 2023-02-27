@@ -106,6 +106,11 @@ func (d *Dispatcher) Connect() error {
 	go func() {
 		for s := range signals {
 			log.Tracef("received signal: %#v", s)
+			dest, err := d.senderName(dbus.Sender(s.Sender))
+			if err != nil {
+				log.Errorf("cannot find sender: %v", err)
+				continue
+			}
 			switch s.Name {
 			case "org.freedesktop.DBus.Properties.PropertiesChanged":
 				changedProperties, ok := s.Body[1].(map[string]dbus.Variant)
@@ -114,11 +119,6 @@ func (d *Dispatcher) Connect() error {
 					continue
 				}
 				log.Debugf("%+v", changedProperties)
-				dest, err := d.senderName(dbus.Sender(s.Sender))
-				if err != nil {
-					log.Errorf("cannot find sender: %v", err)
-					continue
-				}
 				directive := strings.TrimPrefix(dest, "com.redhat.yggdrasil.Worker1.")
 
 				if _, has := changedProperties["Features"]; has {
@@ -133,12 +133,18 @@ func (d *Dispatcher) Connect() error {
 				}
 				switch ipc.WorkerEvent(eventName) {
 				case ipc.WorkerEventBegin, ipc.WorkerEventEnd:
+					if err := d.conn.Emit("/com/redhat/Yggdrasil1", "com.redhat.Yggdrasil1.WorkerEvent", strings.TrimPrefix(dest, "com.redhat.yggdrasil.Worker1."), eventName); err != nil {
+						log.Errorf("cannot emit event: %v", err)
+					}
 					log.Debugf("worker emitted event: %v", ipc.WorkerEvent(eventName))
 				case ipc.WorkerEventWorking:
 					eventMessage, ok := s.Body[1].(string)
 					if !ok {
 						log.Errorf("cannot convert %T to string", s.Body[1])
 						continue
+					}
+					if err := d.conn.Emit("/com/redhat/Yggdrasil1", "com.redhat.Yggdrasil1.WorkerEvent", strings.TrimPrefix(dest, "com.redhat.yggdrasil.Worker1."), eventName, eventMessage); err != nil {
+						log.Errorf("cannot emit event: %v", err)
 					}
 					log.Debugf("worker emitted event: %v with message '%v'", ipc.WorkerEvent(eventName), eventMessage)
 				}
