@@ -24,6 +24,17 @@
             <arg type="ay" name="data" direction="in" />
         </method>
 
+        <!--
+            ListWorkers:
+            @workers: The set of workers.
+
+            Returns the set of workers currently known, along with their
+            "features" table.
+        -->
+        <method name="ListWorkers">
+            <arg type="a{sa{ss}}" name="workers" direction="out" />
+        </method>
+
         <!-- 
             WorkerEvent:
             @worker: Name of the worker emitting the event.

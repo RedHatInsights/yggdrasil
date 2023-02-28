@@ -24,6 +24,7 @@ import (
 )
 
 type Client struct {
+	conn                *dbus.Conn
 	transporter         transport.Transporter
 	dispatcher          *work.Dispatcher
 	prevDispatchersHash atomic.Value
@@ -143,27 +144,26 @@ func (c *Client) Connect() error {
 		}
 	})
 
-	var conn *dbus.Conn
 	if os.Getenv("DBUS_SESSION_BUS_ADDRESS") != "" {
 		log.Debugf("connecting to session bus: %v", os.Getenv("DBUS_SESSION_BUS_ADDRESS"))
-		conn, err = dbus.ConnectSessionBus()
+		c.conn, err = dbus.ConnectSessionBus()
 	} else {
 		log.Debug("connecting to system bus")
-		conn, err = dbus.ConnectSystemBus()
+		c.conn, err = dbus.ConnectSystemBus()
 	}
 	if err != nil {
 		return fmt.Errorf("cannot connect to bus: %v", err)
 	}
 
-	if err := conn.Export(c, "/com/redhat/Yggdrasil1", "com.redhat.Yggdrasil1"); err != nil {
+	if err := c.conn.Export(c, "/com/redhat/Yggdrasil1", "com.redhat.Yggdrasil1"); err != nil {
 		return fmt.Errorf("cannot export com.redhat.Yggdrasil1 interface: %v", err)
 	}
 
-	if err := conn.Export(introspect.Introspectable(internaldbus.InterfaceYggdrasil), "/com/redhat/Yggdrasil1", "org.freedesktop.DBus.Introspectable"); err != nil {
+	if err := c.conn.Export(introspect.Introspectable(internaldbus.InterfaceYggdrasil), "/com/redhat/Yggdrasil1", "org.freedesktop.DBus.Introspectable"); err != nil {
 		return fmt.Errorf("cannot export org.freedesktop.DBus.Introspectable interface: %v", err)
 	}
 
-	reply, err := conn.RequestName("com.redhat.Yggdrasil1", dbus.NameFlagDoNotQueue)
+	reply, err := c.conn.RequestName("com.redhat.Yggdrasil1", dbus.NameFlagDoNotQueue)
 	if err != nil {
 		return fmt.Errorf("cannot request name on bus: %v", err)
 	}
@@ -181,7 +181,7 @@ func (c *Client) Connect() error {
 			case ipc.WorkerEventNameWorking:
 				args = append(args, e.Message)
 			}
-			if err := conn.Emit("/com/redhat/Yggdrasil1", "com.redhat.Yggdrasil1.WorkerEvent", args...); err != nil {
+			if err := c.conn.Emit("/com/redhat/Yggdrasil1", "com.redhat.Yggdrasil1.WorkerEvent", args...); err != nil {
 				log.Errorf("cannot emit event: %v", err)
 				continue
 			}
@@ -190,6 +190,11 @@ func (c *Client) Connect() error {
 	}()
 
 	return c.transporter.Connect()
+}
+
+// ListWorkers implements the com.redhat.Yggdrasil1.ListWorkers method.
+func (c *Client) ListWorkers() (map[string]map[string]string, *dbus.Error) {
+	return c.dispatcher.FlattenDispatchers(), nil
 }
 
 // Dispatch implements the com.redhat.Yggdrasil1.Dispatch method.
