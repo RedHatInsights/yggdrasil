@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"text/tabwriter"
 
 	"git.sr.ht/~spc/go-log"
 
@@ -114,6 +115,71 @@ func main() {
 						}
 
 						fmt.Println(string(data))
+
+						return nil
+					},
+				},
+			},
+		},
+		{
+			Name:  "workers",
+			Usage: "Interact with yggdrasil workers",
+			Subcommands: []*cli.Command{
+				{
+					Name:        "list",
+					Usage:       "List currently connected workers",
+					Description: `The list command prints a list of currently connected workers, along with the workers "features" table.`,
+					Flags: []cli.Flag{
+						&cli.StringFlag{
+							Name:  "format",
+							Usage: "Print output in `FORMAT` (json, table or text)",
+							Value: "text",
+						},
+					},
+					Action: func(c *cli.Context) error {
+						var conn *dbus.Conn
+						var err error
+
+						if os.Getenv("DBUS_SESSION_BUS_ADDRESS") != "" {
+							conn, err = dbus.ConnectSessionBus()
+						} else {
+							conn, err = dbus.ConnectSystemBus()
+						}
+						if err != nil {
+							return cli.Exit(fmt.Errorf("cannot connect to bus: %w", err), 1)
+						}
+
+						obj := conn.Object("com.redhat.Yggdrasil1", "/com/redhat/Yggdrasil1")
+						var workers map[string]map[string]string
+						if err := obj.Call("com.redhat.Yggdrasil1.ListWorkers", dbus.Flags(0)).Store(&workers); err != nil {
+							return cli.Exit(fmt.Errorf("cannot list workers: %v", err), 1)
+						}
+
+						switch c.String("format") {
+						case "json":
+							data, err := json.Marshal(workers)
+							if err != nil {
+								return cli.Exit(fmt.Errorf("cannot marshal workers: %v", err), 1)
+							}
+							fmt.Println(string(data))
+						case "table":
+							writer := tabwriter.NewWriter(os.Stdout, 4, 4, 2, ' ', 0)
+							fmt.Fprintf(writer, "WORKER\tFIELD\tVALUE\n")
+							for worker, features := range workers {
+								for field, value := range features {
+									fmt.Fprintf(writer, "%v\t%v\t%v\n", worker, field, value)
+								}
+								_ = writer.Flush()
+							}
+						case "text":
+							for worker, features := range workers {
+								for field, value := range features {
+									fmt.Printf("%v - %v: %v\n", worker, field, value)
+								}
+							}
+						default:
+							return cli.Exit(fmt.Errorf("unknown format type: %v", c.String("format")), 1)
+						}
 
 						return nil
 					},
