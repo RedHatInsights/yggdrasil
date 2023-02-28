@@ -200,6 +200,17 @@ func (d *Dispatcher) Dispatch(data yggdrasil.Data) error {
 	}
 	log.Debugf("send message %v to worker %v", data.MessageID, data.Directive)
 
+	v, err := obj.GetProperty("com.redhat.yggdrasil.Worker1.Features")
+	if err != nil {
+		return fmt.Errorf("cannot get property 'com.redhat.yggdrasil.Worker1.Features': %v", err)
+	}
+	features, ok := v.Value().(map[string]string)
+	if !ok {
+		return fmt.Errorf("cannot convert %T to map[string]string", v.Value())
+	}
+	d.features.Set(data.Directive, features)
+	d.Dispatchers <- d.FlattenDispatchers()
+
 	return nil
 }
 
