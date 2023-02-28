@@ -159,7 +159,7 @@ func (w *Worker) Transmit(addr string, id string, metadata map[string]string, da
 }
 
 // EmitEvent emits a WorkerEvent, including an optional message.
-func (w *Worker) EmitEvent(event ipc.WorkerEvent, message string) error {
+func (w *Worker) EmitEvent(event ipc.WorkerEventName, message string) error {
 	args := []interface{}{event}
 	if message != "" {
 		args = append(args, message)
@@ -177,7 +177,7 @@ func (w *Worker) dispatch(addr string, id string, metadata map[string]string, da
 	log.Tracef("metadata = %#v", metadata)
 	log.Tracef("data = %v", data)
 
-	if err := w.EmitEvent(ipc.WorkerEventBegin, ""); err != nil {
+	if err := w.EmitEvent(ipc.WorkerEventNameBegin, ""); err != nil {
 		return dbus.NewError("com.redhat.yggdrasil.Worker1.EventError", []interface{}{err.Error()})
 	}
 
@@ -185,7 +185,7 @@ func (w *Worker) dispatch(addr string, id string, metadata map[string]string, da
 		if err := w.rx(w, addr, id, metadata, data); err != nil {
 			log.Errorf("cannot call rx: %v", err)
 		}
-		if err := w.EmitEvent(ipc.WorkerEventEnd, ""); err != nil {
+		if err := w.EmitEvent(ipc.WorkerEventNameEnd, ""); err != nil {
 			log.Errorf("cannot emit event: %v", err)
 		}
 	}()

@@ -172,6 +172,23 @@ func (c *Client) Connect() error {
 	}
 	log.Infof("exported /com/redhat/Yggdrasil1 on bus")
 
+	// Start a goroutine receiving values from the dispatcher's WorkerEvents
+	// channel, emitting a D-Bus "WorkerEvent" signal for each.
+	go func() {
+		for e := range c.dispatcher.WorkerEvents {
+			args := []interface{}{e.Worker, e.Name}
+			switch e.Name {
+			case ipc.WorkerEventNameWorking:
+				args = append(args, e.Message)
+			}
+			if err := conn.Emit("/com/redhat/Yggdrasil1", "com.redhat.Yggdrasil1.WorkerEvent", args...); err != nil {
+				log.Errorf("cannot emit event: %v", err)
+				continue
+			}
+			log.Debugf("emitted event: %+v", e)
+		}
+	}()
+
 	return c.transporter.Connect()
 }
 

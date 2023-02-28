@@ -31,12 +31,13 @@ const (
 // to the destination worker. It sends values on the 'outbound' channel to relay
 // data received from workers to a remote address.
 type Dispatcher struct {
-	HTTPClient  *internalhttp.Client
-	conn        *dbus.Conn
-	features    sync.RWMutexMap[map[string]string]
-	Dispatchers chan map[string]map[string]string
-	Inbound     chan yggdrasil.Data
-	Outbound    chan struct {
+	HTTPClient   *internalhttp.Client
+	conn         *dbus.Conn
+	features     sync.RWMutexMap[map[string]string]
+	Dispatchers  chan map[string]map[string]string
+	WorkerEvents chan ipc.WorkerEvent
+	Inbound      chan yggdrasil.Data
+	Outbound     chan struct {
 		Data yggdrasil.Data
 		Resp chan yggdrasil.Response
 	}
@@ -44,10 +45,11 @@ type Dispatcher struct {
 
 func NewDispatcher(client *internalhttp.Client) *Dispatcher {
 	return &Dispatcher{
-		HTTPClient:  client,
-		features:    sync.RWMutexMap[map[string]string]{},
-		Dispatchers: make(chan map[string]map[string]string),
-		Inbound:     make(chan yggdrasil.Data),
+		HTTPClient:   client,
+		features:     sync.RWMutexMap[map[string]string]{},
+		Dispatchers:  make(chan map[string]map[string]string),
+		WorkerEvents: make(chan ipc.WorkerEvent),
+		Inbound:      make(chan yggdrasil.Data),
 		Outbound: make(chan struct {
 			Data yggdrasil.Data
 			Resp chan yggdrasil.Response
@@ -126,28 +128,24 @@ func (d *Dispatcher) Connect() error {
 					d.Dispatchers <- d.FlattenDispatchers()
 				}
 			case "com.redhat.yggdrasil.Worker1.Event":
+				var event ipc.WorkerEvent
 				eventName, ok := s.Body[0].(uint32)
 				if !ok {
 					log.Errorf("cannot convert %T to uint32", s.Body[0])
 					continue
 				}
-				switch ipc.WorkerEvent(eventName) {
-				case ipc.WorkerEventBegin, ipc.WorkerEventEnd:
-					if err := d.conn.Emit("/com/redhat/Yggdrasil1", "com.redhat.Yggdrasil1.WorkerEvent", strings.TrimPrefix(dest, "com.redhat.yggdrasil.Worker1."), eventName); err != nil {
-						log.Errorf("cannot emit event: %v", err)
-					}
-					log.Debugf("worker emitted event: %v", ipc.WorkerEvent(eventName))
-				case ipc.WorkerEventWorking:
+				event.Name = ipc.WorkerEventName(eventName)
+				event.Worker = strings.TrimPrefix(dest, "com.redhat.yggdrasil.Worker1.")
+				switch ipc.WorkerEventName(eventName) {
+				case ipc.WorkerEventNameWorking:
 					eventMessage, ok := s.Body[1].(string)
 					if !ok {
 						log.Errorf("cannot convert %T to string", s.Body[1])
 						continue
 					}
-					if err := d.conn.Emit("/com/redhat/Yggdrasil1", "com.redhat.Yggdrasil1.WorkerEvent", strings.TrimPrefix(dest, "com.redhat.yggdrasil.Worker1."), eventName, eventMessage); err != nil {
-						log.Errorf("cannot emit event: %v", err)
-					}
-					log.Debugf("worker emitted event: %v with message '%v'", ipc.WorkerEvent(eventName), eventMessage)
+					event.Message = eventMessage
 				}
+				d.WorkerEvents <- event
 			}
 		}
 	}()

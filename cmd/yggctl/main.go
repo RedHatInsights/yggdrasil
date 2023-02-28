@@ -233,7 +233,7 @@ func main() {
 								return cli.Exit(fmt.Errorf("cannot cast %T as string", s.Body[0]), 1)
 							}
 						}
-						log.Printf("%v: %v: %v", worker, ipc.WorkerEvent(name), message)
+						log.Printf("%v: %v: %v", worker, ipc.WorkerEventName(name), message)
 
 					}
 				}
