@@ -155,7 +155,7 @@ func (c *Client) Connect() error {
 		return fmt.Errorf("cannot connect to bus: %v", err)
 	}
 
-	if err := conn.Export(c.dispatcher, "/com/redhat/Yggdrasil1", "com.redhat.Yggdrasil1"); err != nil {
+	if err := conn.Export(c, "/com/redhat/Yggdrasil1", "com.redhat.Yggdrasil1"); err != nil {
 		return fmt.Errorf("cannot export com.redhat.Yggdrasil1 interface: %v", err)
 	}
 
@@ -190,6 +190,24 @@ func (c *Client) Connect() error {
 	}()
 
 	return c.transporter.Connect()
+}
+
+// Dispatch implements the com.redhat.Yggdrasil1.Dispatch method.
+func (c *Client) Dispatch(directive string, messageID string, metadata map[string]string, data []byte) *dbus.Error {
+	msg := yggdrasil.Data{
+		Type:       yggdrasil.MessageTypeData,
+		MessageID:  messageID,
+		ResponseTo: "",
+		Version:    1,
+		Sent:       time.Now(),
+		Directive:  directive,
+		Metadata:   metadata,
+		Content:    data,
+	}
+	if err := c.dispatcher.Dispatch(msg); err != nil {
+		return work.NewDBusError("com.redhat.Yggdrasil1.Dispatch", fmt.Sprintf("cannot dispatch to directive: %v", err))
+	}
+	return nil
 }
 
 func (c *Client) SendDataMessage(msg *yggdrasil.Data, metadata map[string]string) (int, map[string]string, []byte, error) {

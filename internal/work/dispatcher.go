@@ -154,7 +154,7 @@ func (d *Dispatcher) Connect() error {
 	// via the Worker D-Bus interface.
 	go func() {
 		for data := range d.Inbound {
-			if err := d.dispatch(data); err != nil {
+			if err := d.Dispatch(data); err != nil {
 				log.Errorf("cannot dispatch data: %v", err)
 				continue
 			}
@@ -164,7 +164,7 @@ func (d *Dispatcher) Connect() error {
 	return nil
 }
 
-func (d *Dispatcher) dispatch(data yggdrasil.Data) error {
+func (d *Dispatcher) Dispatch(data yggdrasil.Data) error {
 	obj := d.conn.Object("com.redhat.yggdrasil.Worker1."+data.Directive, dbus.ObjectPath(filepath.Join("/com/redhat/yggdrasil/Worker1/", data.Directive)))
 	r, err := obj.GetProperty("com.redhat.yggdrasil.Worker1.RemoteContent")
 	if err != nil {
@@ -203,24 +203,6 @@ func (d *Dispatcher) dispatch(data yggdrasil.Data) error {
 	return nil
 }
 
-// Dispatch implements the com.redhat.Yggdrasil1.Dispatch method.
-func (d *Dispatcher) Dispatch(directive string, messageID string, metadata map[string]string, data []byte) *dbus.Error {
-	msg := yggdrasil.Data{
-		Type:       yggdrasil.MessageTypeData,
-		MessageID:  messageID,
-		ResponseTo: "",
-		Version:    1,
-		Sent:       time.Now(),
-		Directive:  directive,
-		Metadata:   metadata,
-		Content:    data,
-	}
-	if err := d.dispatch(msg); err != nil {
-		return newDBusError("Dispatch", fmt.Sprintf("cannot dispatch to directive: %v", err))
-	}
-	return nil
-}
-
 func (d *Dispatcher) DisconnectWorkers() {
 	if err := d.EmitEvent(ipc.DispatcherEventReceivedDisconnect); err != nil {
 		log.Errorf("cannot emit event: %v", err)
@@ -244,7 +226,7 @@ func (d *Dispatcher) EmitEvent(event ipc.DispatcherEvent) error {
 func (d *Dispatcher) Transmit(sender dbus.Sender, addr string, messageID string, metadata map[string]string, data []byte) (responseCode int, responseMetadata map[string]string, responseData []byte, responseError *dbus.Error) {
 	name, err := d.senderName(sender)
 	if err != nil {
-		return TransmitResponseErr, nil, nil, newDBusError("Transmit", fmt.Sprintf("cannot get name for sender: %v", err))
+		return TransmitResponseErr, nil, nil, NewDBusError("Transmit", fmt.Sprintf("cannot get name for sender: %v", err))
 	}
 
 	directive := strings.TrimPrefix(name, "com.redhat.yggdrasil.Worker1.")
@@ -252,13 +234,13 @@ func (d *Dispatcher) Transmit(sender dbus.Sender, addr string, messageID string,
 	obj := d.conn.Object("com.redhat.yggdrasil.Worker1."+directive, dbus.ObjectPath(filepath.Join("/com/redhat/yggdrasil/Worker1/", directive)))
 	r, err := obj.GetProperty("com.redhat.yggdrasil.Worker1.RemoteContent")
 	if err != nil {
-		return -1, nil, nil, newDBusError("Transmit", "cannot get property 'com.redhat.yggdrasil.Worker1.RemoteContent'")
+		return -1, nil, nil, NewDBusError("Transmit", "cannot get property 'com.redhat.yggdrasil.Worker1.RemoteContent'")
 	}
 
 	if r.Value().(bool) {
 		URL, err := url.Parse(addr)
 		if err != nil {
-			return TransmitResponseErr, nil, nil, newDBusError("Transmit", fmt.Sprintf("cannot parse addr as URL: %v", err))
+			return TransmitResponseErr, nil, nil, NewDBusError("Transmit", fmt.Sprintf("cannot parse addr as URL: %v", err))
 		}
 		if URL.Scheme != "" {
 			if config.DefaultConfig.DataHost != "" {
@@ -266,11 +248,11 @@ func (d *Dispatcher) Transmit(sender dbus.Sender, addr string, messageID string,
 			}
 			resp, err := d.HTTPClient.Post(URL.String(), metadata, data)
 			if err != nil {
-				return TransmitResponseErr, nil, nil, newDBusError("Transmit", fmt.Sprintf("cannot perform HTTP request: %v", err))
+				return TransmitResponseErr, nil, nil, NewDBusError("Transmit", fmt.Sprintf("cannot perform HTTP request: %v", err))
 			}
 			data, err = io.ReadAll(resp.Body)
 			if err != nil {
-				return TransmitResponseErr, nil, nil, newDBusError("Transmit", fmt.Sprintf("cannot read HTTP response body: %v", err))
+				return TransmitResponseErr, nil, nil, NewDBusError("Transmit", fmt.Sprintf("cannot read HTTP response body: %v", err))
 			}
 			resp.Body.Close()
 		}
@@ -300,7 +282,7 @@ func (d *Dispatcher) Transmit(sender dbus.Sender, addr string, messageID string,
 		responseMetadata = resp.Metadata
 		responseData = resp.Data
 	case <-time.After(1 * time.Second):
-		return TransmitResponseErr, nil, nil, newDBusError("Transmit", "timeout reached waiting for response")
+		return TransmitResponseErr, nil, nil, NewDBusError("com.redhat.yggdrasil.Dispatcher1.Transmit", "timeout reached waiting for response")
 	}
 	return
 }
@@ -325,13 +307,4 @@ func (d *Dispatcher) senderName(sender dbus.Sender) (string, error) {
 	}
 
 	return "", fmt.Errorf("cannot get name for sender: %v", sender)
-}
-
-func newDBusError(name string, body ...string) *dbus.Error {
-	e := dbus.Error{}
-	e.Name = "com.redhat.yggdrasil.Dispatcher1." + name
-	for _, v := range body {
-		e.Body = append(e.Body, v)
-	}
-	return &e
 }
