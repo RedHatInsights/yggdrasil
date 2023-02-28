@@ -1,11 +1,13 @@
 package main
 
 import (
+	"crypto/sha256"
 	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
 	"strconv"
+	"sync/atomic"
 	"time"
 
 	"git.sr.ht/~spc/go-log"
@@ -22,8 +24,9 @@ import (
 )
 
 type Client struct {
-	transporter transport.Transporter
-	dispatcher  *work.Dispatcher
+	transporter         transport.Transporter
+	dispatcher          *work.Dispatcher
+	prevDispatchersHash atomic.Value
 }
 
 // NewClient creates a new Client configured with dispatcher and transporter.
@@ -45,6 +48,39 @@ func (c *Client) Connect() error {
 	if err := c.dispatcher.Connect(); err != nil {
 		return fmt.Errorf("cannot connect dispatcher: %w", err)
 	}
+
+	// Start a goroutine that receives values on the 'dispatchers' channel
+	// and publishes "connection-status" messages to MQTT.
+	go func() {
+		for dispatchers := range c.dispatcher.Dispatchers {
+			data, err := json.Marshal(dispatchers)
+			if err != nil {
+				log.Errorf("cannot marshal dispatcher map to JSON: %v", err)
+				continue
+			}
+
+			// Create a checksum of the dispatchers map. If it's identical
+			// to the previous checksum, skip publishing a connection-status
+			// message.
+			sum := fmt.Sprintf("%x", sha256.Sum256(data))
+			oldSum := c.prevDispatchersHash.Load()
+			if oldSum != nil {
+				if sum == oldSum.(string) {
+					continue
+				}
+			}
+			c.prevDispatchersHash.Store(sum)
+			go func() {
+				msg, err := c.ConnectionStatus()
+				if err != nil {
+					log.Fatalf("cannot get connection status: %v", err)
+				}
+				if _, _, _, err = c.SendConnectionStatusMessage(msg); err != nil {
+					log.Errorf("cannot send connection status: %v", err)
+				}
+			}()
+		}
+	}()
 
 	// start receiving values from the dispatcher and transmit them using the
 	// provided transporter.

@@ -1,13 +1,10 @@
 package main
 
 import (
-	"crypto/sha256"
-	"encoding/json"
 	"fmt"
 	"os"
 	"os/signal"
 	"path/filepath"
-	"sync/atomic"
 	"syscall"
 	"time"
 
@@ -294,40 +291,6 @@ func main() {
 				}
 			}()
 		}
-
-		// Start a goroutine that receives values on the 'dispatchers' channel
-		// and publishes "connection-status" messages to MQTT.
-		var prevDispatchersHash atomic.Value
-		go func() {
-			for dispatchers := range dispatcher.Dispatchers {
-				data, err := json.Marshal(dispatchers)
-				if err != nil {
-					log.Errorf("cannot marshal dispatcher map to JSON: %v", err)
-					continue
-				}
-
-				// Create a checksum of the dispatchers map. If it's identical
-				// to the previous checksum, skip publishing a connection-status
-				// message.
-				sum := fmt.Sprintf("%x", sha256.Sum256(data))
-				oldSum := prevDispatchersHash.Load()
-				if oldSum != nil {
-					if sum == oldSum.(string) {
-						continue
-					}
-				}
-				prevDispatchersHash.Store(sum)
-				go func() {
-					msg, err := client.ConnectionStatus()
-					if err != nil {
-						log.Fatalf("cannot get connection status: %v", err)
-					}
-					if _, _, _, err = client.SendConnectionStatusMessage(msg); err != nil {
-						log.Errorf("cannot send connection status: %v", err)
-					}
-				}()
-			}
-		}()
 
 		// Start a goroutine that watches the tags file for write events and
 		// publishes connection status messages when the file changes.
