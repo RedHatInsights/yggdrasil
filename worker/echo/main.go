@@ -48,10 +48,12 @@ func events(event ipc.DispatcherEvent) {
 
 func main() {
 	var (
-		logLevel string
+		logLevel      string
+		remoteContent bool
 	)
 
 	flag.StringVar(&logLevel, "log-level", "error", "set log level")
+	flag.BoolVar(&remoteContent, "remote-content", false, "connect as a remote content worker")
 	flag.Parse()
 
 	level, err := log.ParseLevel(logLevel)
@@ -60,7 +62,7 @@ func main() {
 	}
 	log.SetLevel(level)
 
-	w, err := worker.NewWorker("echo", false, map[string]string{"DispatchedAt": "", "Version": "1"}, echo, events)
+	w, err := worker.NewWorker("echo", remoteContent, map[string]string{"DispatchedAt": "", "Version": "1"}, echo, events)
 	if err != nil {
 		log.Fatalf("error: cannot create worker: %v", err)
 	}
