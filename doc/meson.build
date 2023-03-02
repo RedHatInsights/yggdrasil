@@ -17,3 +17,19 @@ custom_target('yggd.bash',
   install: true,
   install_dir: bash_completion.get_pkgconfig_variable('completionsdir')
 )
+
+custom_target('yggctl.1',
+  output: 'yggctl.1',
+  capture: true,
+  command: [yggctl, '--generate-man-page'],
+  install: true,
+  install_dir: join_paths(get_option('mandir'), 'man1')
+)
+
+custom_target('yggctl.bash',
+  output: 'yggctl.bash',
+  command: [yggctl, '--generate-bash-completion'],
+  capture: true,
+  install: true,
+  install_dir: bash_completion.get_pkgconfig_variable('completionsdir')
+)
