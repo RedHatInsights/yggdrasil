@@ -10,11 +10,8 @@ custom_target('yggd.1',
   install_dir: join_paths(get_option('mandir'), 'man1')
 )
 
-custom_target('yggd.bash',
-  output: 'yggd.bash',
-  command: [yggd, '--generate-bash-completion'],
-  capture: true,
-  install: true,
+install_data('bash_autocomplete',
+  rename: 'yggd',
   install_dir: bash_completion.get_pkgconfig_variable('completionsdir')
 )
 
@@ -26,10 +23,7 @@ custom_target('yggctl.1',
   install_dir: join_paths(get_option('mandir'), 'man1')
 )
 
-custom_target('yggctl.bash',
-  output: 'yggctl.bash',
-  command: [yggctl, '--generate-bash-completion'],
-  capture: true,
-  install: true,
+install_data('bash_autocomplete',
+  rename: 'yggctl',
   install_dir: bash_completion.get_pkgconfig_variable('completionsdir')
 )

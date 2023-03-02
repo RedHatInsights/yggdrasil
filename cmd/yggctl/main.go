@@ -327,6 +327,7 @@ func main() {
 
 		return cli.ShowAppHelp(c)
 	}
+	app.EnableBashCompletion = true
 
 	if err := app.Run(os.Args); err != nil {
 		log.Fatal(err)
