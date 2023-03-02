@@ -73,6 +73,7 @@ type ConnectionStatus struct {
 		Dispatchers    map[string]map[string]string `json:"dispatchers"`
 		State          ConnectionState              `json:"state"`
 		Tags           map[string]string            `json:"tags,omitempty"`
+		Version        string                       `json:"version,omitempty"`
 	} `json:"content"`
 }
 

@@ -12,6 +12,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/redhatinsights/yggdrasil"
 	"github.com/redhatinsights/yggdrasil/internal/config"
+	"github.com/redhatinsights/yggdrasil/internal/constants"
 )
 
 // MQTT is a Transporter that sends and receives data and control
@@ -105,8 +106,10 @@ func NewMQTTTransport(clientID string, brokers []string, tlsConfig *tls.Config) 
 			Dispatchers    map[string]map[string]string "json:\"dispatchers\""
 			State          yggdrasil.ConnectionState    "json:\"state\""
 			Tags           map[string]string            "json:\"tags,omitempty\""
+			Version        string                       "json:\"version,omitempty\""
 		}{
-			State: yggdrasil.ConnectionStateOffline,
+			State:   yggdrasil.ConnectionStateOffline,
+			Version: constants.Version,
 		},
 	})
 	if err != nil {
