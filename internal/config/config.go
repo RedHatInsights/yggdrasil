@@ -4,6 +4,7 @@ import (
 	"crypto/tls"
 	"fmt"
 	"os"
+	"time"
 
 	"git.sr.ht/~spc/go-log"
 	"github.com/rjeczalik/notify"
@@ -20,6 +21,8 @@ const (
 	FlagNameProtocol       = "protocol"
 	FlagNameDataHost       = "data-host"
 	FlagNameCanonicalFacts = "canonical-facts"
+	FlagNameHTTPRetries    = "http-retries"
+	FlagNameHTTPTimeout    = "http-timeout"
 )
 
 var DefaultConfig = Config{
@@ -64,6 +67,14 @@ type Config struct {
 	// CanonicalFacts is a path to a JSON file containing "canonical facts",
 	// a set of facts about the system used to uniquely identify it.
 	CanonicalFacts string
+
+	// HTTPRetries is the number of times the client will attempt to resend
+	// failed HTTP requests before giving up.
+	HTTPRetries int
+
+	// HTTPTimeout is the duration the client will wait before cancelling an
+	// HTTP request.
+	HTTPTimeout time.Duration
 }
 
 func (conf *Config) CreateTLSConfig() (*tls.Config, error) {

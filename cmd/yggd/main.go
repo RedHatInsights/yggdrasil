@@ -99,6 +99,16 @@ func main() {
 			Usage:     "Read canonical facts from `FILE`",
 			TakesFile: true,
 		}),
+		altsrc.NewIntFlag(&cli.IntFlag{
+			Name:   config.FlagNameHTTPRetries,
+			Usage:  "Retry HTTP requests `N` times",
+			Hidden: true,
+		}),
+		altsrc.NewDurationFlag(&cli.DurationFlag{
+			Name:   config.FlagNameHTTPTimeout,
+			Usage:  "Wait for `DURATION` before cancelling an HTTP request",
+			Hidden: true,
+		}),
 	}
 
 	// This BeforeFunc will load flag values from a config file only if the
@@ -143,6 +153,8 @@ func main() {
 			Protocol:       c.String(config.FlagNameProtocol),
 			DataHost:       c.String(config.FlagNameDataHost),
 			CanonicalFacts: c.String(config.FlagNameCanonicalFacts),
+			HTTPRetries:    c.Int(config.FlagNameHTTPRetries),
+			HTTPTimeout:    c.Duration(config.FlagNameHTTPTimeout),
 		}
 
 		tlsConfig, err := config.DefaultConfig.CreateTLSConfig()
@@ -200,6 +212,8 @@ func main() {
 		}
 
 		httpClient := http.NewHTTPClient(tlsConfig, UserAgent)
+		httpClient.Retries = config.DefaultConfig.HTTPRetries
+		httpClient.Timeout = config.DefaultConfig.HTTPTimeout
 
 		// Create Dispatcher service
 		dispatcher := work.NewDispatcher(httpClient)
