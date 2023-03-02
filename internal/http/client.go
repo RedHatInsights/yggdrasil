@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+	"time"
 
 	"git.sr.ht/~spc/go-log"
 )
@@ -84,6 +85,28 @@ func (c *Client) Do(req *http.Request) (*http.Response, error) {
 			}
 			return nil, fmt.Errorf("cannot do HTTP request: %v", err)
 		}
+
+		switch resp.StatusCode {
+		case http.StatusServiceUnavailable, http.StatusTooManyRequests:
+			value := resp.Header.Get("Retry-After")
+			if value != "" {
+				var when time.Time
+				var err error
+
+				when, err = time.Parse(time.RFC1123, value)
+				if err != nil {
+					d, err := time.ParseDuration(value + "s")
+					if err != nil {
+						return nil, fmt.Errorf("cannot parse Retry-After header: %v", err)
+					}
+					when = time.Now().Add(d)
+				}
+				time.Sleep(time.Until(when))
+				attempt++
+				continue
+			}
+		}
+
 		return resp, nil
 	}
 }
