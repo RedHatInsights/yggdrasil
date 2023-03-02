@@ -24,6 +24,7 @@ endif
 
 gobuildflags = [
   '-buildmode=pie',
+  get_option('gobuildflags')
 ]
 
 config_data = configuration_data({
