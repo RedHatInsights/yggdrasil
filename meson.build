@@ -28,6 +28,7 @@ gobuildflags = [
 ]
 
 config_data = configuration_data({
+  'bindir': join_paths(get_option('prefix'), get_option('bindir')),
   'sbindir': join_paths(get_option('prefix'), get_option('sbindir')),
   'configdir': join_paths(get_option('sysconfdir'), meson.project_name()),
   'libexecdir': join_paths(get_option('prefix'), get_option('libexecdir'))

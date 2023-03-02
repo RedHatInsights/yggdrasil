@@ -9,7 +9,7 @@ Type=notify
 NotifyAccess=main
 WatchdogSec=300
 Environment=DBUS_SESSION_BUS_ADDRESS=unix:abstract=yggd_%i
-ExecStart=@sbindir@/yggd --config @configdir@/yggdrasil-%i.toml
+ExecStart=@bindir@/yggd --config @configdir@/yggdrasil-%i.toml
 
 [Install]
 WantedBy=multi-user.target

@@ -3,5 +3,5 @@ yggctl = custom_target('yggctl',
   output: 'yggd',
   command: [go, 'build', gobuildflags, '-o', '@OUTPUT@', '-ldflags', goldflags, 'github.com/redhatinsights/yggdrasil/cmd/yggctl'],
   install: false,
-  install_dir: get_option('sbindir')
+  install_dir: get_option('bindir')
 )

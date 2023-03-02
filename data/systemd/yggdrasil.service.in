@@ -9,7 +9,7 @@ Type=dbus
 BusName=com.redhat.Yggdrasil1
 NotifyAccess=main
 WatchdogSec=300
-ExecStart=@sbindir@/yggd
+ExecStart=@bindir@/yggd
 
 [Install]
 WantedBy=multi-user.target
