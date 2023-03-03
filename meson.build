@@ -22,7 +22,7 @@ if get_option('default_data_host') != ''
   goldflags += ' -X "github.com/redhatinsights/yggdrasil/internal/constants.DefaultDataHost=' + get_option('default_data_host') + '"'
 endif
 
-gobuildflags = get_option('gobuildflags').split()
+gobuildflags = get_option('gobuildflags')
 
 config_data = configuration_data({
   'bindir': join_paths(get_option('prefix'), get_option('bindir')),
