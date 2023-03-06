@@ -11,7 +11,7 @@ if get_option('vendor')
   meson.add_dist_script(join_paths('build-aux', 'vendor.sh'))
 endif
 
-goldflags = ''
+goldflags = get_option('goldflags')
 goldflags += ' -X "github.com/redhatinsights/yggdrasil/internal/constants.Version=' + meson.project_version() + '"'
 goldflags += ' -X "github.com/redhatinsights/yggdrasil/internal/constants.DefaultPathPrefix=' + meson.project_name() + '"'
 goldflags += ' -X "github.com/redhatinsights/yggdrasil/internal/constants.PrefixDir=' + get_option('prefix') + '"'
