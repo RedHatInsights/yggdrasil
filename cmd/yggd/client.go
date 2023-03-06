@@ -345,13 +345,13 @@ func (c *Client) ConnectionStatus() (*yggdrasil.ConnectionStatus, error) {
 			Dispatchers    map[string]map[string]string "json:\"dispatchers\""
 			State          yggdrasil.ConnectionState    "json:\"state\""
 			Tags           map[string]string            "json:\"tags,omitempty\""
-			Version        string                       "json:\"version,omitempty\""
+			ClientVersion  string                       "json:\"client_version,omitempty\""
 		}{
 			CanonicalFacts: facts,
 			Dispatchers:    c.dispatcher.FlattenDispatchers(),
 			State:          yggdrasil.ConnectionStateOnline,
 			Tags:           tagMap,
-			Version:        constants.Version,
+			ClientVersion:  constants.Version,
 		},
 	}
 

@@ -106,10 +106,10 @@ func NewMQTTTransport(clientID string, brokers []string, tlsConfig *tls.Config) 
 			Dispatchers    map[string]map[string]string "json:\"dispatchers\""
 			State          yggdrasil.ConnectionState    "json:\"state\""
 			Tags           map[string]string            "json:\"tags,omitempty\""
-			Version        string                       "json:\"version,omitempty\""
+			ClientVersion  string                       "json:\"client_version,omitempty\""
 		}{
-			State:   yggdrasil.ConnectionStateOffline,
-			Version: constants.Version,
+			State:         yggdrasil.ConnectionStateOffline,
+			ClientVersion: constants.Version,
 		},
 	})
 	if err != nil {
