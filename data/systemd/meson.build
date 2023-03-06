@@ -11,7 +11,7 @@ configure_file(
 
 install_symlink('yggdrasil.service',
   install_dir: systemd_user_unit_dir,
-  pointing_to: join_paths(systemd_system_unit_dir, 'yggdrasil.service')
+  pointing_to: join_paths('..', 'system', 'yggdrasil.service')
 )
 
 configure_file(
