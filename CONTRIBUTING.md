@@ -1,19 +1,27 @@
 # Prerequisites
 
-* _MQTT broker_: An optional MQTT broker, should you wish to publish messages
-  locally. `mosquitto` is extremely easy to set up.
-* _HTTP server_: An optional HTTP server, should you need to request payloads
-  from localhost. This does not need to be more complicated than Python's
-  SimpleHTTPServer module.
-* `yggd` requires D-Bus and systemd in order to run locally. The header files
-  from your distribution's "devel" packages must be installed in order to
-  compile `yggd`. A current list of required packages can be found in
-  `yggdrasil.spec.in` as listed in the `BuildRequires:` entries.
-  * NOTE: These are the packages names are listed as they exist in [Fedora
-    Linux](https://getfedora.org/), [CentOS Stream](https://centos.org/), and
-    [Red Hat Enterprise
-    Linux](https://www.redhat.com/en/technologies/linux-platforms/enterprise-linux).
-    Similar package names for other distros may vary.
+## MQTT broker
+
+An optional MQTT broker, should you wish to publish messages  locally.
+`mosquitto` is extremely easy to set up.
+
+## HTTP server
+
+An optional HTTP server, should you need to request payloads from localhost.
+This does not need to be more complicated than Python's SimpleHTTPServer module.
+
+## D-Bus
+
+`yggd` requires D-Bus and systemd in order to run locally. The header files from
+your distribution's "devel" packages must be installed in order to compile
+`yggd`. A current list of required packages can be found in the top-level
+[`meson.build`](https://github.com/RedHatInsights/yggdrasil/blob/main/meson.build)
+file. The package names will vary depending on your distribution.
+
+## MQTT client
+
+[`mqttcli`](#mqttcli) is recommended to make use of the `pub` and `sub`
+programs.
 
 # Quickstart
 
@@ -32,15 +40,16 @@ go run ./cmd/yggd --server tcp://test.mosquitto.org:8883 --log-level trace --cli
 Start an `echo` worker.
 
 ```
-go run ./worker/echo
+go run ./worker/echo -log-level trace
 ```
 
 ### Terminal 3
 
-Subscribe to the "control/out" topic the `yggd` client is subscribing to.
+Subscribe to all the MQTT topics the `yggd` client will publish and subscribe to
+to monitor the MQTT traffic.
 
 ```
-sub -broker tcp://test.mosquitto.org:8883 -topic yggdrasil/$CLIENT_ID/control/out
+sub -broker tcp://test.mosquitto.org:8883 -topic yggdrasil/$(hostname)/#
 ```
 
 ### Terminal 4
@@ -48,8 +57,23 @@ sub -broker tcp://test.mosquitto.org:8883 -topic yggdrasil/$CLIENT_ID/control/ou
 Publish a "PING" command to the `yggd` "control/in" topic.
 
 ```
-yggctl generate control-message --type command '{"command":"ping"}' | pub -broker tcp://test.mosquitto.org:8883 -topic yggdrasil/$CLIENT_ID/control/in
+go run ./cmd/yggctl generate control-message --type command '{"command":"ping"}' | pub -broker tcp://test.mosquitto.org:8883 -topic yggdrasil/$(hostname)/control/in
 ```
+
+You should see the message logged to the output of `sub` in [Terminal
+3](#terminal-3) and receipt of the message logged in the output of `yggd` in
+[Terminal 1](#terminal-1).
+
+Now publish a data message to the echo worker.
+
+```
+go run ./cmd/yggctl generate data-message --directive worker "hello" | pub -broker tcp://test.mosquitto.org:8883 -topic yggdrasil/$(hostname)/data/in
+```
+
+Again, you should see the message logged by the `sub` command in [Terminal
+3](#terminal-3), the receipt of the message logged in the output of `yggd` in
+[Terminal 1](#terminal-1). This time, you should see output in [Terminal
+2](#terminal-2) when the echo worker receives the message.
 
 ## Running `yggd` on the system bus
 
