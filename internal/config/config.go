@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"git.sr.ht/~spc/go-log"
+	"github.com/redhatinsights/yggdrasil/internal/constants"
 	"github.com/rjeczalik/notify"
 )
 
@@ -26,7 +27,7 @@ const (
 )
 
 var DefaultConfig = Config{
-	PathPrefix: "yggdrasil",
+	PathPrefix: constants.DefaultPathPrefix,
 }
 
 // Config contains current configuration state for yggdrasil.

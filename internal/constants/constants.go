@@ -13,7 +13,7 @@ var (
 
 	// DefaultPathPrefix is the default vlaue used as a prefix to all transport
 	// layer path names in the client.
-	DefaultPathPrefix string
+	DefaultPathPrefix string = "yggdrasil"
 
 	// DefaultDataHost is the default value used to force sending all HTTP
 	// traffic to a specific host.
