@@ -4,11 +4,11 @@ import (
 	_ "embed"
 )
 
-//go:embed com.redhat.yggdrasil.Dispatcher1.xml
+//go:embed com.redhat.Yggdrasil1.Dispatcher1.xml
 var InterfaceDispatcher string
 
 // DispatcherEvent is an event emitted by the
-// com.redhat.yggdrasil.Dispatcher1.Event signal.
+// com.redhat.Yggdrasil1.Dispatcher1.Event signal.
 type DispatcherEvent uint
 
 const (
@@ -22,7 +22,7 @@ const (
 	DispatcherEventConnectionRestored DispatcherEvent = 3
 )
 
-//go:embed com.redhat.yggdrasil.Worker1.xml
+//go:embed com.redhat.Yggdrasil1.Worker1.xml
 var InterfaceWorker string
 
 type WorkerEventName uint

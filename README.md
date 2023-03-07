@@ -83,7 +83,7 @@ connect to. It will attempt to connect to the session bus if
 `DBUS_SESSION_BUS_ADDRESS` is defined. Otherwise, it will attempt to connect to
 the system bus. On the system bus, if the process is not running as root, the
 installed D-Bus security policy will deny the process from claiming the
-`com.redhat.Yggdrasil1` and `com.redhat.yggdrasil.Dispatcher1` names, and the
+`com.redhat.Yggdrasil1` and `com.redhat.Yggdrasil1.Dispatcher1` names, and the
 process will exit.
 
 The systemd unit `yggrasil.service` starts `yggd`, using the logic described
@@ -119,15 +119,15 @@ the value is defined, otherwise connecting to the system bus. Once connected to
 the bus:
 
 * The program must export an object on the bus that implements the
-  `com.redhat.yggdrasil.Worker1` interface.
-* The object must be exported at a path under  `/com/redhat/yggdrasil/Worker1`
-  that includes the directive name (i.e. `/com/redhat/yggdrasil/Worker1/echo`).
+  `com.redhat.Yggdrasil1.Worker1` interface.
+* The object must be exported at a path under  `/com/redhat/Yggdrasil1/Worker1`
+  that includes the directive name (i.e. `/com/redhat/Yggdrasil1/Worker1/echo`).
 * The worker must claim a well-known name that begins with
-  `com.redhat.yggdrasil.Worker1` and includes its directive as the final segment
-  in reverse-domain-name notation (i.e. `com.redhat.yggdrasil.Worker1.echo`).
+  `com.redhat.Yggdrasil1.Worker1` and includes its directive as the final segment
+  in reverse-domain-name notation (i.e. `com.redhat.Yggdrasil1.Worker1.echo`).
 
 A worker can transmit data back to a destination by calling the
-`com.redhat.yggdrasil.Dispatcher1.Transmit` method.
+`com.redhat.Yggdrasil1.Dispatcher1.Transmit` method.
 
 Package `worker` implements the above requirements implicitly, enabling workers
 to be written without needing to worry about much of the D-Bus requirements

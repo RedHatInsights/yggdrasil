@@ -13,7 +13,7 @@ or system), depending on whether `DBUS_SESSION_BUS_ADDRESS` is defined.
 # D-Bus Service Activation
 
 The worker can be started automatically by the broker. Install the included file
-`com.redhat.yggdrasil.Worker1.echo.service` into
+`com.redhat.Yggdrasil1.Worker1.echo.service` into
 `/usr/share/dbus-1/system-services`. When the broker receives a message for the
 address specified by the `Name=` directive, the worker will be started before
 the message is delivered.
@@ -30,7 +30,7 @@ Description=yggdrasil echo worker
 
 [Service]
 Type=dbus
-BusName=com.redhat.yggdrasil.Worker1.echo
+BusName=com.redhat.Yggdrasil1.Worker1.echo
 ExecStart=/usr/libexec/yggdrasil/echo
 ```
 

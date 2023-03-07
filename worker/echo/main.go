@@ -15,7 +15,7 @@ import (
 )
 
 // echo opens a new dbus connection and calls the
-// com.redhat.yggdrasil.Dispatcher1.Transmit method, returning the metadata and
+// com.redhat.Yggdrasil1.Dispatcher1.Transmit method, returning the metadata and
 // data it received.
 func echo(w *worker.Worker, addr string, id string, metadata map[string]string, data []byte) error {
 	if err := w.EmitEvent(ipc.WorkerEventNameWorking, fmt.Sprintf("echoing %v", data)); err != nil {

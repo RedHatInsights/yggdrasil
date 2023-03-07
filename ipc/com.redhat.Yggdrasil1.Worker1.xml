@@ -1,13 +1,13 @@
 <!DOCTYPE node PUBLIC "-//freedesktop//DTD D-BUS Object Introspection 1.0//EN" "https://specifications.freedesktop.org/dbus/introspect-latest.dtd">
 <node>
     <!-- 
-        com.redhat.yggdrasil.Worker1:
+        com.redhat.Yggdrasil1.Worker1:
         @short_description: Worker object interface
 
         The Worker1 interface exposes methods and properties suitable for
         communicating with yggdrasil worker objects.
     -->
-    <interface name="com.redhat.yggdrasil.Worker1">
+    <interface name="com.redhat.Yggdrasil1.Worker1">
         <!--
             Dispatch:
             @addr: Address (typically the worker directive name) of the received

@@ -24,7 +24,7 @@ const (
 	TransmitResponseOK  int = 0
 )
 
-// Dispatcher implements the com.redhat.yggdrasil.Dispatcher1 D-Bus interface
+// Dispatcher implements the com.redhat.Yggdrasil1.Dispatcher1 D-Bus interface
 // and is suitable to be exported onto a bus.
 //
 // Dispatcher receives values on its 'inbound' channel and sends them via D-Bus
@@ -72,15 +72,15 @@ func (d *Dispatcher) Connect() error {
 		return fmt.Errorf("cannot connect to bus: %w", err)
 	}
 
-	if err := d.conn.Export(d, "/com/redhat/yggdrasil/Dispatcher1", "com.redhat.yggdrasil.Dispatcher1"); err != nil {
-		return fmt.Errorf("cannot export com.redhat.yggdrasil.Dispatcher1 interface: %v", err)
+	if err := d.conn.Export(d, "/com/redhat/Yggdrasil1/Dispatcher1", "com.redhat.Yggdrasil1.Dispatcher1"); err != nil {
+		return fmt.Errorf("cannot export com.redhat.Yggdrasil1.Dispatcher1 interface: %v", err)
 	}
 
-	if err := d.conn.Export(introspect.Introspectable(ipc.InterfaceDispatcher), "/com/redhat/yggdrasil/Dispatcher1", "org.freedesktop.DBus.Introspectable"); err != nil {
+	if err := d.conn.Export(introspect.Introspectable(ipc.InterfaceDispatcher), "/com/redhat/Yggdrasil1/Dispatcher1", "org.freedesktop.DBus.Introspectable"); err != nil {
 		return fmt.Errorf("cannot export org.freedesktop.DBus.Introspectable interface: %v", err)
 	}
 
-	reply, err := d.conn.RequestName("com.redhat.yggdrasil.Dispatcher1", dbus.NameFlagDoNotQueue)
+	reply, err := d.conn.RequestName("com.redhat.Yggdrasil1.Dispatcher1", dbus.NameFlagDoNotQueue)
 	if err != nil {
 		return fmt.Errorf("cannot request name on bus: %v", err)
 	}
@@ -89,15 +89,15 @@ func (d *Dispatcher) Connect() error {
 		return fmt.Errorf("name already taken")
 	}
 
-	log.Infof("exported /com/redhat/yggdrasil/Dispatcher1 on bus")
+	log.Infof("exported /com/redhat/Yggdrasil1/Dispatcher1 on bus")
 
 	// Add a match signal on the
 	// org.freedesktop.DBus.Properties.PropertiesChanged signal.
-	if err := d.conn.AddMatchSignal(dbus.WithMatchPathNamespace("/com/redhat/yggdrasil/Worker1"), dbus.WithMatchInterface("org.freedesktop.DBus.Properties"), dbus.WithMatchMember("PropertiesChanged")); err != nil {
+	if err := d.conn.AddMatchSignal(dbus.WithMatchPathNamespace("/com/redhat/Yggdrasil1/Worker1"), dbus.WithMatchInterface("org.freedesktop.DBus.Properties"), dbus.WithMatchMember("PropertiesChanged")); err != nil {
 		return fmt.Errorf("cannot add signal match: %v", err)
 	}
 
-	if err := d.conn.AddMatchSignal(dbus.WithMatchPathNamespace("/com/redhat/yggdrasil/Worker1"), dbus.WithMatchInterface("com.redhat.yggdrasil.Worker1"), dbus.WithMatchMember("Event")); err != nil {
+	if err := d.conn.AddMatchSignal(dbus.WithMatchPathNamespace("/com/redhat/Yggdrasil1/Worker1"), dbus.WithMatchInterface("com.redhat.Yggdrasil1.Worker1"), dbus.WithMatchMember("Event")); err != nil {
 		return fmt.Errorf("cannot add signal match: %v", err)
 	}
 
@@ -121,13 +121,13 @@ func (d *Dispatcher) Connect() error {
 					continue
 				}
 				log.Debugf("%+v", changedProperties)
-				directive := strings.TrimPrefix(dest, "com.redhat.yggdrasil.Worker1.")
+				directive := strings.TrimPrefix(dest, "com.redhat.Yggdrasil1.Worker1.")
 
 				if _, has := changedProperties["Features"]; has {
 					d.features.Set(directive, changedProperties["Features"].Value().(map[string]string))
 					d.Dispatchers <- d.FlattenDispatchers()
 				}
-			case "com.redhat.yggdrasil.Worker1.Event":
+			case "com.redhat.Yggdrasil1.Worker1.Event":
 				var event ipc.WorkerEvent
 				eventName, ok := s.Body[0].(uint32)
 				if !ok {
@@ -135,7 +135,7 @@ func (d *Dispatcher) Connect() error {
 					continue
 				}
 				event.Name = ipc.WorkerEventName(eventName)
-				event.Worker = strings.TrimPrefix(dest, "com.redhat.yggdrasil.Worker1.")
+				event.Worker = strings.TrimPrefix(dest, "com.redhat.Yggdrasil1.Worker1.")
 				switch ipc.WorkerEventName(eventName) {
 				case ipc.WorkerEventNameWorking:
 					eventMessage, ok := s.Body[1].(string)
@@ -165,10 +165,10 @@ func (d *Dispatcher) Connect() error {
 }
 
 func (d *Dispatcher) Dispatch(data yggdrasil.Data) error {
-	obj := d.conn.Object("com.redhat.yggdrasil.Worker1."+data.Directive, dbus.ObjectPath(filepath.Join("/com/redhat/yggdrasil/Worker1/", data.Directive)))
-	r, err := obj.GetProperty("com.redhat.yggdrasil.Worker1.RemoteContent")
+	obj := d.conn.Object("com.redhat.Yggdrasil1.Worker1."+data.Directive, dbus.ObjectPath(filepath.Join("/com/redhat/Yggdrasil1/Worker1/", data.Directive)))
+	r, err := obj.GetProperty("com.redhat.Yggdrasil1.Worker1.RemoteContent")
 	if err != nil {
-		return fmt.Errorf("cannot get property 'com.redhat.yggdrasil.Worker1.RemoteContent': %v", err)
+		return fmt.Errorf("cannot get property 'com.redhat.Yggdrasil1.Worker1.RemoteContent': %v", err)
 	}
 
 	if r.Value().(bool) {
@@ -194,15 +194,15 @@ func (d *Dispatcher) Dispatch(data yggdrasil.Data) error {
 		data.Content = content
 	}
 
-	call := obj.Call("com.redhat.yggdrasil.Worker1.Dispatch", 0, data.Directive, data.MessageID, data.Metadata, data.Content)
+	call := obj.Call("com.redhat.Yggdrasil1.Worker1.Dispatch", 0, data.Directive, data.MessageID, data.Metadata, data.Content)
 	if err := call.Store(); err != nil {
 		return fmt.Errorf("cannot call Dispatch method on worker: %v", err)
 	}
 	log.Debugf("send message %v to worker %v", data.MessageID, data.Directive)
 
-	v, err := obj.GetProperty("com.redhat.yggdrasil.Worker1.Features")
+	v, err := obj.GetProperty("com.redhat.Yggdrasil1.Worker1.Features")
 	if err != nil {
-		return fmt.Errorf("cannot get property 'com.redhat.yggdrasil.Worker1.Features': %v", err)
+		return fmt.Errorf("cannot get property 'com.redhat.Yggdrasil1.Worker1.Features': %v", err)
 	}
 	features, ok := v.Value().(map[string]string)
 	if !ok {
@@ -230,22 +230,22 @@ func (d *Dispatcher) FlattenDispatchers() map[string]map[string]string {
 }
 
 func (d *Dispatcher) EmitEvent(event ipc.DispatcherEvent) error {
-	return d.conn.Emit("/com/redhat/yggdrasil/Dispatcher1", "com.redhat.yggdrasil.Dispatcher1.Event", event)
+	return d.conn.Emit("/com/redhat/Yggdrasil1/Dispatcher1", "com.redhat.Yggdrasil1.Dispatcher1.Event", event)
 }
 
-// Transmit implements the com.redhat.yggdrasil.Dispatcher1.Transmit method.
+// Transmit implements the com.redhat.Yggdrasil1.Dispatcher1.Transmit method.
 func (d *Dispatcher) Transmit(sender dbus.Sender, addr string, messageID string, metadata map[string]string, data []byte) (responseCode int, responseMetadata map[string]string, responseData []byte, responseError *dbus.Error) {
 	name, err := d.senderName(sender)
 	if err != nil {
 		return TransmitResponseErr, nil, nil, NewDBusError("Transmit", fmt.Sprintf("cannot get name for sender: %v", err))
 	}
 
-	directive := strings.TrimPrefix(name, "com.redhat.yggdrasil.Worker1.")
+	directive := strings.TrimPrefix(name, "com.redhat.Yggdrasil1.Worker1.")
 
-	obj := d.conn.Object("com.redhat.yggdrasil.Worker1."+directive, dbus.ObjectPath(filepath.Join("/com/redhat/yggdrasil/Worker1/", directive)))
-	r, err := obj.GetProperty("com.redhat.yggdrasil.Worker1.RemoteContent")
+	obj := d.conn.Object("com.redhat.Yggdrasil1.Worker1."+directive, dbus.ObjectPath(filepath.Join("/com/redhat/Yggdrasil1/Worker1/", directive)))
+	r, err := obj.GetProperty("com.redhat.Yggdrasil1.Worker1.RemoteContent")
 	if err != nil {
-		return -1, nil, nil, NewDBusError("Transmit", "cannot get property 'com.redhat.yggdrasil.Worker1.RemoteContent'")
+		return -1, nil, nil, NewDBusError("Transmit", "cannot get property 'com.redhat.Yggdrasil1.Worker1.RemoteContent'")
 	}
 
 	if r.Value().(bool) {
@@ -293,7 +293,7 @@ func (d *Dispatcher) Transmit(sender dbus.Sender, addr string, messageID string,
 		responseMetadata = resp.Metadata
 		responseData = resp.Data
 	case <-time.After(1 * time.Second):
-		return TransmitResponseErr, nil, nil, NewDBusError("com.redhat.yggdrasil.Dispatcher1.Transmit", "timeout reached waiting for response")
+		return TransmitResponseErr, nil, nil, NewDBusError("com.redhat.Yggdrasil1.Dispatcher1.Transmit", "timeout reached waiting for response")
 	}
 	return
 }
@@ -306,7 +306,7 @@ func (d *Dispatcher) senderName(sender dbus.Sender) (string, error) {
 		return "", fmt.Errorf("cannot call org.freedesktop.DBus.ListNames: %v", err)
 	}
 	for _, name := range names {
-		if strings.HasPrefix(name, "com.redhat.yggdrasil.Worker1.") {
+		if strings.HasPrefix(name, "com.redhat.Yggdrasil1.Worker1.") {
 			var owner string
 			if err := d.conn.BusObject().Call("org.freedesktop.DBus.GetNameOwner", 0, name).Store(&owner); err != nil {
 				return "", fmt.Errorf("cannot call org.freedesktop.DBus.GetNameOwner: %v", err)

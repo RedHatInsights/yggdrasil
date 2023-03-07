@@ -1,13 +1,13 @@
 <!DOCTYPE node PUBLIC "-//freedesktop//DTD D-BUS Object Introspection 1.0//EN" "https://specifications.freedesktop.org/dbus/introspect-latest.dtd">
 <node>
     <!-- 
-        com.redhat.yggdrasil.Dispatcher1:
+        com.redhat.Yggdrasil1.Dispatcher1:
         @short_description: Dispatcher object interface
 
         The Dispatcher1 interface exposes methods and signals suitable for
         communicating with the yggdrasil dispatcher object.
     -->
-    <interface name="com.redhat.yggdrasil.Dispatcher1">
+    <interface name="com.redhat.Yggdrasil1.Dispatcher1">
         <!-- 
             Transmit:
             @addr: Address (typically the worker directive name) of the message.

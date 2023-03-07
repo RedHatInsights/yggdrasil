@@ -8,8 +8,8 @@ custom_target('echo',
 
 configure_file(
   configuration: config_data,
-  input: 'com.redhat.yggdrasil.Worker1.echo.service.in',
-  output: 'com.redhat.yggdrasil.Worker1.echo.service',
+  input: 'com.redhat.Yggdrasil1.Worker1.echo.service.in',
+  output: 'com.redhat.Yggdrasil1.Worker1.echo.service',
   install: true,
   install_dir: dbus.get_pkgconfig_variable('system_bus_services_dir')
 )
