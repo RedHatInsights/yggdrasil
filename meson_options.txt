@@ -1,4 +1,5 @@
 option('default_data_host', type: 'string', description: 'Set the compile-time value for the default download hostname')
+option('default_path_prefix', type: 'string', value: 'yggdrasil', description: 'Set the compile-time value for the default path prefix')
 option('vendor', type: 'boolean', value: false, description: 'Bundle go module dependencies in the vendor directory')
 option('examples', type: 'boolean', value: false, description: 'Build and install the example workers')
 option('gobuildflags', type: 'array', value: ['-buildmode', 'pie'], description: 'Additional build flags to be passed to the Go compiler')

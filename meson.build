@@ -13,7 +13,7 @@ endif
 
 goldflags = get_option('goldflags')
 goldflags += ' -X "github.com/redhatinsights/yggdrasil/internal/constants.Version=' + meson.project_version() + '"'
-goldflags += ' -X "github.com/redhatinsights/yggdrasil/internal/constants.DefaultPathPrefix=' + meson.project_name() + '"'
+goldflags += ' -X "github.com/redhatinsights/yggdrasil/internal/constants.DefaultPathPrefix=' + get_option('default_path_prefix') + '"'
 goldflags += ' -X "github.com/redhatinsights/yggdrasil/internal/constants.PrefixDir=' + get_option('prefix') + '"'
 goldflags += ' -X "github.com/redhatinsights/yggdrasil/internal/constants.SysconfDir=' + get_option('sysconfdir') + '"'
 goldflags += ' -X "github.com/redhatinsights/yggdrasil/internal/constants.LocalstateDir=' + get_option('localstatedir') + '"'
@@ -44,6 +44,7 @@ endif
 summary(
   {
     'default_data_host': get_option('default_data_host'),
+    'default_path_prefix': get_option('default_path_prefix'),
     'vendor': get_option('vendor'),
     'examples': get_option('examples')
   },
