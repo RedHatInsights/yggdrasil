@@ -194,7 +194,7 @@ func (d *Dispatcher) Dispatch(data yggdrasil.Data) error {
 		data.Content = content
 	}
 
-	call := obj.Call("com.redhat.Yggdrasil1.Worker1.Dispatch", 0, data.Directive, data.MessageID, data.Metadata, data.Content)
+	call := obj.Call("com.redhat.Yggdrasil1.Worker1.Dispatch", 0, data.Directive, data.MessageID, data.ResponseTo, data.Metadata, data.Content)
 	if err := call.Store(); err != nil {
 		return fmt.Errorf("cannot call Dispatch method on worker: %v", err)
 	}
