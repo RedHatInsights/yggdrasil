@@ -11,5 +11,5 @@ configure_file(
   input: 'com.redhat.Yggdrasil1.Worker1.echo.service.in',
   output: 'com.redhat.Yggdrasil1.Worker1.echo.service',
   install: true,
-  install_dir: dbus.get_pkgconfig_variable('system_bus_services_dir')
+  install_dir: dbus.get_variable(pkgconfig: 'system_bus_services_dir')
 )

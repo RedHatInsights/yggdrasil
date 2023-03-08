@@ -12,7 +12,7 @@ custom_target('yggd.1',
 
 install_data('bash_autocomplete',
   rename: 'yggd',
-  install_dir: bash_completion.get_pkgconfig_variable('completionsdir')
+  install_dir: bash_completion.get_variable(pkgconfig: 'completionsdir')
 )
 
 custom_target('yggctl.1',
@@ -25,5 +25,5 @@ custom_target('yggctl.1',
 
 install_data('bash_autocomplete',
   rename: 'yggctl',
-  install_dir: bash_completion.get_pkgconfig_variable('completionsdir')
+  install_dir: bash_completion.get_variable(pkgconfig: 'completionsdir')
 )
