@@ -17,12 +17,12 @@ import (
 // echo opens a new dbus connection and calls the
 // com.redhat.Yggdrasil1.Dispatcher1.Transmit method, returning the metadata and
 // data it received.
-func echo(w *worker.Worker, addr string, id string, metadata map[string]string, data []byte) error {
+func echo(w *worker.Worker, addr string, id string, responseTo string, metadata map[string]string, data []byte) error {
 	if err := w.EmitEvent(ipc.WorkerEventNameWorking, fmt.Sprintf("echoing %v", data)); err != nil {
 		return fmt.Errorf("cannot call EmitEvent: %w", err)
 	}
 
-	responseCode, responseMetadata, responseData, err := w.Transmit(addr, id, metadata, data)
+	responseCode, responseMetadata, responseData, err := w.Transmit(addr, id, responseTo, metadata, data)
 	if err != nil {
 		return fmt.Errorf("cannot call Transmit: %w", err)
 	}

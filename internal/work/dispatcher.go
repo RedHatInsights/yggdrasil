@@ -234,7 +234,7 @@ func (d *Dispatcher) EmitEvent(event ipc.DispatcherEvent) error {
 }
 
 // Transmit implements the com.redhat.Yggdrasil1.Dispatcher1.Transmit method.
-func (d *Dispatcher) Transmit(sender dbus.Sender, addr string, messageID string, metadata map[string]string, data []byte) (responseCode int, responseMetadata map[string]string, responseData []byte, responseError *dbus.Error) {
+func (d *Dispatcher) Transmit(sender dbus.Sender, addr string, messageID string, responseTo string, metadata map[string]string, data []byte) (responseCode int, responseMetadata map[string]string, responseData []byte, responseError *dbus.Error) {
 	name, err := d.senderName(sender)
 	if err != nil {
 		return TransmitResponseErr, nil, nil, NewDBusError("Transmit", fmt.Sprintf("cannot get name for sender: %v", err))
@@ -277,7 +277,7 @@ func (d *Dispatcher) Transmit(sender dbus.Sender, addr string, messageID string,
 		Data: yggdrasil.Data{
 			Type:       yggdrasil.MessageTypeData,
 			MessageID:  messageID,
-			ResponseTo: "",
+			ResponseTo: responseTo,
 			Version:    1,
 			Sent:       time.Now(),
 			Directive:  addr,
