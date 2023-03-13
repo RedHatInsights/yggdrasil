@@ -37,6 +37,7 @@ subdir('cmd/yggd')
 subdir('data')
 subdir('dbus')
 subdir('doc')
+subdir('ipc')
 
 if get_option('examples')
   subdir('worker/echo')
