@@ -14,12 +14,11 @@
             @id: Unique ID of the received message.
             @response_to: Unique ID of the message this message is in reply to,
               if any.
-            @metadata: Optional key-value pairs included in the message.
+            @metadata: Key-value pairs included in the message.
             @data: The message content.
-            @response_code: Optional numeric value indicating response status.
-            @response_metadata: Optional key-value pairs included in the
-              response.
-            @response_data: Optional data included in the response.
+            @response_code: Numeric value indicating response status.
+            @response_metadata: Key-value pairs included in the response.
+            @response_data: Data included in the response.
 
             Sends data to the dispatcher.
         -->
@@ -30,7 +29,7 @@
             <arg type="a{ss}" name="metadata" direction="in" />
             <arg type="ay" name="data" direction="in" />
 
-            <arg type="u" name="response_code" direction="out" />
+            <arg type="i" name="response_code" direction="out" />
             <arg type="a{ss}" name="response_metadata" direction="out" />
             <arg type="ay" name="response_data" direction="out" />
         </method>

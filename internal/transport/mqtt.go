@@ -174,7 +174,7 @@ func (t *MQTT) Tx(addr string, metadata map[string]string, data []byte) (respons
 	log.Debugf("published message to topic %v", topic)
 	log.Tracef("message: %v", string(data))
 
-	return TxResponseOK, nil, nil, nil
+	return TxResponseOK, map[string]string{}, []byte{}, nil
 }
 
 // SetRxHandler stores a reference to f, which is then called whenever data is
