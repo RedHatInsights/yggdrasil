@@ -4,7 +4,7 @@ project('yggdrasil',
 
 go = find_program('go')
 
-dbus = dependency('dbus-1')
+dbus = dependency('dbus-1', version: '>=1.14')
 systemd = dependency('systemd')
 bash_completion = dependency('bash-completion')
 
