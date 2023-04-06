@@ -14,12 +14,20 @@ import (
 	"github.com/redhatinsights/yggdrasil/worker"
 )
 
+var sleepTime time.Duration
+
 // echo opens a new dbus connection and calls the
 // com.redhat.Yggdrasil1.Dispatcher1.Transmit method, returning the metadata and
 // data it received.
 func echo(w *worker.Worker, addr string, id string, responseTo string, metadata map[string]string, data []byte) error {
 	if err := w.EmitEvent(ipc.WorkerEventNameWorking, fmt.Sprintf("echoing %v", data)); err != nil {
 		return fmt.Errorf("cannot call EmitEvent: %w", err)
+	}
+
+	// Sleep time between receiving the message and sending it
+	if sleepTime > 0 {
+		log.Infof("sleeping: %v", sleepTime)
+		time.Sleep(sleepTime)
 	}
 
 	responseCode, responseMetadata, responseData, err := w.Transmit(addr, id, responseTo, metadata, data)
@@ -54,6 +62,7 @@ func main() {
 
 	flag.StringVar(&logLevel, "log-level", "error", "set log level")
 	flag.BoolVar(&remoteContent, "remote-content", false, "connect as a remote content worker")
+	flag.DurationVar(&sleepTime, "sleep", 0, "sleep time in seconds before echoing the response")
 	flag.Parse()
 
 	level, err := log.ParseLevel(logLevel)
