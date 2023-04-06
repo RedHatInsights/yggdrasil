@@ -14,7 +14,7 @@ import (
 )
 
 // RxFunc is a function type that gets called each time the worker receives data.
-type RxFunc func(w *Worker, addr string, id string, responseTo string, metadata map[string]string, data []byte) error
+type RxFunc func(w *Worker, addr string, id string, responseTo string, cancelID string, metadata map[string]string, data []byte) error
 
 // EventHandlerFunc is a function type that gets called each time the worker
 // receives a com.redhat.Yggdrasil1.Dispatcher1.Event signal.
@@ -146,11 +146,11 @@ func (w *Worker) GetFeature(name string) string {
 
 // Transmit wraps a com.redhat.Yggdrasil1.Dispatcher1.Transmit method call for
 // ease of use from the worker.
-func (w *Worker) Transmit(addr string, id string, responseTo string, metadata map[string]string, data []byte) (responseCode int, responseMetadata map[string]string, responseData []byte, err error) {
+func (w *Worker) Transmit(addr string, id string, responseTo string, cancelID string, metadata map[string]string, data []byte) (responseCode int, responseMetadata map[string]string, responseData []byte, err error) {
 	// Look up the Dispatcher object on the bus connection and call its Transmit
 	// method, returning the data received.
 	obj := w.conn.Object("com.redhat.Yggdrasil1.Dispatcher1", "/com/redhat/Yggdrasil1/Dispatcher1")
-	err = obj.Call("com.redhat.Yggdrasil1.Dispatcher1.Transmit", 0, addr, id, responseTo, metadata, data).Store(&responseCode, &responseMetadata, &responseData)
+	err = obj.Call("com.redhat.Yggdrasil1.Dispatcher1.Transmit", 0, addr, id, responseTo, cancelID, metadata, data).Store(&responseCode, &responseMetadata, &responseData)
 	if err != nil {
 		responseCode = -1
 		return
@@ -170,11 +170,12 @@ func (w *Worker) EmitEvent(event ipc.WorkerEventName, message string) error {
 
 // dispatch implements com.redhat.Yggdrasil1.Worker1.Dispatch by calling the
 // worker's RxFunc in a goroutine.
-func (w *Worker) dispatch(addr string, id string, responseTo string, metadata map[string]string, data []byte) *dbus.Error {
+func (w *Worker) dispatch(addr string, id string, responseTo string, cancelID string, metadata map[string]string, data []byte) *dbus.Error {
 	// Log the data received at a high log level for debugging purposes.
 	log.Tracef("addr = %v", addr)
 	log.Tracef("id = %v", id)
 	log.Tracef("responseTo = %v", responseTo)
+	log.Tracef("cancelID = %v", cancelID)
 	log.Tracef("metadata = %#v", metadata)
 	log.Tracef("data = %v", data)
 
@@ -183,7 +184,7 @@ func (w *Worker) dispatch(addr string, id string, responseTo string, metadata ma
 	}
 
 	go func() {
-		if err := w.rx(w, addr, id, responseTo, metadata, data); err != nil {
+		if err := w.rx(w, addr, id, responseTo, cancelID, metadata, data); err != nil {
 			log.Errorf("cannot call rx: %v", err)
 		}
 		if err := w.EmitEvent(ipc.WorkerEventNameEnd, ""); err != nil {

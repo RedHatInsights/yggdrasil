@@ -9,7 +9,7 @@ import (
 	"github.com/redhatinsights/yggdrasil"
 )
 
-func generateDataMessage(messageType yggdrasil.MessageType, responseTo string, directive string, content []byte, metadata map[string]string, version int) (*yggdrasil.Data, error) {
+func generateDataMessage(messageType yggdrasil.MessageType, responseTo string, directive string, content []byte, metadata map[string]string, version int, cancelID string) (*yggdrasil.Data, error) {
 	msg := yggdrasil.Data{
 		Type:       messageType,
 		MessageID:  uuid.New().String(),
@@ -17,6 +17,7 @@ func generateDataMessage(messageType yggdrasil.MessageType, responseTo string, d
 		Version:    version,
 		Sent:       time.Now(),
 		Directive:  directive,
+		CancelID:   cancelID,
 		Metadata:   metadata,
 		Content:    content,
 	}

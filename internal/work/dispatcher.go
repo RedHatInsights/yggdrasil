@@ -194,7 +194,7 @@ func (d *Dispatcher) Dispatch(data yggdrasil.Data) error {
 		data.Content = content
 	}
 
-	call := obj.Call("com.redhat.Yggdrasil1.Worker1.Dispatch", 0, data.Directive, data.MessageID, data.ResponseTo, data.Metadata, data.Content)
+	call := obj.Call("com.redhat.Yggdrasil1.Worker1.Dispatch", 0, data.Directive, data.MessageID, data.ResponseTo, data.CancelID, data.Metadata, data.Content)
 	if err := call.Store(); err != nil {
 		return fmt.Errorf("cannot call Dispatch method on worker: %v", err)
 	}
@@ -234,7 +234,7 @@ func (d *Dispatcher) EmitEvent(event ipc.DispatcherEvent) error {
 }
 
 // Transmit implements the com.redhat.Yggdrasil1.Dispatcher1.Transmit method.
-func (d *Dispatcher) Transmit(sender dbus.Sender, addr string, messageID string, responseTo string, metadata map[string]string, data []byte) (responseCode int, responseMetadata map[string]string, responseData []byte, responseError *dbus.Error) {
+func (d *Dispatcher) Transmit(sender dbus.Sender, addr string, messageID string, responseTo string, cancelID string, metadata map[string]string, data []byte) (responseCode int, responseMetadata map[string]string, responseData []byte, responseError *dbus.Error) {
 	name, err := d.senderName(sender)
 	if err != nil {
 		return TransmitResponseErr, nil, nil, NewDBusError("Transmit", fmt.Sprintf("cannot get name for sender: %v", err))
@@ -281,6 +281,7 @@ func (d *Dispatcher) Transmit(sender dbus.Sender, addr string, messageID string,
 			Version:    1,
 			Sent:       time.Now(),
 			Directive:  addr,
+			CancelID:   cancelID,
 			Metadata:   metadata,
 			Content:    data,
 		},

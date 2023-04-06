@@ -13,6 +13,7 @@ type Input struct {
 	messageType string
 	responseTo  string
 	directive   string
+	cancelID    string
 	content     []byte
 	metadata    map[string]string
 	version     int
@@ -30,6 +31,7 @@ func TestGenerateDataMessage(t *testing.T) {
 			input: Input{
 				messageType: "data",
 				directive:   "dir",
+				cancelID:    "message-id",
 				content:     []byte(`{"field":"value"}`),
 				metadata:    map[string]string{},
 				version:     1,
@@ -38,6 +40,7 @@ func TestGenerateDataMessage(t *testing.T) {
 				Type:      yggdrasil.MessageTypeData,
 				Version:   1,
 				Directive: "dir",
+				CancelID:  "message-id",
 				Metadata:  map[string]string{},
 				Content:   []byte(`{"field":"value"}`),
 			},
@@ -47,6 +50,7 @@ func TestGenerateDataMessage(t *testing.T) {
 			input: Input{
 				messageType: "data",
 				directive:   "dir",
+				cancelID:    "",
 				content:     []byte(`"hello world"`),
 				metadata:    map[string]string{},
 				version:     1,
@@ -55,6 +59,7 @@ func TestGenerateDataMessage(t *testing.T) {
 				Type:      yggdrasil.MessageTypeData,
 				Version:   1,
 				Directive: "dir",
+				CancelID:  "",
 				Metadata:  map[string]string{},
 				Content:   []byte(`"hello world"`),
 			},
@@ -63,7 +68,7 @@ func TestGenerateDataMessage(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-			got, err := generateDataMessage(yggdrasil.MessageType(test.input.messageType), test.input.responseTo, test.input.directive, test.input.content, test.input.metadata, test.input.version)
+			got, err := generateDataMessage(yggdrasil.MessageType(test.input.messageType), test.input.responseTo, test.input.directive, test.input.content, test.input.metadata, test.input.version, test.input.cancelID)
 
 			if test.wantError != nil {
 				if !cmp.Equal(err, test.wantError, cmpopts.EquateErrors()) {

@@ -68,6 +68,11 @@ func main() {
 							Required: true,
 							Usage:    "set directive to `STRING`",
 						},
+						&cli.StringFlag{
+							Name:    "cancel",
+							Aliases: []string{"c"},
+							Usage:   "MessageId to be canceled",
+						},
 					},
 					Action: func(c *cli.Context) error {
 						var metadata map[string]string
@@ -75,7 +80,7 @@ func main() {
 							return cli.Exit(fmt.Errorf("cannot unmarshal metadata: %w", err), 1)
 						}
 
-						data, err := generateMessage("data", c.String("response-to"), c.String("directive"), c.Args().First(), metadata, c.Int("version"))
+						data, err := generateMessage("data", c.String("response-to"), c.String("directive"), c.Args().First(), c.String("cancel"), metadata, c.Int("version"))
 						if err != nil {
 							return cli.Exit(fmt.Errorf("cannot marshal message: %w", err), 1)
 						}
@@ -109,7 +114,7 @@ func main() {
 						},
 					},
 					Action: func(c *cli.Context) error {
-						data, err := generateMessage(c.String("type"), c.String("response-to"), "", c.Args().First(), nil, c.Int("version"))
+						data, err := generateMessage(c.String("type"), c.String("response-to"), "", c.Args().First(), c.String("cancel"), nil, c.Int("version"))
 						if err != nil {
 							return cli.Exit(fmt.Errorf("cannot marshal message: %w", err), 1)
 						}
@@ -334,10 +339,10 @@ func main() {
 	}
 }
 
-func generateMessage(messageType, responseTo, directive, content string, metadata map[string]string, version int) ([]byte, error) {
+func generateMessage(messageType, responseTo, directive, content string, cancel string, metadata map[string]string, version int) ([]byte, error) {
 	switch messageType {
 	case "data":
-		msg, err := generateDataMessage(yggdrasil.MessageType(messageType), responseTo, directive, []byte(content), metadata, version)
+		msg, err := generateDataMessage(yggdrasil.MessageType(messageType), responseTo, directive, []byte(content), metadata, version, cancel)
 		if err != nil {
 			return nil, err
 		}

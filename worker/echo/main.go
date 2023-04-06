@@ -15,22 +15,44 @@ import (
 )
 
 var sleepTime time.Duration
+var abort chan string
+
+func handler(w *worker.Worker, addr string, id string, responseTo string, cancelID string, metadata map[string]string, data []byte) error {
+	abort = make(chan string)
+	log.Tracef("handling message")
+	if cancelID == "" {
+		return echo(w, addr, id, responseTo, cancelID, metadata, data)
+	} else {
+		log.Tracef("sending abort execution to message: %v", cancelID)
+		abort <- cancelID
+	}
+	return nil
+}
 
 // echo opens a new dbus connection and calls the
 // com.redhat.Yggdrasil1.Dispatcher1.Transmit method, returning the metadata and
 // data it received.
-func echo(w *worker.Worker, addr string, id string, responseTo string, metadata map[string]string, data []byte) error {
-	if err := w.EmitEvent(ipc.WorkerEventNameWorking, fmt.Sprintf("echoing %v", data)); err != nil {
-		return fmt.Errorf("cannot call EmitEvent: %w", err)
-	}
-
-	// Sleep time between receiving the message and sending it
+func echo(w *worker.Worker, addr string, id string, responseTo string, cancelID string, metadata map[string]string, data []byte) error {
+	log.Tracef("echoing")
 	if sleepTime > 0 {
 		log.Infof("sleeping: %v", sleepTime)
 		time.Sleep(sleepTime)
 	}
 
-	responseCode, responseMetadata, responseData, err := w.Transmit(addr, id, responseTo, metadata, data)
+	select {
+	case cID := <-abort:
+		if cID == id {
+			log.Tracef("cancelling echo message id: %v", id)
+			return nil
+		}
+	default:
+	}
+
+	if err := w.EmitEvent(ipc.WorkerEventNameWorking, fmt.Sprintf("echoing %v", data)); err != nil {
+		return fmt.Errorf("cannot call EmitEvent: %w", err)
+	}
+
+	responseCode, responseMetadata, responseData, err := w.Transmit(addr, id, responseTo, cancelID, metadata, data)
 	if err != nil {
 		return fmt.Errorf("cannot call Transmit: %w", err)
 	}
@@ -45,6 +67,7 @@ func echo(w *worker.Worker, addr string, id string, responseTo string, metadata 
 	}
 
 	return nil
+
 }
 
 func events(event ipc.DispatcherEvent) {
@@ -71,7 +94,7 @@ func main() {
 	}
 	log.SetLevel(level)
 
-	w, err := worker.NewWorker("echo", remoteContent, map[string]string{"DispatchedAt": "", "Version": "1"}, echo, events)
+	w, err := worker.NewWorker("echo", remoteContent, map[string]string{"DispatchedAt": "", "Version": "1"}, handler, events)
 	if err != nil {
 		log.Fatalf("error: cannot create worker: %v", err)
 	}

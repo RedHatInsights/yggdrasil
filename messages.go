@@ -121,6 +121,7 @@ type Data struct {
 	Version    int               `json:"version"`
 	Sent       time.Time         `json:"sent"`
 	Directive  string            `json:"directive"`
+	CancelID   string            `json:"cancel_id"`
 	Metadata   map[string]string `json:"metadata"`
 	Content    []byte            `json:"content"`
 }

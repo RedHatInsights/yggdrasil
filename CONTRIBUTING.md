@@ -182,7 +182,7 @@ for publishing messages and subscribing to topics on an MQTT broker. `mqttcli`
 can be installed with `go install`:
 
 ```
-go install git.sr.ht/~spc/mqttcli/cmd/...
+go install git.sr.ht/~spc/mqttcli/cmd/...@latest
 ```
 
 Or if you're running Fedora 34 or later, it can be installed directly with
