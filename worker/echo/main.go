@@ -17,11 +17,18 @@ import (
 var sleepTime time.Duration
 var abort chan string
 
+// handler checks the message:
+// if it is a cancell message it sends the cancel id through the channel
+// otherwise it calls slowEcho whether it has sleep time or not
 func handler(w *worker.Worker, addr string, id string, responseTo string, cancelID string, metadata map[string]string, data []byte) error {
 	abort = make(chan string)
 	log.Tracef("handling message")
 	if cancelID == "" {
-		return echo(w, addr, id, responseTo, cancelID, metadata, data)
+		if sleepTime > 0 {
+			return slowEcho(w, addr, id, responseTo, cancelID, metadata, data)
+		} else {
+			return echo(w, addr, id, responseTo, cancelID, metadata, data)
+		}
 	} else {
 		log.Tracef("sending abort execution to message: %v", cancelID)
 		abort <- cancelID
@@ -29,16 +36,19 @@ func handler(w *worker.Worker, addr string, id string, responseTo string, cancel
 	return nil
 }
 
-// echo opens a new dbus connection and calls the
-// com.redhat.Yggdrasil1.Dispatcher1.Transmit method, returning the metadata and
-// data it received.
-func echo(w *worker.Worker, addr string, id string, responseTo string, cancelID string, metadata map[string]string, data []byte) error {
+// slowEcho sleeps the period of time passed by parameter
+// this is a cancellable work, it listens to the channel
+// and if the messageID of its work has been sent it stops
+// the execution, otherwise, it echoes the data message by
+// calling sendEcho
+func slowEcho(w *worker.Worker, addr string, id string, responseTo string, cancelID string, metadata map[string]string, data []byte) error {
 	log.Tracef("echoing")
-	if sleepTime > 0 {
-		log.Infof("sleeping: %v", sleepTime)
-		time.Sleep(sleepTime)
-	}
 
+	log.Infof("sleeping: %v", sleepTime)
+	time.Sleep(sleepTime)
+
+	// check is id has been sent through the channel
+	// if so, return
 	select {
 	case cID := <-abort:
 		if cID == id {
@@ -47,7 +57,13 @@ func echo(w *worker.Worker, addr string, id string, responseTo string, cancelID 
 		}
 	default:
 	}
+	return echo(w, addr, id, responseTo, cancelID, metadata, data)
+}
 
+// echo opens a new dbus connection and calls the
+// com.redhat.Yggdrasil1.Dispatcher1.Transmit method, returning the metadata and
+// data it received.
+func echo(w *worker.Worker, addr string, id string, responseTo string, cancelID string, metadata map[string]string, data []byte) error {
 	if err := w.EmitEvent(ipc.WorkerEventNameWorking, fmt.Sprintf("echoing %v", data)); err != nil {
 		return fmt.Errorf("cannot call EmitEvent: %w", err)
 	}
@@ -67,7 +83,6 @@ func echo(w *worker.Worker, addr string, id string, responseTo string, cancelID 
 	}
 
 	return nil
-
 }
 
 func events(event ipc.DispatcherEvent) {
