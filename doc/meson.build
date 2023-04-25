@@ -10,20 +10,10 @@ custom_target('yggd.1',
   install_dir: join_paths(get_option('mandir'), 'man1')
 )
 
-install_data('bash_autocomplete',
-  rename: 'yggd',
-  install_dir: bash_completion.get_variable(pkgconfig: 'completionsdir')
-)
-
 custom_target('yggctl.1',
   output: 'yggctl.1',
   capture: true,
   command: [yggctl, '--generate-man-page'],
   install: true,
   install_dir: join_paths(get_option('mandir'), 'man1')
-)
-
-install_data('bash_autocomplete',
-  rename: 'yggctl',
-  install_dir: bash_completion.get_variable(pkgconfig: 'completionsdir')
 )
