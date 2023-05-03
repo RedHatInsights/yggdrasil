@@ -46,6 +46,7 @@
             Event:
             @name: Name of the event.
             @message: Optional message included with the event.
+            @message_id: The id associated with the worker message.
 
             Emitted by a worker when certain conditions arise, such as beginning
             or ending work.
@@ -66,6 +67,7 @@
         <signal name="Event">
             <arg type="u" name="name" />
             <arg type="s" name="message" />
+            <arg type="s" name="message_id" />
         </signal>
     </interface>
 

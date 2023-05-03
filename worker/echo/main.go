@@ -17,10 +17,10 @@ import (
 var sleepTime time.Duration
 
 // echo opens a new dbus connection and calls the
-// com.redhat.Yggdrasil1.Dispatcher1.Transmit method, returning the metadata and
-// data it received.
+// com.redhat.Yggdrasil1.Dispatcher1.Transmit method, returning the
+// metadata, data, and the message id it received.
 func echo(w *worker.Worker, addr string, id string, responseTo string, metadata map[string]string, data []byte) error {
-	if err := w.EmitEvent(ipc.WorkerEventNameWorking, fmt.Sprintf("echoing %v", data)); err != nil {
+	if err := w.EmitEvent(ipc.WorkerEventNameWorking, fmt.Sprintf("echoing %v", data), id); err != nil {
 		return fmt.Errorf("cannot call EmitEvent: %w", err)
 	}
 
