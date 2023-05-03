@@ -15,6 +15,7 @@ import (
 	"github.com/redhatinsights/yggdrasil"
 	"github.com/redhatinsights/yggdrasil/internal/config"
 	internalhttp "github.com/redhatinsights/yggdrasil/internal/http"
+	"github.com/redhatinsights/yggdrasil/internal/messagejournal"
 	"github.com/redhatinsights/yggdrasil/internal/sync"
 	"github.com/redhatinsights/yggdrasil/ipc"
 )
@@ -31,13 +32,14 @@ const (
 // to the destination worker. It sends values on the 'outbound' channel to relay
 // data received from workers to a remote address.
 type Dispatcher struct {
-	HTTPClient   *internalhttp.Client
-	conn         *dbus.Conn
-	features     sync.RWMutexMap[map[string]string]
-	Dispatchers  chan map[string]map[string]string
-	WorkerEvents chan ipc.WorkerEvent
-	Inbound      chan yggdrasil.Data
-	Outbound     chan struct {
+	HTTPClient     *internalhttp.Client
+	conn           *dbus.Conn
+	features       sync.RWMutexMap[map[string]string]
+	MessageJournal *messagejournal.MessageJournal
+	Dispatchers    chan map[string]map[string]string
+	WorkerEvents   chan ipc.WorkerEvent
+	Inbound        chan yggdrasil.Data
+	Outbound       chan struct {
 		Data yggdrasil.Data
 		Resp chan yggdrasil.Response
 	}
@@ -45,11 +47,12 @@ type Dispatcher struct {
 
 func NewDispatcher(client *internalhttp.Client) *Dispatcher {
 	return &Dispatcher{
-		HTTPClient:   client,
-		features:     sync.RWMutexMap[map[string]string]{},
-		Dispatchers:  make(chan map[string]map[string]string),
-		WorkerEvents: make(chan ipc.WorkerEvent),
-		Inbound:      make(chan yggdrasil.Data),
+		HTTPClient:     client,
+		features:       sync.RWMutexMap[map[string]string]{},
+		MessageJournal: nil,
+		Dispatchers:    make(chan map[string]map[string]string),
+		WorkerEvents:   make(chan ipc.WorkerEvent),
+		Inbound:        make(chan yggdrasil.Data),
 		Outbound: make(chan struct {
 			Data yggdrasil.Data
 			Resp chan yggdrasil.Response
@@ -146,6 +149,30 @@ func (d *Dispatcher) Connect() error {
 				event.Worker = strings.TrimPrefix(dest, "com.redhat.Yggdrasil1.Worker1.")
 
 				d.WorkerEvents <- *event
+
+				// Start goroutine to add a new message journal entry.
+				go func() {
+					// Skip adding a new entry if the message journal is disabled.
+					if d.MessageJournal == nil {
+						return
+					}
+					workerMessage := yggdrasil.WorkerMessage{
+						MessageID:  event.MessageID,
+						Sent:       time.Now().UTC(),
+						WorkerName: event.Worker,
+						ResponseTo: event.ResponseTo,
+						WorkerEvent: struct {
+							EventName uint              "json:\"event_name\""
+							EventData map[string]string "json:\"event_data\""
+						}{
+							uint(event.Name),
+							event.Data,
+						},
+					}
+					if err := d.MessageJournal.AddEntry(workerMessage); err != nil {
+						log.Errorf("cannot add journal entry: %v", err)
+					}
+				}()
 			}
 		}
 	}()

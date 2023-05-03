@@ -1,12 +1,14 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
 	"log"
 	"os"
 	"text/tabwriter"
+	"text/template"
 
 	"github.com/godbus/dbus/v5"
 	"github.com/google/uuid"
@@ -83,6 +85,88 @@ func generateControlMessageAction(ctx *cli.Context) error {
 	}
 
 	fmt.Println(string(data))
+
+	return nil
+}
+
+func messageJournalAction(ctx *cli.Context) error {
+	var conn *dbus.Conn
+	var err error
+
+	if os.Getenv("DBUS_SESSION_BUS_ADDRESS") != "" {
+		conn, err = dbus.ConnectSessionBus()
+		if err != nil {
+			return cli.Exit(fmt.Errorf("cannot connect to session bus: %w", err), 1)
+		}
+	} else {
+		conn, err = dbus.ConnectSystemBus()
+		if err != nil {
+			return cli.Exit(fmt.Errorf("cannot connect to system bus: %w", err), 1)
+		}
+	}
+
+	var journalEntries []map[string]string
+	args := []interface{}{
+		ctx.String("message-id"),
+		ctx.String("worker"),
+		ctx.String("since"),
+		ctx.String("until"),
+		ctx.Bool("persistent"),
+	}
+	obj := conn.Object("com.redhat.Yggdrasil1", "/com/redhat/Yggdrasil1")
+	if err := obj.Call("com.redhat.Yggdrasil1.MessageJournal", dbus.Flags(0), args...).Store(&journalEntries); err != nil {
+		return cli.Exit(fmt.Errorf("cannot list message journal entries: %v", err), 1)
+	}
+
+	switch ctx.String("format") {
+	case "json":
+		data, err := json.Marshal(journalEntries)
+		if err != nil {
+			return cli.Exit(fmt.Errorf("cannot marshal journal entries: %v", err), 1)
+		}
+		fmt.Println(string(data))
+	case "text":
+		journalTextTemplate := template.New("journalTextTemplate")
+		journalTextTemplate, err := journalTextTemplate.Parse(
+			"{{range .}}{{.message_id}} : {{.sent}} : {{.worker_name}} : " +
+				"{{if .response_to}}{{.response_to}}{{else}}...{{end}} : " +
+				"{{if .worker_event}}{{.worker_event}}{{else}}...{{end}} : " +
+				"{{if .worker_data}}{{.worker_data}}{{else}}...{{end}}\n{{end}}",
+		)
+		if err != nil {
+			return fmt.Errorf("cannot parse journal text template parameters: %w", err)
+		}
+		var compiledTextTemplate bytes.Buffer
+		textCompileErr := journalTextTemplate.Execute(&compiledTextTemplate, journalEntries)
+		if textCompileErr != nil {
+			return fmt.Errorf("cannot compile journal text template: %w", textCompileErr)
+		}
+		fmt.Println(compiledTextTemplate.String())
+	case "table":
+		writer := tabwriter.NewWriter(os.Stdout, 4, 4, 2, ' ', 0)
+		fmt.Fprint(
+			writer,
+			"MESSAGE #\tMESSAGE ID\tSENT\tWORKER NAME\tRESPONSE TO\tWORKER EVENT\tWORKER DATA\n",
+		)
+		for idx, entry := range journalEntries {
+			fmt.Fprintf(
+				writer,
+				"%d\t%s\t%s\t%s\t%s\t%v\t%s\n",
+				idx,
+				entry["message_id"],
+				entry["sent"],
+				entry["worker_name"],
+				entry["response_to"],
+				entry["worker_event"],
+				entry["worker_data"],
+			)
+		}
+		if err := writer.Flush(); err != nil {
+			return cli.Exit(fmt.Errorf("unable to flush tab writer: %v", err), 1)
+		}
+	default:
+		return cli.Exit(fmt.Errorf("unknown format type: %v", ctx.String("format")), 1)
+	}
 
 	return nil
 }
