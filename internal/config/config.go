@@ -30,6 +30,7 @@ const (
 	FlagNameMQTTReconnectDelay       = "mqtt-reconnect-delay"
 	FlagNameMQTTConnectTimeout       = "mqtt-connect-timeout"
 	FlagNameMQTTPublishTimeout       = "mqtt-publish-timeout"
+	FlagNameMessageJournal           = "message-journal"
 )
 
 var DefaultConfig = Config{
@@ -106,6 +107,10 @@ type Config struct {
 	// MQTTPublishTimeout is the duration the client will wait for an MQTT
 	// connection to publish a message before giving up.
 	MQTTPublishTimeout time.Duration
+
+	// MessageJournal is used to enable the storage of worker events
+	// and message data in a SQLite file at the specified file path.
+	MessageJournal string
 }
 
 // CreateTLSConfig creates a tls.Config object from the current configuration.

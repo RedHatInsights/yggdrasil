@@ -35,6 +35,37 @@
             <arg type="a{sa{ss}}" name="workers" direction="out" />
         </method>
 
+        <!--
+            MessageJournal:
+            @message_id: Filter journal entries to only contain entries with this message id value.
+            @worker: Filter journal entries to only contain entries with this worker name.
+            @since: Filter journal entries to only contain entries from this date time value.
+            @until: Filter journal entries to only contain entries up to this date time value.
+            @persistent: Filter journal entries to only contain entries from the persistent collection of
+            journal entries spanning multiple sessions. By default, journal entries are collected from
+            the active session.
+
+            @messages: Array of dictionary objects matching the input filter parameters.
+            Each element in the array is a dictionary with key/value pairs as follows:
+            "message_id":     <string value>,
+            "sent":           <string value>,
+            "worker_name":    <string value>,
+            "response_to":    <string value>,
+            "worker_event":   <string value>,
+            "worker_message": <string value>,
+
+            Returns the set of worker messages dispatched to workers and
+            events emitted by workers.
+        -->
+        <method name="MessageJournal">
+            <arg type="s" name="message_id" direction="in" />
+            <arg type="s" name="worker" direction="in" />
+            <arg type="s" name="since" direction="in" />
+            <arg type="s" name="until" direction="in" />
+            <arg type="b" name="persistent" direction="in" />
+            <arg type="aa{ss}" name="messages" direction="out" />
+        </method>
+
         <!-- 
             WorkerEvent:
             @worker: Name of the worker emitting the event.

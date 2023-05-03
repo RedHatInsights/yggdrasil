@@ -121,6 +121,21 @@ type Data struct {
 	Content    []byte            `json:"content"`
 }
 
+// A WorkerMessage represents the structure of a journal entry in the
+// optional message journal. These worker messages are created when the
+// dispatcher receives emitted worker event data and when
+// data is dispatched to a worker.
+type WorkerMessage struct {
+	MessageID   string    `json:"message_id"`
+	Sent        time.Time `json:"sent"`
+	WorkerName  string    `json:"worker_name"`
+	ResponseTo  string    `json:"response_to"`
+	WorkerEvent struct {
+		EventName uint              `json:"event_name"`
+		EventData map[string]string `json:"event_data"`
+	}
+}
+
 // Response messages are published by the server as a response to a data
 // message. This is most often used as a receipt to indicate the receiption of a
 // message by a synchronous request/response transport (such as the HTTP polling
