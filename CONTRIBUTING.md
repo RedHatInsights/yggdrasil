@@ -2,7 +2,7 @@
 
 ## MQTT broker
 
-An optional MQTT broker, should you wish to publish messages  locally.
+An MQTT broker, should you wish to publish messages locally.
 `mosquitto` is extremely easy to set up.
 
 ## HTTP server
@@ -25,14 +25,19 @@ programs.
 
 # Quickstart
 
+### Mosquitto
+
+This quickstart assumes an unencrypted MQTT broker is listening on `localhost:1883`.
+Typically, all that is required to start the `mosquitto` broker is: `systemctl start mosquitto`.
+
 ### Terminal 1
 
-Start `yggd` on the user's session bus, connecting it to the broker
-`test.mosquitto.org` over an unencrypted TCP connection, log judiciously to
+Start `yggd` on the user's session bus, connecting it to the MQTT broker
+`localhost` over an unencrypted TCP connection, log judiciously to
 `stdout`.
 
 ```
-go run ./cmd/yggd --server tcp://test.mosquitto.org:8883 --log-level trace --client-id $(hostname)
+go run ./cmd/yggd --server tcp://localhost:1883 --log-level trace --client-id $(hostname)
 ```
 
 ### Terminal 2
@@ -45,29 +50,36 @@ go run ./worker/echo -log-level trace
 
 ### Terminal 3
 
-Subscribe to all the MQTT topics the `yggd` client will publish and subscribe to
+Subscribe to all the MQTT topics the `yggd` client will publish and subscribe
 to monitor the MQTT traffic.
 
 ```
-sub -broker tcp://test.mosquitto.org:8883 -topic yggdrasil/$(hostname)/#
+sub -broker tcp://localhost:1883 -topic yggdrasil/$(hostname)/#
 ```
 
 ### Terminal 4
 
-Publish a "PING" command to the `yggd` "control/in" topic.
+#### Testing MQTT
+
+Publish a "PING" command to the `yggd` "control/in" topic to test sending
+an MQTT message to `yggd`.
 
 ```
-go run ./cmd/yggctl generate control-message --type command '{"command":"ping"}' | pub -broker tcp://test.mosquitto.org:8883 -topic yggdrasil/$(hostname)/control/in
+go run ./cmd/yggctl generate control-message --type command '{"command":"ping"}' | \
+    pub -broker tcp://localhost:1883 -topic yggdrasil/$(hostname)/control/in
 ```
 
 You should see the message logged to the output of `sub` in [Terminal
 3](#terminal-3) and receipt of the message logged in the output of `yggd` in
 [Terminal 1](#terminal-1).
 
-Now publish a data message to the echo worker.
+#### Testing the echo worker
+
+Now publish a data message containing the string "hello" to the `echo` worker.
 
 ```
-go run ./cmd/yggctl generate data-message --directive worker "hello" | pub -broker tcp://test.mosquitto.org:8883 -topic yggdrasil/$(hostname)/data/in
+go run ./cmd/yggctl generate data-message --directive echo "hello" | \
+    pub -broker tcp://localhost:1883 -topic yggdrasil/$(hostname)/data/in
 ```
 
 Again, you should see the message logged by the `sub` command in [Terminal
@@ -90,7 +102,7 @@ Then start `yggd`, ensuring the environment variable `DBUS_SESSION_BUS_ADDRESS`
 is undefined.
 
 ```
-sudo go run ./cmd/yggd --server tcp://test.mosquitto.org:8883 --log-level trace --client-id $(hostname)
+sudo go run ./cmd/yggd --server tcp://localhost:1883 --log-level trace --client-id $(hostname)
 ```
 
 # Running `yggd`
@@ -127,7 +139,8 @@ sudo firewall-cmd --zone public --add-port 2345/tcp --permanent
 Start `dlv` using the `debug` command:
 
 ```
-sudo /root/go/bin/dlv debug --api-version 2 --headless --listen 0.0.0.0:2345 ./cmd/yggd -- --config ./data/yggdrasil/config.toml
+sudo /root/go/bin/dlv debug --api-version 2 --headless --listen 0.0.0.0:2345 \
+    ./cmd/yggd -- --config ./data/yggdrasil/config.toml
 ```
 
 Next, from your host, connect to the dlv server, using either `dlv attach` or by
@@ -202,16 +215,20 @@ message to the broker, destined for one of the topics `yggd` is subscribed to.
 To watch a topic for messages, subscribe to it with `sub`:
 
 ```
-sub -broker tcp://test.mosquitto.org:8883 -topic yggdrasil/$CLIENT_ID/data/in -topic yggdrasil/$CLIENT_ID/data/out -topic yggdrasil/$CLIENT_ID/control/out
+sub -broker tcp://localhost:1883 -topic yggdrasil/$(hostname)/data/in \
+    -topic yggdrasil/$(hostname)/data/out -topic yggdrasil/$(hostname)/control/out
 ```
 
 ## Publish a message
+
+### Over MQTT
 
 A client can be sent a `PING` command by generated a control message and
 publishing it to the client's "control/in" topic:
 
 ```
-yggctl generate control-message --type command '{"command":"ping"}' | pub -broker tcp://test.mosquitto.org:8883 -topic yggdrasil/$CLIENT_ID/control/in
+yggctl generate control-message --type command '{"command":"ping"}' | \
+    pub -broker tcp://localhost:1883 -topic yggdrasil/$(hostname)/control/in
 ```
 
 Activity should occur on the terminal attached to `yggd`, and a `PONG` event
@@ -222,7 +239,17 @@ Similarly, a data message can be published to a client using `yggctl generate`
 and `pub`.
 
 ```
-yggctl generate data-message --directive echo hello | pub -broker tcp://test.mosquitto.org:8883 -topic yggdrasil/$CLIENT_ID/data/in
+yggctl generate data-message --directive echo hello | \
+    pub -broker tcp://localhost:1883 -topic yggdrasil/$(hostname)/data/in
+```
+
+### Directly
+
+It is also possible to send data directly to a worker. This method does not publish
+a message to the MQTT broker. Instead, it calls a D-Bus method:
+
+```bash
+echo -n "hello" | yggctl dispatch -w "echo" -
 ```
 
 # Code Guidelines
