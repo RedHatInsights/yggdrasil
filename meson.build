@@ -1,5 +1,5 @@
 project('yggdrasil',
-        version: '0.3.1',
+        version: '0.3.2',
         meson_version: '>= 0.58.0')
 
 go = find_program('go')
