@@ -1,5 +1,5 @@
-systemd_system_unit_dir = systemd.get_variable(pkgconfig: 'systemd_system_unit_dir')
-systemd_user_unit_dir = systemd.get_variable(pkgconfig: 'systemd_user_unit_dir')
+systemd_system_unit_dir = systemd.get_variable(pkgconfig: 'systemdsystemunitdir')
+systemd_user_unit_dir = systemd.get_variable(pkgconfig: 'systemduserunitdir')
 
 yggdrasil_service = configure_file(
   configuration: config_data,
