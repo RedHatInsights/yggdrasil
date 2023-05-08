@@ -1,3 +1,4 @@
 [D-BUS Service]
 Name=com.redhat.Yggdrasil1.Worker1.echo
+User=root
 Exec=@libexecdir@/yggdrasil/echo
