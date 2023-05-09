@@ -177,7 +177,7 @@ func (c *Client) Connect() error {
 	// channel, emitting a D-Bus "WorkerEvent" signal for each.
 	go func() {
 		for e := range c.dispatcher.WorkerEvents {
-			args := []interface{}{e.Worker, e.Name}
+			args := []interface{}{e.Worker, e.Name, e.MessageID}
 			switch e.Name {
 			case ipc.WorkerEventNameWorking:
 				args = append(args, e.Message)

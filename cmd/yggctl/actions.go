@@ -165,14 +165,18 @@ func listenAction(ctx *cli.Context) error {
 			if !ok {
 				return cli.Exit(fmt.Errorf("cannot cat %T as uint32", s.Body[1]), 1)
 			}
+			messageID, ok := s.Body[2].(string)
+			if !ok {
+				return cli.Exit(fmt.Errorf("cannot cat %T as string", s.Body[2]), 1)
+			}
 			var message string
-			if len(s.Body) > 2 {
-				message, ok = s.Body[2].(string)
+			if len(s.Body) > 3 {
+				message, ok = s.Body[3].(string)
 				if !ok {
-					return cli.Exit(fmt.Errorf("cannot cast %T as string", s.Body[0]), 1)
+					return cli.Exit(fmt.Errorf("cannot cast %T as string", s.Body[3]), 1)
 				}
 			}
-			log.Printf("%v: %v: %v", worker, ipc.WorkerEventName(name), message)
+			log.Printf("%v: %v: %v: %v", worker, messageID, ipc.WorkerEventName(name), message)
 
 		}
 	}

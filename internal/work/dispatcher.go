@@ -136,15 +136,24 @@ func (d *Dispatcher) Connect() error {
 				}
 				event.Name = ipc.WorkerEventName(eventName)
 				event.Worker = strings.TrimPrefix(dest, "com.redhat.Yggdrasil1.Worker1.")
+
+				eventMessageID, ok := s.Body[1].(string)
+				if !ok {
+					log.Errorf("cannot convert %T to string", s.Body[1])
+					continue
+				}
+				event.MessageID = eventMessageID
+
 				switch ipc.WorkerEventName(eventName) {
 				case ipc.WorkerEventNameWorking:
-					eventMessage, ok := s.Body[1].(string)
+					eventMessage, ok := s.Body[2].(string)
 					if !ok {
-						log.Errorf("cannot convert %T to string", s.Body[1])
+						log.Errorf("cannot convert %T to string", s.Body[2])
 						continue
 					}
 					event.Message = eventMessage
 				}
+
 				d.WorkerEvents <- event
 			}
 		}
