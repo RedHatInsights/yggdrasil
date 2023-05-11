@@ -412,3 +412,25 @@ func workerEventFromSignal(s *dbus.Signal) (*ipc.WorkerEvent, error) {
 
 	return &event, nil
 }
+
+// CancelMessage implements the dispatching of a cancel message to the worker.
+func (d *Dispatcher) CancelMessage(directive, message_id, cancel_id string) error {
+	// Send the message through the cancel interface
+	obj := d.conn.Object("com.redhat.Yggdrasil1.Worker1."+directive,
+		dbus.ObjectPath(filepath.Join("/com/redhat/Yggdrasil1/Worker1/", directive)))
+	call := obj.Call("com.redhat.Yggdrasil1.Worker1.Cancel", 0,
+		directive,
+		message_id,
+		cancel_id)
+	if err := call.Store(); err != nil {
+		return fmt.Errorf(
+			"cannot call Cancel method with message %v on worker %v: %v",
+			cancel_id,
+			directive,
+			err,
+		)
+	}
+	log.Debugf("sent cancel message %v to worker %v", cancel_id, directive)
+	d.Dispatchers <- d.FlattenDispatchers()
+	return nil
+}

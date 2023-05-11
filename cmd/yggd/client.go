@@ -318,6 +318,22 @@ func (c *Client) ReceiveControlMessage(msg *yggdrasil.Control) error {
 			if err := c.transporter.Connect(); err != nil {
 				return fmt.Errorf("cannot reconnect to broker: %w", err)
 			}
+		case yggdrasil.CommandNameCancel:
+			log.Info("cancelling message...")
+			// Unmarshall comand arguments
+			// cmd contains the directive and the message id to be canceled.
+			directive, exists := cmd.Arguments["directive"]
+			if !exists {
+				return fmt.Errorf("cancel command does not contain 'directive' argument")
+			}
+			cancelID, exists := cmd.Arguments["messageID"]
+			if !exists {
+				return fmt.Errorf("cancel command does not contain 'messageID' argument")
+			}
+			// Dispatch to appropriate worker.
+			if err := c.dispatcher.CancelMessage(directive, msg.MessageID, cancelID); err != nil {
+				return fmt.Errorf("cannot dispatch cancel message: %w", err)
+			}
 		default:
 			return fmt.Errorf("unknown command: %v", cmd.Command)
 		}

@@ -27,7 +27,17 @@
             <arg type="a{ss}" name="metadata" direction="in" />
             <arg type="ay" name="data" direction="in" />
         </method>
-
+        <!--
+            Cancel:
+            @directive: worker identifier for which the cancel is destined.
+            @id: unique ID of the message.
+            @cancel_id: unique ID of the message to cancel.
+        -->
+        <method name="Cancel">
+            <arg type="s" name="directive" direction="in" />
+            <arg type="s" name="id" direction="in" />
+            <arg type="s" name="cancel_id" direction="in" />
+        </method>
         <!-- 
             Features:
 
