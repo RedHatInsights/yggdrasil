@@ -43,6 +43,9 @@ const (
 
 	// CommandNameDisconnect instructs a client to permanently disconnect.
 	CommandNameDisconnect CommandName = "disconnect"
+
+	// CommandNameCancel instructs a client to cancel a previous message.
+	CommandNameCancel CommandName = "cancel"
 )
 
 // EventName represents accepted values for the "event" field of an Event
