@@ -93,6 +93,7 @@ type Config struct {
 	MQTTAutoReconnect bool
 }
 
+// CreateTLSConfig creates a tls.Config object from the current configuration.
 func (conf *Config) CreateTLSConfig() (*tls.Config, error) {
 	var certData, keyData []byte
 	var err error
@@ -126,13 +127,13 @@ func (conf *Config) CreateTLSConfig() (*tls.Config, error) {
 	return tlsConfig, nil
 }
 
-// WatcherUpdate creates a Inotify watcher on all TLS related information
+// WatcherUpdate creates an Inotify watcher on all TLS related information
 // (Cert-file, key-file and CA-root) if any of those files are updated, it'll
 // send over the returned channel a new TLS.Config that consumers can use to
 // renew their connections.
 // The main use case if when on short-lived certificates, where a connection
 // need to be reloaded to create a new TLSHandshake
-// It will return a error if cannot set the inoty on any file
+// It will return an error if cannot set the inotify on any file
 func (conf *Config) WatcherUpdate() (chan *tls.Config, error) {
 	c := make(chan notify.EventInfo, 1)
 	files := []string{}
@@ -168,7 +169,12 @@ func (conf *Config) WatcherUpdate() (chan *tls.Config, error) {
 			case notify.InCloseWrite, notify.InDelete:
 				cfg, err := conf.CreateTLSConfig()
 				if err != nil {
-					log.Errorf("cannot create TLS config from file '%v' on event %v: %v", e.Path(), e.Event(), err)
+					log.Errorf(
+						"cannot create TLS config from file '%v' on event %v: %v",
+						e.Path(),
+						e.Event(),
+						err,
+					)
 				}
 				if cfg != nil {
 					events <- cfg

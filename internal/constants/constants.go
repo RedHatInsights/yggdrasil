@@ -11,7 +11,7 @@ var (
 	// Version is the version as described by git.
 	Version string
 
-	// DefaultPathPrefix is the default vlaue used as a prefix to all transport
+	// DefaultPathPrefix is the default value used as a prefix to all transport
 	// layer path names in the client.
 	DefaultPathPrefix string = "yggdrasil"
 
