@@ -192,7 +192,7 @@ func generateMessage(messageType, responseTo, directive, content string, metadat
 		}
 		return data, nil
 	case "command":
-		msg, err := generateCommandMessage(yggdrasil.MessageType(messageType), responseTo, version, []byte(content))
+		msg, err := generateControlMessage(yggdrasil.MessageType(messageType), responseTo, version, []byte(content))
 		if err != nil {
 			return nil, err
 		}
