@@ -257,20 +257,20 @@ func (c *Client) ReceiveControlMessage(msg *yggdrasil.Control) error {
 	switch msg.Type {
 	case yggdrasil.MessageTypeCommand:
 		var cmd yggdrasil.Command
-		if err := json.Unmarshal(msg.Content, &cmd.Content); err != nil {
+		if err := json.Unmarshal(msg.Content, &cmd); err != nil {
 			return fmt.Errorf("cannot unmarshal command message: %w", err)
 		}
 
-		log.Debugf("received message %v", cmd.MessageID)
-		log.Tracef("command: %+v", cmd)
-		log.Tracef("Control message: %v", cmd)
+		log.Debugf("received message %v", msg.MessageID)
+		log.Tracef("command: %+v", cmd.Command)
+		log.Tracef("Control message: %v", msg)
 
-		switch cmd.Content.Command {
+		switch cmd.Command {
 		case yggdrasil.CommandNamePing:
 			event := yggdrasil.Event{
 				Type:       yggdrasil.MessageTypeEvent,
 				MessageID:  uuid.New().String(),
-				ResponseTo: cmd.MessageID,
+				ResponseTo: msg.MessageID,
 				Version:    1,
 				Sent:       time.Now(),
 				Content:    string(yggdrasil.EventNamePong),
@@ -290,7 +290,7 @@ func (c *Client) ReceiveControlMessage(msg *yggdrasil.Control) error {
 		case yggdrasil.CommandNameReconnect:
 			log.Info("reconnecting...")
 			c.transporter.Disconnect(500)
-			delay, err := strconv.ParseInt(cmd.Content.Arguments["delay"], 10, 64)
+			delay, err := strconv.ParseInt(cmd.Arguments["delay"], 10, 64)
 			if err != nil {
 				return fmt.Errorf("cannot parse data to int: %w", err)
 			}
@@ -300,7 +300,7 @@ func (c *Client) ReceiveControlMessage(msg *yggdrasil.Control) error {
 				return fmt.Errorf("cannot reconnect to broker: %w", err)
 			}
 		default:
-			return fmt.Errorf("unknown command: %v", cmd.Content.Command)
+			return fmt.Errorf("unknown command: %v", cmd.Command)
 		}
 	default:
 		return fmt.Errorf("unsupported control message: %v", msg)

@@ -96,22 +96,15 @@ func TestGenerateCommandMessage(t *testing.T) {
 				version:     1,
 			},
 			want: &yggdrasil.Command{
-				Type:    yggdrasil.MessageTypeCommand,
-				Version: 1,
-				Content: struct {
-					Command   yggdrasil.CommandName "json:\"command\""
-					Arguments map[string]string     "json:\"arguments\""
-				}{
-					Command:   "ping",
-					Arguments: map[string]string{},
-				},
+				Command:   "ping",
+				Arguments: map[string]string{},
 			},
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-			got, err := generateCommandMessage(yggdrasil.MessageType(test.input.messageType), test.input.responseTo, test.input.version, test.input.content)
+			got, err := generateCommandContent(test.input.content)
 
 			if test.wantError != nil {
 				if !cmp.Equal(err, test.wantError, cmpopts.EquateErrors()) {
@@ -121,7 +114,7 @@ func TestGenerateCommandMessage(t *testing.T) {
 				if err != nil {
 					t.Fatal(err)
 				}
-				if !cmp.Equal(got, test.want, cmpopts.IgnoreFields(yggdrasil.Command{}, "MessageID", "Sent")) {
+				if !cmp.Equal(got, test.want) {
 					t.Errorf("%#v != %#v", got, test.want)
 				}
 			}
@@ -137,6 +130,7 @@ func TestGenerateControlMessage(t *testing.T) {
 		wantError   error
 	}{
 		{
+			description: "control event",
 			input: Input{
 				messageType: "event",
 				content:     []byte(`pong`),
@@ -146,6 +140,19 @@ func TestGenerateControlMessage(t *testing.T) {
 				Type:    yggdrasil.MessageTypeEvent,
 				Version: 1,
 				Content: json.RawMessage(`"pong"`),
+			},
+		},
+		{
+			description: "control command",
+			input: Input{
+				messageType: "command",
+				content:     []byte(`{"command":"ping","arguments":{}}`),
+				version:     1,
+			},
+			want: &yggdrasil.Control{
+				Type:    yggdrasil.MessageTypeCommand,
+				Version: 1,
+				Content: json.RawMessage(`{"command":"ping","arguments":{}}`),
 			},
 		},
 	}

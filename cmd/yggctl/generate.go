@@ -29,18 +29,22 @@ func generateDataMessage(messageType yggdrasil.MessageType, responseTo string, d
 func generateControlMessage(messageType yggdrasil.MessageType, responseTo string, version int, content []byte) (*yggdrasil.Control, error) {
 	switch messageType {
 	case yggdrasil.MessageTypeCommand:
-		msg, err := generateCommandMessage(messageType, responseTo, version, content)
+		ctrl := yggdrasil.Control{
+			Type:       messageType,
+			MessageID:  uuid.New().String(),
+			ResponseTo: responseTo,
+			Version:    version,
+			Sent:       time.Now(),
+		}
+		command, err := generateCommandContent(content)
 		if err != nil {
 			return nil, fmt.Errorf("cannot generate command message: %v", err)
 		}
-		data, err := json.Marshal(msg)
+		cmd, err := json.Marshal(command)
 		if err != nil {
 			return nil, fmt.Errorf("cannot marshal command message: %v", err)
 		}
-		var ctrl yggdrasil.Control
-		if err := json.Unmarshal(data, &ctrl); err != nil {
-			return nil, fmt.Errorf("cannot unmarshal control message: %v", err)
-		}
+		ctrl.Content = cmd
 		return &ctrl, nil
 	case yggdrasil.MessageTypeEvent:
 		msg, err := generateEventMessage(messageType, responseTo, version, content)
@@ -49,7 +53,7 @@ func generateControlMessage(messageType yggdrasil.MessageType, responseTo string
 		}
 		data, err := json.Marshal(msg)
 		if err != nil {
-			return nil, fmt.Errorf("cannot marshal command message: %v", err)
+			return nil, fmt.Errorf("cannot marshal event message: %v", err)
 		}
 		var ctrl yggdrasil.Control
 		if err := json.Unmarshal(data, &ctrl); err != nil {
@@ -61,21 +65,12 @@ func generateControlMessage(messageType yggdrasil.MessageType, responseTo string
 	}
 }
 
-// generateCommandMessage unmarshals bytes into a command message.
-func generateCommandMessage(messageType yggdrasil.MessageType, responseTo string, version int, content []byte) (*yggdrasil.Command, error) {
-	msg := yggdrasil.Command{
-		Type:       messageType,
-		MessageID:  uuid.New().String(),
-		ResponseTo: responseTo,
-		Version:    version,
-		Sent:       time.Now(),
-	}
-
-	if err := json.Unmarshal(content, &msg.Content); err != nil {
+func generateCommandContent(content []byte) (*yggdrasil.Command, error) {
+	var command yggdrasil.Command
+	if err := json.Unmarshal(content, &command); err != nil {
 		return nil, fmt.Errorf("cannot unmarshal content: %v", err)
 	}
-
-	return &msg, nil
+	return &command, nil
 }
 
 func generateEventMessage(messageType yggdrasil.MessageType, responseTo string, version int, content []byte) (*yggdrasil.Event, error) {

@@ -80,15 +80,8 @@ type ConnectionStatus struct {
 // A Command message is published by the server on the "control" topic when it
 // needs to instruct a client to perform an operation.
 type Command struct {
-	Type       MessageType `json:"type"`
-	MessageID  string      `json:"message_id"`
-	ResponseTo string      `json:"response_to"`
-	Version    int         `json:"version"`
-	Sent       time.Time   `json:"sent"`
-	Content    struct {
-		Command   CommandName       `json:"command"`
-		Arguments map[string]string `json:"arguments"`
-	} `json:"content"`
+	Command   CommandName       `json:"command"`
+	Arguments map[string]string `json:"arguments"`
 }
 
 // An Event message is published by the client on the "control" topic when it
