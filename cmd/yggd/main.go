@@ -339,6 +339,7 @@ func main() {
 		watchdogDuration, err := daemon.SdWatchdogEnabled(false)
 		if err != nil {
 			log.Errorf("cannot get watchdog duration: %v", err)
+			err = nil
 		}
 		if watchdogDuration > 0 {
 			go func() {
