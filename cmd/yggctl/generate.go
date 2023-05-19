@@ -9,7 +9,14 @@ import (
 	"github.com/redhatinsights/yggdrasil"
 )
 
-func generateDataMessage(messageType yggdrasil.MessageType, responseTo string, directive string, content []byte, metadata map[string]string, version int) (*yggdrasil.Data, error) {
+// generateDataMessage creates a data message of the appropriate type by
+func generateDataMessage(
+	messageType yggdrasil.MessageType,
+	responseTo string,
+	directive string,
+	content []byte,
+	metadata map[string]string,
+	version int) (*yggdrasil.Data, error) {
 	msg := yggdrasil.Data{
 		Type:       messageType,
 		MessageID:  uuid.New().String(),

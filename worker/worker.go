@@ -2,13 +2,13 @@ package worker
 
 import (
 	"fmt"
+	"github.com/godbus/dbus/v5/introspect"
 	"os"
 	"path"
 	"regexp"
 
 	"git.sr.ht/~spc/go-log"
 	"github.com/godbus/dbus/v5"
-	"github.com/godbus/dbus/v5/introspect"
 	"github.com/godbus/dbus/v5/prop"
 	"github.com/redhatinsights/yggdrasil/ipc"
 )
@@ -24,7 +24,7 @@ type EventHandlerFunc func(e ipc.DispatcherEvent)
 type Worker struct {
 	directive     string
 	features      map[string]string
-	remoteContent bool
+	RemoteContent bool
 	rx            RxFunc
 	conn          *dbus.Conn
 	objectPath    dbus.ObjectPath
@@ -33,16 +33,23 @@ type Worker struct {
 }
 
 // NewWorker creates a new worker.
-func NewWorker(directive string, remoteContent bool, features map[string]string, rx RxFunc, events EventHandlerFunc) (*Worker, error) {
+func NewWorker(
+	directive string,
+	remoteContent bool,
+	features map[string]string,
+	rx RxFunc,
+	events EventHandlerFunc) (*Worker, error) {
+
+	// directive cannot contain a dash
 	r := regexp.MustCompile("-")
 	if r.Match([]byte(directive)) {
-		return nil, fmt.Errorf("invalid directive '%v'", directive)
+		return nil, fmt.Errorf("invalid directive '%v' (contains '-')", directive)
 	}
 
 	w := Worker{
 		directive:     directive,
 		features:      features,
-		remoteContent: remoteContent,
+		RemoteContent: remoteContent,
 		rx:            rx,
 		objectPath:    dbus.ObjectPath(path.Join("/com/redhat/Yggdrasil1/Worker1", directive)),
 		busName:       fmt.Sprintf("com.redhat.Yggdrasil1.Worker1.%v", directive),
@@ -54,8 +61,8 @@ func NewWorker(directive string, remoteContent bool, features map[string]string,
 
 // Connect connects to the bus, exports the worker on its object path, and
 // requests a well-known bus name. It connects to a private session bus, if
-// DBUS_SESSION_BUS_ADDRESS is set in the environment. Otherwise it connects to
-// the system bus. It exports w onto the bus and waits until a signal is
+// DBUS_SESSION_BUS_ADDRESS is set in the environment. Otherwise, it connects to
+// the system bus. It exports worker onto the bus and waits until a signal is
 // received on quit.
 func (w *Worker) Connect(quit <-chan os.Signal) error {
 	var err error
@@ -64,14 +71,24 @@ func (w *Worker) Connect(quit <-chan os.Signal) error {
 		log.Debugf("connecting to session bus: %v", os.Getenv("DBUS_SESSION_BUS_ADDRESS"))
 		w.conn, err = dbus.ConnectSessionBus()
 	} else {
+		log.Debug("connecting to system bus")
 		w.conn, err = dbus.ConnectSystemBus()
 	}
 	if err != nil {
 		return fmt.Errorf("error: cannot connect to bus: %w", err)
 	}
 
+	// Emit a connecting event
+	err = w.EmitEvent(
+		ipc.WorkerEventNameConnecting,
+		"")
+	if err != nil {
+		return fmt.Errorf("cannot emit event: %w", err)
+	}
+
 	// Export properties onto the bus as an org.freedesktop.DBus.Properties
 	// interface.
+	log.Debug("exporting 'com.redhat.Yggdrasil1.Worker1' properties")
 	propertySpec := prop.Map{
 		"com.redhat.Yggdrasil1.Worker1": {
 			"Features": {
@@ -80,38 +97,69 @@ func (w *Worker) Connect(quit <-chan os.Signal) error {
 				Emit:     prop.EmitTrue,
 			},
 			"RemoteContent": {
-				Value:    w.remoteContent,
+				Value:    w.RemoteContent,
 				Writable: false,
 				Emit:     prop.EmitTrue,
 			},
 		},
 	}
-
 	_, err = prop.Export(w.conn, w.objectPath, propertySpec)
 	if err != nil {
-		return fmt.Errorf("cannot export com.redhat.Yggdrasil1.Worker1 properties: %w", err)
+		return fmt.Errorf("cannot export 'com.redhat.Yggdrasil1.Worker1' properties: %w", err)
 	}
 
 	// Export worker onto the bus, implementing the com.redhat.Yggdrasil1.Worker1
 	// and org.freedesktop.DBus.Introspectable interfaces. The path name the
 	// worker exports includes the directive name.
-	if err := w.conn.ExportMethodTable(map[string]interface{}{"Dispatch": w.dispatch}, w.objectPath, "com.redhat.Yggdrasil1.Worker1"); err != nil {
+	log.Debug("exporting 'com.redhat.Yggdrasil1.Worker1' interface")
+	err = w.conn.ExportMethodTable(
+		map[string]interface{}{"Dispatch": w.dispatch},
+		w.objectPath,
+		"com.redhat.Yggdrasil1.Worker1",
+	)
+	if err != nil {
 		return fmt.Errorf("cannot export com.redhat.Yggdrasil1.Worker1 interface: %w", err)
 	}
 
-	if err := w.conn.Export(introspect.Introspectable(ipc.InterfaceWorker), w.objectPath, "org.freedesktop.DBus.Introspectable"); err != nil {
+	log.Debug("exporting org.freedesktop.DBus.Introspectable interface")
+	err = w.conn.Export(
+		introspect.Introspectable(ipc.InterfaceWorker),
+		w.objectPath,
+		"org.freedesktop.DBus.Introspectable",
+	)
+	if err != nil {
 		return fmt.Errorf("cannot export org.freedesktop.DBus.Introspectable interface: %w", err)
 	}
 
 	// Request ownership of the well-known bus address.
+	log.Debugf("requesting ownership of bus name: '%v'", w.busName)
 	reply, err := w.conn.RequestName(w.busName, dbus.NameFlagDoNotQueue)
 	if err != nil {
 		return fmt.Errorf("cannot request name on bus: %w", err)
 	}
-	if reply != dbus.RequestNameReplyPrimaryOwner {
-		return fmt.Errorf("request name failed")
+	switch reply {
+	case dbus.RequestNameReplyPrimaryOwner:
+		log.Debugf("bus name: '%v' is now owned by this worker", w.busName)
+	case dbus.RequestNameReplyAlreadyOwner:
+		return fmt.Errorf("requesting of bus name: '%v' failed (name already owned)", w.busName)
+	case dbus.RequestNameReplyExists:
+		return fmt.Errorf("requesting of bus name: '%v' failed (name already exists)", w.busName)
+	case dbus.RequestNameReplyInQueue:
+		return fmt.Errorf("requesting of bus name: '%v' failed (name already in queue)", w.busName)
+	default:
+		return fmt.Errorf("requesting of bus name: '%v' failed (unknown error)", w.busName)
 	}
 
+	// Emit a connected event
+	err = w.EmitEvent(
+		ipc.WorkerEventNameConnected,
+		"")
+	if err != nil {
+		return fmt.Errorf("cannot emit event: %w", err)
+	}
+
+	// "Main loop" for the worker. Wait for signals on the bus and handle them.
+	log.Debugf("listening for signals on the bus...")
 	signals := make(chan *dbus.Signal)
 	w.conn.Signal(signals)
 	go func() {
@@ -129,6 +177,8 @@ func (w *Worker) Connect(quit <-chan os.Signal) error {
 
 	<-quit
 
+	log.Debug("terminating worker")
+
 	return nil
 }
 
@@ -136,7 +186,11 @@ func (w *Worker) Connect(quit <-chan os.Signal) error {
 // PropertiesChanged signal.
 func (w *Worker) SetFeature(name, value string) error {
 	w.features[name] = value
-	return w.conn.Emit(w.objectPath, "org.freedesktop.DBus.Properties.PropertiesChanged", "com.redhat.Yggdrasil1.Worker1.Features", map[string]dbus.Variant{"Features": dbus.MakeVariant(w.features)})
+	return w.conn.Emit(
+		w.objectPath,
+		"org.freedesktop.DBus.Properties.PropertiesChanged",
+		"com.redhat.Yggdrasil1.Worker1.Features",
+		map[string]dbus.Variant{"Features": dbus.MakeVariant(w.features)})
 }
 
 // GetFeature retrieves the value from the feature map for given key.
@@ -146,11 +200,23 @@ func (w *Worker) GetFeature(name string) string {
 
 // Transmit wraps a com.redhat.Yggdrasil1.Dispatcher1.Transmit method call for
 // ease of use from the worker.
-func (w *Worker) Transmit(addr string, id string, responseTo string, metadata map[string]string, data []byte) (responseCode int, responseMetadata map[string]string, responseData []byte, err error) {
+func (w *Worker) Transmit(
+	addr string,
+	id string,
+	responseTo string,
+	metadata map[string]string,
+	data []byte) (responseCode int, responseMetadata map[string]string, responseData []byte, err error) {
 	// Look up the Dispatcher object on the bus connection and call its Transmit
 	// method, returning the data received.
 	obj := w.conn.Object("com.redhat.Yggdrasil1.Dispatcher1", "/com/redhat/Yggdrasil1/Dispatcher1")
-	err = obj.Call("com.redhat.Yggdrasil1.Dispatcher1.Transmit", 0, addr, id, responseTo, metadata, data).Store(&responseCode, &responseMetadata, &responseData)
+	err = obj.Call(
+		"com.redhat.Yggdrasil1.Dispatcher1.Transmit",
+		0,
+		addr,
+		id,
+		responseTo,
+		metadata,
+		data).Store(&responseCode, &responseMetadata, &responseData)
 	if err != nil {
 		responseCode = -1
 		return
@@ -165,18 +231,28 @@ func (w *Worker) EmitEvent(event ipc.WorkerEventName, message string) error {
 		args = append(args, message)
 	}
 	log.Debugf("emitting event %v", event)
-	return w.conn.Emit(dbus.ObjectPath(path.Join("/com/redhat/Yggdrasil1/Worker1", w.directive)), "com.redhat.Yggdrasil1.Worker1.Event", args...)
+	return w.conn.Emit(
+		dbus.ObjectPath(path.Join("/com/redhat/Yggdrasil1/Worker1", w.directive)),
+		"com.redhat.Yggdrasil1.Worker1.Event",
+		args...)
 }
 
 // dispatch implements com.redhat.Yggdrasil1.Worker1.Dispatch by calling the
 // worker's RxFunc in a goroutine.
-func (w *Worker) dispatch(addr string, id string, responseTo string, metadata map[string]string, data []byte) *dbus.Error {
+func (w *Worker) dispatch(
+	addr string,
+	id string,
+	responseTo string,
+	metadata map[string]string,
+	data []byte) *dbus.Error {
+
 	// Log the data received at a high log level for debugging purposes.
-	log.Tracef("addr = %v", addr)
-	log.Tracef("id = %v", id)
-	log.Tracef("responseTo = %v", responseTo)
-	log.Tracef("metadata = %#v", metadata)
-	log.Tracef("data = %v", data)
+	log.Tracef("dispatching message:")
+	log.Tracef("  addr = %v", addr)
+	log.Tracef("  id = %v", id)
+	log.Tracef("  responseTo = %v", responseTo)
+	log.Tracef("  metadata = %#v", metadata)
+	log.Tracef("  data = %v", data)
 
 	if err := w.EmitEvent(ipc.WorkerEventNameBegin, ""); err != nil {
 		return dbus.NewError("com.redhat.Yggdrasil1.Worker1.EventError", []interface{}{err.Error()})

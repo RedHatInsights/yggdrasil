@@ -2,13 +2,6 @@ package work
 
 import (
 	"fmt"
-	"io"
-	"net/url"
-	"os"
-	"path/filepath"
-	"strings"
-	"time"
-
 	"git.sr.ht/~spc/go-log"
 	"github.com/godbus/dbus/v5"
 	"github.com/godbus/dbus/v5/introspect"
@@ -17,6 +10,12 @@ import (
 	internalhttp "github.com/redhatinsights/yggdrasil/internal/http"
 	"github.com/redhatinsights/yggdrasil/internal/sync"
 	"github.com/redhatinsights/yggdrasil/ipc"
+	"io"
+	"net/url"
+	"os"
+	"path/filepath"
+	"strings"
+	"time"
 )
 
 const (
@@ -136,7 +135,9 @@ func (d *Dispatcher) Connect() error {
 				}
 				event.Name = ipc.WorkerEventName(eventName)
 				event.Worker = strings.TrimPrefix(dest, "com.redhat.Yggdrasil1.Worker1.")
+
 				switch ipc.WorkerEventName(eventName) {
+				// Set the event message only if the event is a "working" event.
 				case ipc.WorkerEventNameWorking:
 					eventMessage, ok := s.Body[1].(string)
 					if !ok {
@@ -144,6 +145,8 @@ func (d *Dispatcher) Connect() error {
 						continue
 					}
 					event.Message = eventMessage
+				default:
+					event.Message = ""
 				}
 				d.WorkerEvents <- event
 			}
@@ -165,10 +168,16 @@ func (d *Dispatcher) Connect() error {
 }
 
 func (d *Dispatcher) Dispatch(data yggdrasil.Data) error {
-	obj := d.conn.Object("com.redhat.Yggdrasil1.Worker1."+data.Directive, dbus.ObjectPath(filepath.Join("/com/redhat/Yggdrasil1/Worker1/", data.Directive)))
+	objPath := filepath.Join("/com/redhat/Yggdrasil1/Worker1/", data.Directive)
+	obj := d.conn.Object(
+		"com.redhat.Yggdrasil1.Worker1."+data.Directive,
+		dbus.ObjectPath(objPath))
 	r, err := obj.GetProperty("com.redhat.Yggdrasil1.Worker1.RemoteContent")
 	if err != nil {
-		return fmt.Errorf("cannot get property 'com.redhat.Yggdrasil1.Worker1.RemoteContent': %v", err)
+		return fmt.Errorf(
+			"cannot get property 'com.redhat.Yggdrasil1.Worker1.RemoteContent' from object path: '%v': %v",
+			objPath,
+			err)
 	}
 
 	if r.Value().(bool) {
@@ -257,6 +266,7 @@ func (d *Dispatcher) Transmit(sender dbus.Sender, addr string, messageID string,
 			if config.DefaultConfig.DataHost != "" {
 				URL.Host = config.DefaultConfig.DataHost
 			}
+			log.Debugf("making HTTP POST request to %v", URL.String())
 			resp, err := d.HTTPClient.Post(URL.String(), metadata, data)
 			if err != nil {
 				return TransmitResponseErr, nil, nil, NewDBusError("Transmit", fmt.Sprintf("cannot perform HTTP request: %v", err))
@@ -265,36 +275,45 @@ func (d *Dispatcher) Transmit(sender dbus.Sender, addr string, messageID string,
 			if err != nil {
 				return TransmitResponseErr, nil, nil, NewDBusError("Transmit", fmt.Sprintf("cannot read HTTP response body: %v", err))
 			}
-			resp.Body.Close()
+			err = resp.Body.Close()
+			if err != nil {
+				return TransmitResponseErr, nil, nil, NewDBusError("Transmit", fmt.Sprintf("cannot close HTTP response body: %v", err))
+			}
+			responseCode = resp.StatusCode
+			// TODO: convert resp.Header to responseMetadata
+			responseData = data
+		}
+	} else {
+		ch := make(chan yggdrasil.Response)
+		d.Outbound <- struct {
+			Data yggdrasil.Data
+			Resp chan yggdrasil.Response
+		}{
+			Data: yggdrasil.Data{
+				Type:       yggdrasil.MessageTypeData,
+				MessageID:  messageID,
+				ResponseTo: responseTo,
+				Version:    1,
+				Sent:       time.Now(),
+				Directive:  addr,
+				Metadata:   metadata,
+				Content:    data,
+			},
+			Resp: ch,
+		}
+
+		select {
+		case resp := <-ch:
+			responseCode = resp.Code
+			responseMetadata = resp.Metadata
+			responseData = resp.Data
+		case <-time.After(1 * time.Second):
+			return TransmitResponseErr, nil, nil, NewDBusError("com.redhat.Yggdrasil1.Dispatcher1.Transmit", "timeout reached waiting for response")
+		default:
+			log.Debug("no response")
 		}
 	}
 
-	ch := make(chan yggdrasil.Response)
-	d.Outbound <- struct {
-		Data yggdrasil.Data
-		Resp chan yggdrasil.Response
-	}{
-		Data: yggdrasil.Data{
-			Type:       yggdrasil.MessageTypeData,
-			MessageID:  messageID,
-			ResponseTo: responseTo,
-			Version:    1,
-			Sent:       time.Now(),
-			Directive:  addr,
-			Metadata:   metadata,
-			Content:    data,
-		},
-		Resp: ch,
-	}
-
-	select {
-	case resp := <-ch:
-		responseCode = resp.Code
-		responseMetadata = resp.Metadata
-		responseData = resp.Data
-	case <-time.After(1 * time.Second):
-		return TransmitResponseErr, nil, nil, NewDBusError("com.redhat.Yggdrasil1.Dispatcher1.Transmit", "timeout reached waiting for response")
-	}
 	return
 }
 

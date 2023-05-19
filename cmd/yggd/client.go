@@ -179,10 +179,14 @@ func (c *Client) Connect() error {
 		for e := range c.dispatcher.WorkerEvents {
 			args := []interface{}{e.Worker, e.Name}
 			switch e.Name {
+			// Only working event has a message
 			case ipc.WorkerEventNameWorking:
 				args = append(args, e.Message)
 			}
-			if err := c.conn.Emit("/com/redhat/Yggdrasil1", "com.redhat.Yggdrasil1.WorkerEvent", args...); err != nil {
+			if err := c.conn.Emit(
+				"/com/redhat/Yggdrasil1",
+				"com.redhat.Yggdrasil1.WorkerEvent",
+				args...); err != nil {
 				log.Errorf("cannot emit event: %v", err)
 				continue
 			}

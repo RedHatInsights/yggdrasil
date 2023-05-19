@@ -12,13 +12,15 @@ var InterfaceDispatcher string
 type DispatcherEvent uint
 
 const (
-	// Emitted when the dispatcher receives the "disconnect" command.
+	// DispatcherEventReceivedDisconnect is emitted when the dispatcher receives
+	// the "disconnect" command.
 	DispatcherEventReceivedDisconnect DispatcherEvent = 1
 
-	// Emitted when the transport unexpected disconnects from the network.
+	// DispatcherEventUnexpectedDisconnect is emitted when the transport unexpected
+	// disconnects from the network.
 	DispatcherEventUnexpectedDisconnect DispatcherEvent = 2
 
-	// Emitted when the transport reconnects to the network.
+	// DispatcherEventConnectionRestored is emitted when the transport reconnects to the network.
 	DispatcherEventConnectionRestored DispatcherEvent = 3
 )
 
@@ -29,28 +31,39 @@ type WorkerEventName uint
 
 const (
 
-	// Emitted when the worker "accepts" a dispatched message and begins
-	// "working".
+	// WorkerEventNameBegin is emitted when the worker "accepts"
+	// a dispatched message and begins "working".
 	WorkerEventNameBegin WorkerEventName = 1
 
-	// Emitted when the worker finishes "working".
+	// WorkerEventNameEnd is emitted when the worker finishes "working".
 	WorkerEventNameEnd WorkerEventName = 2
 
-	// Emitted when the worker wishes to continue to announce it is
-	// working.
+	// WorkerEventNameWorking is emitted when the worker wishes to continue
+	// to announce it is working.
 	WorkerEventNameWorking WorkerEventName = 3
+
+	// WorkerEventNameConnecting is emitted when the worker starts connecting
+	WorkerEventNameConnecting WorkerEventName = 4
+
+	// WorkerEventNameConnected is emitted when the worker finishes connecting
+	WorkerEventNameConnected WorkerEventName = 5
 )
 
+// String returns textual representation of event name
 func (e WorkerEventName) String() string {
 	switch e {
-	case 1:
+	case WorkerEventNameBegin:
 		return "BEGIN"
-	case 2:
+	case WorkerEventNameEnd:
 		return "END"
-	case 3:
+	case WorkerEventNameWorking:
 		return "WORKING"
+	case WorkerEventNameConnecting:
+		return "CONNECTING"
+	case WorkerEventNameConnected:
+		return "CONNECTED"
 	}
-	return ""
+	return "UNKNOWN"
 }
 
 type WorkerEvent struct {

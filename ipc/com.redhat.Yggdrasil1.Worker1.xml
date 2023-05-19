@@ -62,6 +62,12 @@
             3 = WORKING
             Emitted when the worker wishes to continue to announce it is
             working.
+
+            4 = CONNECTING
+            Emitted when the worker starts connecting to bus
+
+            5 = CONNECTED
+            Emitted when the worker is connected to bus
         -->
         <signal name="Event">
             <arg type="u" name="name" />
