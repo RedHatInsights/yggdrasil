@@ -1,0 +1,45 @@
+name: Package
+
+on:
+  push:
+
+jobs:
+  build-srpm:
+    runs-on: ubuntu-latest
+    container: registry.fedoraproject.org/fedora:rawhide
+    steps:
+      - run: dnf install --assumeyes bash-completion git go meson 'pkgconfig(dbus-1)' rpm-build
+      - uses: actions/checkout@v3
+      - run: git config --system --add safe.directory $GITHUB_WORKSPACE
+      - run: meson setup $GITHUB_WORKSPACE/builddir -Dbuild_srpm=True
+      - run: meson compile srpm -C $GITHUB_WORKSPACE/builddir
+      - uses: actions/upload-artifact@v3
+        with:
+          name: yggdrasil-${{ github.sha }}
+          path: ${{ github.workspace }}/builddir/dist/srpm/*.src.rpm
+  build-rpm:
+    needs: build-srpm
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        registry:
+          - "registry.fedoraproject.org"
+        image:
+          - "fedora"
+        version:
+          - "rawhide"
+          - "latest"
+    container:
+      image: ${{ matrix.registry }}/${{ matrix.image }}:${{ matrix.version }}
+      options: "--privileged --cap-add=SYS_ADMIN"
+    steps:
+      - run: dnf install --assumeyes git mock
+      - uses: actions/download-artifact@v3
+        with:
+          name: yggdrasil-${{ github.sha }}
+      - run: mock --enable-network --rebuild --resultdir $GITHUB_WORKSPACE $GITHUB_WORKSPACE/*.src.rpm
+      - uses: actions/upload-artifact@v3
+        with:
+          name: yggdrasil-${{ matrix.image }}-${{ matrix.version }}
+          path: ${{ github.workspace }}/*.rpm
