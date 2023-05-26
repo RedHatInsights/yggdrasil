@@ -118,7 +118,13 @@ sudo go run ./cmd/yggd --config ./data/yggdrasil/config.toml
 
 Many default paths (such as Prefix, BinDir, LocalstateDir, etc), as well as some
 other compile-time constants, can be specified by providing a linker `-X` flag
-argument. See the `Makefile` or `constants.go` for a complete list. 
+argument. See the [meson built-in
+options](https://mesonbuild.com/Builtin-options.html) or
+`internal/constants/constants.go` for a complete list.
+
+It is also possible to compile `yggd` and all additional programs in this
+project into an RPM suitable for installation on Fedora-based distributions. See
+the README in `dist/srpm` for details.
 
 ## Debugging `yggd`
 
