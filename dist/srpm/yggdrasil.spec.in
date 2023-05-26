@@ -1,0 +1,107 @@
+# This RPM spec file exists primarily to enable CI/CD pipelines and automatic
+# testing of built RPMs. This RPM can be used as a suitable baseline for a
+# proper distribution package, but changes should be made to suit the needs of
+# the package.
+#
+# See https://src.fedoraproject.org/rpms/yggdrasil/blob/rawhide/f/yggdrasil.spec
+# for a better example of a downstream distribution packaging example.
+
+%bcond_without check
+
+# https://github.com/redhatinsights/yggdrasil
+%global goipath         github.com/redhatinsights/yggdrasil
+%global commit          @COMMIT@
+%global shortcommit     %(c=%{commit}; echo ${c:0:7})
+
+%if 0%{?fedora}
+%gometa -f
+%else
+%gometa
+%endif
+
+# Manually redefine %%dist to work around an issue in COPR where the build root
+# that creates the srpm does not define a value for %%dist. This should *NOT* be
+# carried in downstream; this is strictly an upstream/COPR/CI workaround.
+%if "%{dist}" == ""
+%global dist %{distprefix}.fc%{fedora}
+%endif
+
+%if 0%{?fedora}
+%global setup_flags -Dvendor=False -Dexamples=True
+%else
+%global setup_flags -Dvendor=True -Dexamples=True
+%endif
+
+%global common_description %{expand:
+yggdrasil is a system daemon that subscribes to topics on an MQTT broker and
+routes any data received on the topics to an appropriate child "worker" process,
+exchanging data with its worker processes through a D-Bus message broker.}
+
+%global golicenses      LICENSE
+%global godocs          CONTRIBUTING.md README.md
+
+Name:           yggdrasil
+Version:        @VERSION@
+Release:        0%{?dist}
+Summary:        Remote data transmission and processing client
+
+License:        GPL-3.0-only
+URL:            %{gourl}
+Source:         %{gosource}
+
+BuildRequires:  systemd-rpm-macros
+BuildRequires:  meson
+BuildRequires:  pkgconfig(dbus-1)
+BuildRequires:  pkgconfig(systemd)
+BuildRequires:  pkgconfig(bash-completion)
+
+%description %{common_description}
+
+%gopkg
+
+%prep
+%if 0%{?fedora}
+%goprep
+%else
+%goprep -k
+%endif
+
+%if 0%{?fedora}
+%generate_buildrequires
+%go_generate_buildrequires
+%endif
+
+%build
+%undefine _auto_set_build_flags
+export %gomodulesmode
+%{?gobuilddir:export GOPATH="%{gobuilddir}:${GOPATH:+${GOPATH}:}%{?gopath}"}
+%meson %setup_flags "-Dgobuildflags=[%(echo %{expand:%gocompilerflags} | sed -e s/"^"/"'"/ -e s/" "/"', '"/g -e s/"$"/"'"/), '-tags', '"rpm_crashtraceback\ ${BUILDTAGS:-}"', '-a', '-v', '-x']" -Dgoldflags='%{?currentgoldflags} -B 0x%(head -c20 /dev/urandom|od -An -tx1|tr -d " \n") -compressdwarf=false -linkmode=external -extldflags "%{build_ldflags} %{?__golang_extldflags}"'
+%meson_build
+
+%global gosupfiles ./ipc/com.redhat.Yggdrasil1.Dispatcher1.xml ./ipc/com.redhat.Yggdrasil1.Worker1.xml
+%install
+%meson_install
+%gopkginstall
+
+%if %{with check}
+%check
+%gocheck
+%endif
+
+%files
+%license LICENSE
+%doc CONTRIBUTING.md README.md
+%{_bindir}/*
+%{_libexecdir}/%{name}/*
+%config(noreplace) %{_sysconfdir}/%{name}
+%{_unitdir}/*
+%{_userunitdir}/*
+%{_datadir}/bash-completion/completions/*
+%{_datadir}/dbus-1/{interfaces,system-services,system.d}/*
+%{_datadir}/doc/%{name}/*
+%{_mandir}/man1/*
+
+%gopkgfiles
+
+%changelog
+%autochangelog
