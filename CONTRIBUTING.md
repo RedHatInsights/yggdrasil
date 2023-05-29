@@ -205,6 +205,11 @@ Or if you're running Fedora 34 or later, it can be installed directly with
 dnf install mqttcli
 ```
 
+## Debugging MQTT traffic
+
+If the environment variable `MQTT_DEBUG` is set, `yggd` will log all MQTT
+messages sent and received. This can be useful for debugging.
+
 # Sending Data
 
 With a running `yggd` and `echo` worker, it should be possible to publish a
