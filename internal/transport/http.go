@@ -151,7 +151,6 @@ func (t *HTTP) Tx(addr string, metadata map[string]string, data []byte) (respons
 	headers := map[string]string{
 		"Content-Type": "application/json",
 	}
-	log.Tracef("posting HTTP request body: %s", string(data))
 	resp, err := t.client.Post(url, headers, data)
 	if err != nil && resp == nil {
 		return TxResponseErr, nil, nil, fmt.Errorf("cannot perform HTTP request: %w", err)

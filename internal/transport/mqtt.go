@@ -172,7 +172,6 @@ func (t *MQTT) Tx(addr string, metadata map[string]string, data []byte) (respons
 		return TxResponseErr, nil, nil, token.Error()
 	}
 	log.Debugf("published message to topic %v", topic)
-	log.Tracef("message: %v", string(data))
 
 	return TxResponseOK, map[string]string{}, []byte{}, nil
 }
