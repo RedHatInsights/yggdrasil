@@ -105,7 +105,6 @@ func (d *dispatcher) Send(ctx context.Context, r *pb.Data) (*pb.Receipt, error) 
 		}
 	}
 	log.Debugf("received message %v", data.MessageID)
-	log.Tracef("message: %+v", data.Content)
 
 	return &pb.Receipt{}, nil
 }
@@ -166,7 +165,6 @@ func (d *dispatcher) sendData() {
 			_, err = c.Send(ctx, &msg)
 			if err != nil {
 				log.Errorf("cannot send message %v: %v", data.MessageID, err)
-				log.Tracef("message: %+v", data)
 				return
 			}
 			log.Debugf("dispatched message %v to worker %v", msg.MessageId, data.Directive)
