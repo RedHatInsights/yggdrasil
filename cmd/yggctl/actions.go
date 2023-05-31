@@ -163,11 +163,11 @@ func listenAction(ctx *cli.Context) error {
 			}
 			name, ok := s.Body[1].(uint32)
 			if !ok {
-				return cli.Exit(fmt.Errorf("cannot cat %T as uint32", s.Body[1]), 1)
+				return cli.Exit(fmt.Errorf("cannot cast %T as uint32", s.Body[1]), 1)
 			}
 			messageID, ok := s.Body[2].(string)
 			if !ok {
-				return cli.Exit(fmt.Errorf("cannot cat %T as string", s.Body[2]), 1)
+				return cli.Exit(fmt.Errorf("cannot cast %T as string", s.Body[2]), 1)
 			}
 			var message string
 			if len(s.Body) > 3 {

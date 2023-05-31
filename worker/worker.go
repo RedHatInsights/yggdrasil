@@ -159,8 +159,8 @@ func (w *Worker) Transmit(addr string, id string, responseTo string, metadata ma
 }
 
 // EmitEvent emits a WorkerEvent, worker message id, and an optional message.
-func (w *Worker) EmitEvent(event ipc.WorkerEventName, message_id string, message string) error {
-	args := []interface{}{event, message_id}
+func (w *Worker) EmitEvent(event ipc.WorkerEventName, messageID string, message string) error {
+	args := []interface{}{event, messageID}
 	if message != "" {
 		args = append(args, message)
 	}
