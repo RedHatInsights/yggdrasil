@@ -48,7 +48,7 @@ func get(url string) ([]byte, error) {
 	if err != nil {
 		return nil, fmt.Errorf("cannot read response body: %w", err)
 	}
-	log.Debugf("received HTTP %v: %v", resp.Status, strings.TrimSpace(string(data)))
+	log.Debugf("received HTTP %v", resp.Status)
 
 	if resp.StatusCode >= 400 {
 		return nil, &yggdrasil.APIResponseError{Code: resp.StatusCode, Body: strings.TrimSpace(string(data))}
@@ -81,7 +81,7 @@ func post(url string, headers map[string]string, body []byte) error {
 	if err != nil {
 		return fmt.Errorf("cannot read response body: %w", err)
 	}
-	log.Debugf("received HTTP %v: %v", resp.Status, strings.TrimSpace(string(data)))
+	log.Debugf("received HTTP %v", resp.Status)
 
 	if resp.StatusCode >= 400 {
 		return &yggdrasil.APIResponseError{Code: resp.StatusCode, Body: strings.TrimSpace(string(data))}

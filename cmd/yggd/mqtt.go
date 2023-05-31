@@ -22,7 +22,7 @@ func handleDataMessage(client mqtt.Client, msg mqtt.Message, sendQ chan<- yggdra
 		log.Errorf("cannot unmarshal data message: %v", err)
 		return
 	}
-	log.Tracef("message: %+v", data)
+	log.Tracef("message: %v", data.MessageID)
 
 	sendQ <- data
 }
@@ -129,7 +129,6 @@ func publishConnectionStatus(c mqtt.Client, dispatchers map[string]map[string]st
 		log.Errorf("failed to publish message: %v", token.Error())
 	}
 	log.Debugf("published message %v to topic %v", msg.MessageID, topic)
-	log.Tracef("message: %+v", msg)
 }
 
 func publishReceivedData(client mqtt.Client, c <-chan yggdrasil.Data) {
@@ -146,6 +145,5 @@ func publishReceivedData(client mqtt.Client, c <-chan yggdrasil.Data) {
 			log.Errorf("failed to publish message: %v", token.Error())
 		}
 		log.Debugf("published message %v to topic %v", d.MessageID, topic)
-		log.Tracef("message: %+v", d)
 	}
 }
