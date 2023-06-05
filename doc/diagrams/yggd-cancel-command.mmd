@@ -1,0 +1,25 @@
+sequenceDiagram
+participant S as server
+participant B as broker
+participant Y as yggdrasil
+participant D as DBus
+participant W as workerEcho
+
+S ->> B: data/in {"type":"data","directive":"echo","message-id": "1-1","content":"aGVsbG8="}
+B ->> Y: data/in {ditto}
+Y ->> D: Dispatcher method
+D ->>+ W: data/in {ditto}
+Note right of W: echo proccess
+W ->> D: Worker Event {Worker:echo Name:BEGIN}
+D ->> Y: Worker Event {Worker:echo Name:BEGIN}
+W ->> D: Worker Event {Worker:echo Name:WORKING}
+D ->> Y: Worker Event {Worker:echo Name:WORKING}
+rect rgb(255, 153, 153)
+S ->> B: control/in {"type":"command","directive":"echo","message-id": "1-2","content":{"command":"cancel","arguments":{"directive":"echo","messageID":"1-1"}}
+B ->> Y: control/in {ditto}
+Y ->> D: Cancel method {"addr":echo, id:1-2, cancel-id:1-1}
+D ->> W: Cancel method {"addr":echo, id:1-2, cancel-id:1-1}
+Note right of W: Cancel previous echo
+end
+W ->>- D: Worker Event {Worker:echo Name:END}
+D ->> Y: Worker Event {Worker:echo Name:END}

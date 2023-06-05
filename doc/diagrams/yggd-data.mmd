@@ -1,0 +1,27 @@
+sequenceDiagram
+participant S as server
+participant B as broker
+participant Y as yggdrasil
+participant D as DBus
+participant W as workerEcho
+
+S ->> B: data/in {"type":"data","directive":"echo","content":"aGVsbG8="}
+B ->> Y: data/in {ditto}
+Y ->> D: Dispatcher method
+D ->>+ W: data/in {ditto}
+Note right of W: echo proccess
+W ->> D: Worker Event {Worker:echo Name:BEGIN}
+D ->> Y: Worker Event {Worker:echo Name:BEGIN}
+W ->> D: Worker Event {Worker:echo Name:WORKING}
+D ->> Y: Worker Event {Worker:echo Name:WORKING}
+W ->>- D: data/out  message: {"type":"data","directive":"echo","content":"aGVsbG8="}
+D ->> Y: data/out  message: {"type":"data","directive":"echo","content":"aGVsbG8="}
+Y ->> B: data/out {ditto}
+B ->> S: data/out {ditto}
+W ->> D: Worker Event {Worker:echo Name:END}
+D ->> Y: Worker Event {Worker:echo Name:END}
+W ->> D: .Propierties Update DispatchedAt feature
+D ->> Y: .Propierties Update DispatchedAt feature
+Note right of Y: Update status of workers
+Y ->> B: control/out {"type":"connection-status","content":{"dispatchers":{"echo":{"DispatchedAt":"date"}}
+B ->> S: control/out {ditto}

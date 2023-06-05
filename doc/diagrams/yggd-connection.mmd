@@ -1,0 +1,26 @@
+sequenceDiagram
+participant S as server
+participant B as broker
+participant Y as yggdrasil
+participant D as DBus
+participant W as workerEcho
+
+par Connect
+Y ->> D: Get dispatchers
+Y ->> B: connect to broker
+Note right of Y: "yggdrasil Set last will (Disconnect)"
+Y ->> S: control/out {"type":"connection-status", "dispatchers":{}}
+end
+par Data Messages
+S ->> Y: Data messages
+Y ->> W: Data Message
+end
+par Control Messages
+S ->> Y: Control Messages
+and
+Y ->> S: Event Message
+end
+par Disconnect
+Note right of Y: "yggdrasil Disconnect"
+B ->> S: control/out {"type":"connection-status","state":"offline"}
+end
