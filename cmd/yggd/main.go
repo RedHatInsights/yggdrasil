@@ -98,6 +98,24 @@ func main() {
 			Name:  "exclude-worker",
 			Usage: "Exclude `WORKER` from activation when starting workers",
 		}),
+		altsrc.NewBoolFlag(&cli.BoolFlag{
+			Name:   "mqtt-connect-retry",
+			Usage:  "Enable automatic reconnection logic when the client initially connects",
+			Value:  false,
+			Hidden: true,
+		}),
+		altsrc.NewDurationFlag(&cli.DurationFlag{
+			Name:   "mqtt-connect-retry-interval",
+			Usage:  "Sets the time to wait between connection attempts to `DURATION`",
+			Value:  30 * time.Second,
+			Hidden: true,
+		}),
+		altsrc.NewBoolFlag(&cli.BoolFlag{
+			Name:   "mqtt-auto-reconnect",
+			Usage:  "Enable automatic reconnection when the client disconnects",
+			Value:  false,
+			Hidden: true,
+		}),
 	}
 
 	// This BeforeFunc will load flag values from a config file only if the
@@ -224,6 +242,9 @@ func main() {
 		mqttClientOpts.SetClientID(ClientID)
 		mqttClientOpts.SetTLSConfig(tlsConfig)
 		mqttClientOpts.SetCleanSession(true)
+		mqttClientOpts.SetAutoReconnect(c.Bool("mqtt-auto-reconnect"))
+		mqttClientOpts.SetConnectRetry(c.Bool("mqtt-connect-retry"))
+		mqttClientOpts.SetConnectRetryInterval(c.Duration("mqtt-connect-retry-interval"))
 		mqttClientOpts.SetOnConnectHandler(func(client mqtt.Client) {
 			opts := client.OptionsReader()
 			for _, url := range opts.Servers() {
