@@ -8,6 +8,8 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/google/uuid"
+
 	"git.sr.ht/~spc/go-log"
 
 	"github.com/redhatinsights/yggdrasil/ipc"
@@ -38,7 +40,18 @@ func echo(
 		time.Sleep(sleepTime)
 	}
 
-	responseCode, responseMetadata, responseData, err := w.Transmit(addr, id, responseTo, metadata, data)
+	// Set "response_to" according to the rcvId of the message we received
+	echoResponseTo := rcvId
+	// Create new echoId for the message we are going to send
+	echoId := uuid.New().String()
+
+	responseCode, responseMetadata, responseData, err := w.Transmit(
+		addr,
+		echoId,
+		echoResponseTo,
+		metadata,
+		data,
+	)
 	if err != nil {
 		return fmt.Errorf("cannot call Transmit: %w", err)
 	}
