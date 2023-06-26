@@ -274,35 +274,47 @@ func (d *Dispatcher) Transmit(sender dbus.Sender, addr string, messageID string,
 			if err != nil {
 				return TransmitResponseErr, nil, nil, NewDBusError("Transmit", fmt.Sprintf("cannot read HTTP response body: %v", err))
 			}
-			resp.Body.Close()
+
+			err = resp.Body.Close()
+			if err != nil {
+				return TransmitResponseErr, nil, nil, NewDBusError("Transmit", fmt.Sprintf("cannot close HTTP response body: %v", err))
+			}
+			responseCode = resp.StatusCode
+			responseMetadata = make(map[string]string)
+			for header := range resp.Header {
+				responseMetadata[header] = resp.Header.Get(header)
+			}
+			responseData = data
+		} else {
+			return TransmitResponseErr, nil, nil, NewDBusError("Transmit", fmt.Sprintf("URL: '%v' has no scheme", addr))
 		}
-	}
+	} else {
+		ch := make(chan yggdrasil.Response)
+		d.Outbound <- struct {
+			Data yggdrasil.Data
+			Resp chan yggdrasil.Response
+		}{
+			Data: yggdrasil.Data{
+				Type:       yggdrasil.MessageTypeData,
+				MessageID:  messageID,
+				ResponseTo: responseTo,
+				Version:    1,
+				Sent:       time.Now(),
+				Directive:  addr,
+				Metadata:   metadata,
+				Content:    data,
+			},
+			Resp: ch,
+		}
 
-	ch := make(chan yggdrasil.Response)
-	d.Outbound <- struct {
-		Data yggdrasil.Data
-		Resp chan yggdrasil.Response
-	}{
-		Data: yggdrasil.Data{
-			Type:       yggdrasil.MessageTypeData,
-			MessageID:  messageID,
-			ResponseTo: responseTo,
-			Version:    1,
-			Sent:       time.Now(),
-			Directive:  addr,
-			Metadata:   metadata,
-			Content:    data,
-		},
-		Resp: ch,
-	}
-
-	select {
-	case resp := <-ch:
-		responseCode = resp.Code
-		responseMetadata = resp.Metadata
-		responseData = resp.Data
-	case <-time.After(1 * time.Second):
-		return TransmitResponseErr, nil, nil, NewDBusError("com.redhat.Yggdrasil1.Dispatcher1.Transmit", "timeout reached waiting for response")
+		select {
+		case resp := <-ch:
+			responseCode = resp.Code
+			responseMetadata = resp.Metadata
+			responseData = resp.Data
+		case <-time.After(1 * time.Second):
+			return TransmitResponseErr, nil, nil, NewDBusError("com.redhat.Yggdrasil1.Dispatcher1.Transmit", "timeout reached waiting for response")
+		}
 	}
 	return
 }
