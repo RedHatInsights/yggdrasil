@@ -12,18 +12,21 @@ import (
 )
 
 const (
-	FlagNameLogLevel       = "log-level"
-	FlagNameCertFile       = "cert-file"
-	FlagNameKeyFile        = "key-file"
-	FlagNameCaRoot         = "ca-root"
-	FlagNameServer         = "server"
-	FlagNameClientID       = "client-id"
-	FlagNamePathPrefix     = "path-prefix"
-	FlagNameProtocol       = "protocol"
-	FlagNameDataHost       = "data-host"
-	FlagNameCanonicalFacts = "canonical-facts"
-	FlagNameHTTPRetries    = "http-retries"
-	FlagNameHTTPTimeout    = "http-timeout"
+	FlagNameLogLevel                 = "log-level"
+	FlagNameCertFile                 = "cert-file"
+	FlagNameKeyFile                  = "key-file"
+	FlagNameCaRoot                   = "ca-root"
+	FlagNameServer                   = "server"
+	FlagNameClientID                 = "client-id"
+	FlagNamePathPrefix               = "path-prefix"
+	FlagNameProtocol                 = "protocol"
+	FlagNameDataHost                 = "data-host"
+	FlagNameCanonicalFacts           = "canonical-facts"
+	FlagNameHTTPRetries              = "http-retries"
+	FlagNameHTTPTimeout              = "http-timeout"
+	FlagNameMQTTConnectRetry         = "mqtt-connect-retry"
+	FlagNameMQTTConnectRetryInterval = "mqtt-connect-retry-interval"
+	FlagNameMQTTAutoReconnect        = "mqtt-auto-reconnect"
 )
 
 var DefaultConfig = Config{
@@ -76,6 +79,18 @@ type Config struct {
 	// HTTPTimeout is the duration the client will wait before cancelling an
 	// HTTP request.
 	HTTPTimeout time.Duration
+
+	// MQTTConnectRetry is the MQTT client option to enable connection retry
+	// logic when performing the initial connection.
+	MQTTConnectRetry bool
+
+	// MQTTConnectRetryInterval is the MQTT client option that specifies the
+	// duration to wait between connection retry attempts.
+	MQTTConnectRetryInterval time.Duration
+
+	// MQTTAutoReconnect is the MQTT client option that enables automatic
+	// reconnection logic when the client unexpectedly disconnects.
+	MQTTAutoReconnect bool
 }
 
 func (conf *Config) CreateTLSConfig() (*tls.Config, error) {
