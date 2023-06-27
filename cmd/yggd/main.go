@@ -109,6 +109,24 @@ func main() {
 			Usage:  "Wait for `DURATION` before cancelling an HTTP request",
 			Hidden: true,
 		}),
+		altsrc.NewBoolFlag(&cli.BoolFlag{
+			Name:   config.FlagNameMQTTConnectRetry,
+			Usage:  "Enable automatic reconnection logic when the client initially connects",
+			Value:  false,
+			Hidden: true,
+		}),
+		altsrc.NewDurationFlag(&cli.DurationFlag{
+			Name:   config.FlagNameMQTTConnectRetryInterval,
+			Usage:  "Sets the time to wait between connection attempts to `DURATION`",
+			Value:  30 * time.Second,
+			Hidden: true,
+		}),
+		altsrc.NewBoolFlag(&cli.BoolFlag{
+			Name:   config.FlagNameMQTTAutoReconnect,
+			Usage:  "Enable automatic reconnection when the client disconnects",
+			Value:  true,
+			Hidden: true,
+		}),
 	}
 
 	// This BeforeFunc will load flag values from a config file only if the

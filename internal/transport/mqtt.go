@@ -43,6 +43,9 @@ func NewMQTTTransport(clientID string, brokers []string, tlsConfig *tls.Config) 
 	opts.SetClientID(clientID)
 	opts.SetTLSConfig(tlsConfig.Clone())
 	opts.SetCleanSession(true)
+	opts.SetConnectRetry(config.DefaultConfig.MQTTConnectRetry)
+	opts.SetConnectRetryInterval(config.DefaultConfig.MQTTConnectRetryInterval)
+	opts.SetAutoReconnect(config.DefaultConfig.MQTTAutoReconnect)
 	opts.SetOnConnectHandler(func(c mqtt.Client) {
 		t.events <- TransporterEventConnected
 
