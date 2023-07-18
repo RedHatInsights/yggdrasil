@@ -281,6 +281,11 @@ echo -n "hello" | yggctl dispatch -w "echo" -
   exclusively.
 * Code can exist in a package if it provides an alternative interface to
   another package, and the two packages cannot be imported together.
+* Code should be formatted using `gofmt` and `goimports` before committing. As
+  the saying goes ["gofmt's style is no one's favorite, yet gofmt is everyone's
+  favorite."](https://www.youtube.com/watch?v=PAAkCSZUG1c&t=8m43s).
+* Code may optionally be formatted using
+  [`golines`](https://github.com/segmentio/golines), to wrap long lines.
 
 ## Required Reading
 
