@@ -57,5 +57,5 @@ type WorkerEvent struct {
 	Worker    string
 	Name      WorkerEventName
 	MessageID string
-	Message   string
+	Data      map[string]string
 }

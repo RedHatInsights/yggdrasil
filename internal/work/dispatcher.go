@@ -396,11 +396,11 @@ func workerEventFromSignal(s *dbus.Signal) (*ipc.WorkerEvent, error) {
 			}
 			event.MessageID = messageID
 		case 2:
-			message, ok := v.(string)
+			data, ok := v.(map[string]string)
 			if !ok {
-				return nil, newStringTypeConversionError(v)
+				return nil, newStringMapTypeConversionError(v)
 			}
-			event.Message = message
+			event.Data = data
 		}
 	}
 
