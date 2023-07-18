@@ -30,7 +30,11 @@ func echo(
 	metadata map[string]string,
 	data []byte,
 ) error {
-	if err := w.EmitEvent(ipc.WorkerEventNameWorking, rcvId, fmt.Sprintf("echoing %v", data)); err != nil {
+	if err := w.EmitEvent(
+		ipc.WorkerEventNameWorking,
+		rcvId,
+		map[string]string{"message": fmt.Sprintf("echoing %v", data)},
+	); err != nil {
 		return fmt.Errorf("cannot call EmitEvent: %w", err)
 	}
 

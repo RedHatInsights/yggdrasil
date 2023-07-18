@@ -182,7 +182,7 @@ func (c *Client) Connect() error {
 			args := []interface{}{e.Worker, e.Name, e.MessageID}
 			switch e.Name {
 			case ipc.WorkerEventNameWorking:
-				args = append(args, e.Message)
+				args = append(args, e.Data)
 			}
 			if err := c.conn.Emit("/com/redhat/Yggdrasil1", "com.redhat.Yggdrasil1.WorkerEvent", args...); err != nil {
 				log.Errorf("cannot emit event: %v", err)

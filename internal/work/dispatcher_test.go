@@ -52,13 +52,13 @@ func TestWorkerEventFromSignal(t *testing.T) {
 				Body: []interface{}{
 					uint32(3),
 					"6925055f-167a-45cc-9869-1789ee37883f",
-					"working message",
+					map[string]string{"message": "working message"},
 				},
 			},
 			want: &ipc.WorkerEvent{
 				Name:      ipc.WorkerEventNameWorking,
 				MessageID: "6925055f-167a-45cc-9869-1789ee37883f",
-				Message:   "working message",
+				Data:      map[string]string{"message": "working message"},
 			},
 		},
 		{
@@ -83,7 +83,7 @@ func TestWorkerEventFromSignal(t *testing.T) {
 				Body: []interface{}{uint32(3), "6925055f-167a-45cc-9869-1789ee37883f", 3},
 			},
 			want:      nil,
-			wantError: newStringTypeConversionError(3),
+			wantError: newStringMapTypeConversionError(3),
 		},
 	}
 

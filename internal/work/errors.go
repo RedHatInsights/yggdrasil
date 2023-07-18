@@ -26,3 +26,10 @@ func newStringTypeConversionError(parameter interface{}) typeConversionError {
 		t: reflect.TypeOf(""),
 	}
 }
+
+func newStringMapTypeConversionError(parameter interface{}) typeConversionError {
+	return typeConversionError{
+		p: reflect.ValueOf(parameter),
+		t: reflect.TypeOf(map[string]string{}),
+	}
+}
