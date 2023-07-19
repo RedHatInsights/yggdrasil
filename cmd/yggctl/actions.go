@@ -43,14 +43,7 @@ func generateControlMessageAction(c *cli.Context) error {
 }
 
 func workersAction(c *cli.Context) error {
-	var conn *dbus.Conn
-	var err error
-
-	if os.Getenv("DBUS_SESSION_BUS_ADDRESS") != "" {
-		conn, err = dbus.ConnectSessionBus()
-	} else {
-		conn, err = dbus.ConnectSystemBus()
-	}
+	conn, err := connectBus()
 	if err != nil {
 		return cli.Exit(fmt.Errorf("cannot connect to bus: %w", err), 1)
 	}
@@ -91,14 +84,7 @@ func workersAction(c *cli.Context) error {
 }
 
 func dispatchAction(c *cli.Context) error {
-	var conn *dbus.Conn
-	var err error
-
-	if os.Getenv("DBUS_SESSION_BUS_ADDRESS") != "" {
-		conn, err = dbus.ConnectSessionBus()
-	} else {
-		conn, err = dbus.ConnectSystemBus()
-	}
+	conn, err := connectBus()
 	if err != nil {
 		return cli.Exit(fmt.Errorf("cannot connect to bus: %w", err), 1)
 	}
@@ -136,14 +122,7 @@ func dispatchAction(c *cli.Context) error {
 }
 
 func listenAction(ctx *cli.Context) error {
-	var conn *dbus.Conn
-	var err error
-
-	if os.Getenv("DBUS_SESSION_BUS_ADDRESS") != "" {
-		conn, err = dbus.ConnectSessionBus()
-	} else {
-		conn, err = dbus.ConnectSystemBus()
-	}
+	conn, err := connectBus()
 	if err != nil {
 		return cli.Exit(fmt.Errorf("cannot connect to bus: %w", err), 1)
 	}
@@ -208,4 +187,24 @@ func generateMessage(messageType, responseTo, directive, content string, metadat
 	default:
 		return nil, fmt.Errorf("unsupported message type: %v", messageType)
 	}
+}
+
+func connectBus() (*dbus.Conn, error) {
+	var connect func(...dbus.ConnOption) (*dbus.Conn, error)
+	var conn *dbus.Conn
+	var err error
+	var errMsg string
+	if os.Getenv("DBUS_SESSION_BUS_ADDRESS") != "" && os.Geteuid() > 0 {
+		connect = dbus.ConnectSessionBus
+		errMsg = "cannot connect to session bus (" + os.Getenv("DBUS_SESSION_BUS_ADDRESS") + "): %w"
+	} else {
+		connect = dbus.ConnectSystemBus
+		errMsg = "cannot connect to system bus: %w"
+	}
+
+	conn, err = connect()
+	if err != nil {
+		return nil, fmt.Errorf(errMsg, err)
+	}
+	return conn, nil
 }
