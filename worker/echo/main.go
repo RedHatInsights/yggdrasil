@@ -18,9 +18,17 @@ var sleepTime time.Duration
 
 // echo opens a new dbus connection and calls the
 // com.redhat.Yggdrasil1.Dispatcher1.Transmit method, returning the
-// metadata, data, and the message id it received.
-func echo(w *worker.Worker, addr string, id string, responseTo string, metadata map[string]string, data []byte) error {
-	if err := w.EmitEvent(ipc.WorkerEventNameWorking, id, fmt.Sprintf("echoing %v", data)); err != nil {
+// metadata and data. New ID is generated for the message, and
+// response_to is set to the ID of the message we received.
+func echo(
+	w *worker.Worker,
+	addr string,
+	rcvId string,
+	responseTo string,
+	metadata map[string]string,
+	data []byte,
+) error {
+	if err := w.EmitEvent(ipc.WorkerEventNameWorking, rcvId, fmt.Sprintf("echoing %v", data)); err != nil {
 		return fmt.Errorf("cannot call EmitEvent: %w", err)
 	}
 
@@ -71,7 +79,13 @@ func main() {
 	}
 	log.SetLevel(level)
 
-	w, err := worker.NewWorker("echo", remoteContent, map[string]string{"DispatchedAt": "", "Version": "1"}, echo, events)
+	w, err := worker.NewWorker(
+		"echo",
+		remoteContent,
+		map[string]string{"DispatchedAt": "", "Version": "1"},
+		echo,
+		events,
+	)
 	if err != nil {
 		log.Fatalf("error: cannot create worker: %v", err)
 	}
