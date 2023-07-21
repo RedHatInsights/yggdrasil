@@ -140,6 +140,16 @@ func setupClient(
 		if err != nil {
 			return nil, nil, cli.Exit(fmt.Errorf("cannot create HTTP transport: %w", err), 1)
 		}
+	case "none":
+		var err error
+		transporter, err = transport.NewNoopTransport()
+		if err != nil {
+			return nil, nil, cli.Exit(fmt.Errorf("cannot create no-op transport: %w", err), 1)
+		}
+		log.Info("no network protocol specified - no data will be sent or received over the network")
+		for _, server := range config.DefaultConfig.Server {
+			log.Warnf("no network protocol specified - ignoring server option '%v'", server)
+		}
 	default:
 		return nil, nil, cli.Exit(
 			fmt.Errorf("unsupported transport protocol: %v", config.DefaultConfig.Protocol),
@@ -436,7 +446,7 @@ func main() {
 		}),
 		altsrc.NewStringFlag(&cli.StringFlag{
 			Name:  config.FlagNameProtocol,
-			Usage: "Transmit data remotely using `PROTOCOL` ('mqtt' or 'http')",
+			Usage: "Transmit data remotely using `PROTOCOL` ('mqtt', 'http' or 'none')",
 			Value: "mqtt",
 		}),
 		altsrc.NewStringSliceFlag(&cli.StringSliceFlag{
