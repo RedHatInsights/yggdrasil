@@ -10,6 +10,7 @@ NotifyAccess=main
 WatchdogSec=300
 Environment=DBUS_SESSION_BUS_ADDRESS=unix:abstract=yggd_%i
 ExecStart=@bindir@/yggd --config @configdir@/yggdrasil-%i.toml
+PrivateTmp=true
 
 [Install]
 WantedBy=multi-user.target
