@@ -128,33 +128,14 @@ func (d *Dispatcher) Connect() error {
 					d.Dispatchers <- d.FlattenDispatchers()
 				}
 			case "com.redhat.Yggdrasil1.Worker1.Event":
-				var event ipc.WorkerEvent
-				eventName, ok := s.Body[0].(uint32)
-				if !ok {
-					log.Errorf("cannot convert %T to uint32", s.Body[0])
+				event, err := workerEventFromSignal(s)
+				if err != nil {
+					log.Errorf("cannot unpack signal: %v", err)
 					continue
 				}
-				event.Name = ipc.WorkerEventName(eventName)
 				event.Worker = strings.TrimPrefix(dest, "com.redhat.Yggdrasil1.Worker1.")
 
-				eventMessageID, ok := s.Body[1].(string)
-				if !ok {
-					log.Errorf("cannot convert %T to string", s.Body[1])
-					continue
-				}
-				event.MessageID = eventMessageID
-
-				switch ipc.WorkerEventName(eventName) {
-				case ipc.WorkerEventNameWorking:
-					eventMessage, ok := s.Body[2].(string)
-					if !ok {
-						log.Errorf("cannot convert %T to string", s.Body[2])
-						continue
-					}
-					event.Message = eventMessage
-				}
-
-				d.WorkerEvents <- event
+				d.WorkerEvents <- *event
 			}
 		}
 	}()
@@ -339,4 +320,34 @@ func (d *Dispatcher) senderName(sender dbus.Sender) (string, error) {
 	}
 
 	return "", fmt.Errorf("cannot get name for sender: %v", sender)
+}
+
+// workerEventFromSignal creates an ipc.WorkerEvent from a DBus signal.
+func workerEventFromSignal(s *dbus.Signal) (*ipc.WorkerEvent, error) {
+	event := ipc.WorkerEvent{}
+
+	for i, v := range s.Body {
+		switch i {
+		case 0:
+			name, ok := v.(uint32)
+			if !ok {
+				return nil, newUint32TypeConversionError(v)
+			}
+			event.Name = ipc.WorkerEventName(name)
+		case 1:
+			messageID, ok := v.(string)
+			if !ok {
+				return nil, newStringTypeConversionError(v)
+			}
+			event.MessageID = messageID
+		case 2:
+			message, ok := v.(string)
+			if !ok {
+				return nil, newStringTypeConversionError(v)
+			}
+			event.Message = message
+		}
+	}
+
+	return &event, nil
 }
