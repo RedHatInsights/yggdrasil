@@ -10,6 +10,7 @@ BusName=com.redhat.Yggdrasil1
 NotifyAccess=main
 WatchdogSec=300
 ExecStart=@bindir@/yggd
+PrivateTmp=true
 
 [Install]
 WantedBy=multi-user.target
