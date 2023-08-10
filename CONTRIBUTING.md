@@ -65,8 +65,9 @@ Publish a "PING" command to the `yggd` "control/in" topic to test sending
 an MQTT message to `yggd`.
 
 ```
-go run ./cmd/yggctl generate control-message --type command '{"command":"ping"}' | \
-    pub -broker tcp://localhost:1883 -topic yggdrasil/$(hostname)/control/in
+echo '{"command":"ping"}' | \
+go run ./cmd/yggctl generate control-message --type command - | \
+pub -broker tcp://localhost:1883 -topic yggdrasil/$(hostname)/control/in
 ```
 
 You should see the message logged to the output of `sub` in [Terminal
@@ -78,8 +79,9 @@ You should see the message logged to the output of `sub` in [Terminal
 Now publish a data message containing the string "hello" to the `echo` worker.
 
 ```
-go run ./cmd/yggctl generate data-message --directive echo "hello" | \
-    pub -broker tcp://localhost:1883 -topic yggdrasil/$(hostname)/data/in
+echo "hello" | \
+go run ./cmd/yggctl generate data-message --directive echo - | \
+pub -broker tcp://localhost:1883 -topic yggdrasil/$(hostname)/data/in
 ```
 
 Again, you should see the message logged by the `sub` command in [Terminal
@@ -234,12 +236,13 @@ sub -broker tcp://localhost:1883 -topic yggdrasil/$(hostname)/data/in \
 
 ### Over MQTT
 
-A client can be sent a `PING` command by generated a control message and
+A client can be sent a `PING` command by generating a control message and
 publishing it to the client's "control/in" topic:
 
 ```
-yggctl generate control-message --type command '{"command":"ping"}' | \
-    pub -broker tcp://localhost:1883 -topic yggdrasil/$(hostname)/control/in
+echo '{"command":"ping"}' | \
+yggctl generate control-message --type command - | \
+pub -broker tcp://localhost:1883 -topic yggdrasil/$(hostname)/control/in
 ```
 
 Activity should occur on the terminal attached to `yggd`, and a `PONG` event
@@ -250,8 +253,9 @@ Similarly, a data message can be published to a client using `yggctl generate`
 and `pub`.
 
 ```
-yggctl generate data-message --directive echo hello | \
-    pub -broker tcp://localhost:1883 -topic yggdrasil/$(hostname)/data/in
+echo "hello" | \
+yggctl generate data-message --directive echo - | \
+pub -broker tcp://localhost:1883 -topic yggdrasil/$(hostname)/data/in
 ```
 
 ### Directly

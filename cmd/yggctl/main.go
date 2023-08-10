@@ -30,12 +30,16 @@ func main() {
 	app.Commands = []*cli.Command{
 		{
 			Name:   "generate",
-			Usage:  `Generate messages for publishing to client "in" topics.`,
+			Usage:  `Generate messages for publishing to client "in" topics`,
 			Hidden: true,
 			Subcommands: []*cli.Command{
 				{
-					Name:    "data-message",
-					Usage:   "Generate a data message.",
+					Name:      "data-message",
+					Usage:     "Generate a data message",
+					UsageText: "yggctl generate data-message [command options] FILE",
+					Description: `The generate data-message command reads FILE and prints a JSON object conforming
+to yggdrasil's JSON schema for 'data' messages. If FILE is -, content is read
+from stdin.`,
 					Aliases: []string{"data"},
 					Flags: []cli.Flag{
 						&cli.IntFlag{
@@ -65,8 +69,12 @@ func main() {
 					Action: generateDataMessageAction,
 				},
 				{
-					Name:    "control-message",
-					Usage:   "Generate a control message.",
+					Name:      "control-message",
+					Usage:     "Generate a control message",
+					UsageText: "yggctl generate control-message [command options] FILE",
+					Description: `The generate control-message command reads FILE and prints a JSON object conforming
+to yggdrasil's JSON schema for 'control' messages. If FILE is -, content is read
+from stdin.`,
 					Aliases: []string{"control"},
 					Flags: []cli.Flag{
 						&cli.IntFlag{
