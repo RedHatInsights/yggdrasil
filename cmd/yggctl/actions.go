@@ -15,13 +15,36 @@ import (
 	"github.com/urfave/cli/v2"
 )
 
-func generateDataMessageAction(c *cli.Context) error {
+func generateDataMessageAction(ctx *cli.Context) error {
 	var metadata map[string]string
-	if err := json.Unmarshal([]byte(c.String("metadata")), &metadata); err != nil {
+	if err := json.Unmarshal([]byte(ctx.String("metadata")), &metadata); err != nil {
 		return cli.Exit(fmt.Errorf("cannot unmarshal metadata: %w", err), 1)
 	}
 
-	data, err := generateMessage("data", c.String("response-to"), c.String("directive"), c.Args().First(), metadata, c.Int("version"))
+	var err error
+	var content []byte
+	var reader io.Reader
+	if ctx.Args().First() == "-" {
+		reader = os.Stdin
+	} else {
+		reader, err = os.Open(ctx.Args().First())
+	}
+	if err != nil {
+		return cli.Exit(fmt.Errorf("cannot open file for reading: %w", err), 1)
+	}
+	content, err = io.ReadAll(reader)
+	if err != nil {
+		return cli.Exit(fmt.Errorf("cannot read data: %w", err), 1)
+	}
+
+	data, err := generateMessage(
+		"data",
+		ctx.String("response-to"),
+		ctx.String("directive"),
+		content,
+		metadata,
+		ctx.Int("version"),
+	)
 	if err != nil {
 		return cli.Exit(fmt.Errorf("cannot marshal message: %w", err), 1)
 	}
@@ -31,8 +54,30 @@ func generateDataMessageAction(c *cli.Context) error {
 	return nil
 }
 
-func generateControlMessageAction(c *cli.Context) error {
-	data, err := generateMessage(c.String("type"), c.String("response-to"), "", c.Args().First(), nil, c.Int("version"))
+func generateControlMessageAction(ctx *cli.Context) error {
+	var err error
+	var content []byte
+	var reader io.Reader
+	if ctx.Args().First() == "-" {
+		reader = os.Stdin
+	} else {
+		reader, err = os.Open(ctx.Args().First())
+	}
+	if err != nil {
+		return cli.Exit(fmt.Errorf("cannot open file for reading: %w", err), 1)
+	}
+	content, err = io.ReadAll(reader)
+	if err != nil {
+		return cli.Exit(fmt.Errorf("cannot read data: %w", err), 1)
+	}
+	data, err := generateMessage(
+		ctx.String("type"),
+		ctx.String("response-to"),
+		"",
+		content,
+		nil,
+		ctx.Int("version"),
+	)
 	if err != nil {
 		return cli.Exit(fmt.Errorf("cannot marshal message: %w", err), 1)
 	}
@@ -162,10 +207,24 @@ func listenAction(ctx *cli.Context) error {
 	return nil
 }
 
-func generateMessage(messageType, responseTo, directive, content string, metadata map[string]string, version int) ([]byte, error) {
+func generateMessage(
+	messageType string,
+	responseTo string,
+	directive string,
+	content []byte,
+	metadata map[string]string,
+	version int,
+) ([]byte, error) {
 	switch messageType {
 	case "data":
-		msg, err := generateDataMessage(yggdrasil.MessageType(messageType), responseTo, directive, []byte(content), metadata, version)
+		msg, err := generateDataMessage(
+			yggdrasil.MessageType(messageType),
+			responseTo,
+			directive,
+			content,
+			metadata,
+			version,
+		)
 		if err != nil {
 			return nil, err
 		}
@@ -175,7 +234,12 @@ func generateMessage(messageType, responseTo, directive, content string, metadat
 		}
 		return data, nil
 	case "command":
-		msg, err := generateControlMessage(yggdrasil.MessageType(messageType), responseTo, version, []byte(content))
+		msg, err := generateControlMessage(
+			yggdrasil.MessageType(messageType),
+			responseTo,
+			version,
+			content,
+		)
 		if err != nil {
 			return nil, err
 		}
