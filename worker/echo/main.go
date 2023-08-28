@@ -34,6 +34,7 @@ func echo(
 	if err := w.EmitEvent(
 		ipc.WorkerEventNameWorking,
 		rcvId,
+		responseTo,
 		map[string]string{"message": fmt.Sprintf("echoing %v", data)},
 	); err != nil {
 		return fmt.Errorf("cannot call EmitEvent: %w", err)

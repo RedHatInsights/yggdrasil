@@ -180,11 +180,13 @@ func (w *Worker) Transmit(
 func (w *Worker) EmitEvent(
 	event ipc.WorkerEventName,
 	messageID string,
+	responseTo string,
 	data map[string]string,
 ) error {
 	args := []interface{}{
 		event,
 		messageID,
+		responseTo,
 		data,
 	}
 	log.Debugf("emitting event %v", event)
@@ -210,7 +212,7 @@ func (w *Worker) dispatch(
 	log.Tracef("metadata = %#v", metadata)
 	log.Tracef("data = %v", data)
 
-	if err := w.EmitEvent(ipc.WorkerEventNameBegin, id, map[string]string{}); err != nil {
+	if err := w.EmitEvent(ipc.WorkerEventNameBegin, id, responseTo, map[string]string{}); err != nil {
 		return dbus.NewError("com.redhat.Yggdrasil1.Worker1.EventError", []interface{}{err.Error()})
 	}
 
@@ -218,7 +220,7 @@ func (w *Worker) dispatch(
 		if err := w.rx(w, addr, id, responseTo, metadata, data); err != nil {
 			log.Errorf("cannot call rx: %v", err)
 		}
-		if err := w.EmitEvent(ipc.WorkerEventNameEnd, id, map[string]string{}); err != nil {
+		if err := w.EmitEvent(ipc.WorkerEventNameEnd, id, responseTo, map[string]string{}); err != nil {
 			log.Errorf("cannot emit event: %v", err)
 		}
 	}()

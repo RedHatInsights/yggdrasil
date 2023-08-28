@@ -19,31 +19,31 @@ func TestWorkerEventFromSignal(t *testing.T) {
 		{
 			input: &dbus.Signal{
 				Name: "com.redhat.Yggdrasil1.Worker1.Event",
-				Body: []interface{}{uint32(1), "6925055f-167a-45cc-9869-1789ee37883f"},
+				Body: []interface{}{
+					uint32(1),
+					"6925055f-167a-45cc-9869-1789ee37883f",
+					"123456f-167a-45cc-9869-1789ee37883f",
+				},
 			},
 			want: &ipc.WorkerEvent{
-				Name:      ipc.WorkerEventNameBegin,
-				MessageID: "6925055f-167a-45cc-9869-1789ee37883f",
+				Name:       ipc.WorkerEventNameBegin,
+				MessageID:  "6925055f-167a-45cc-9869-1789ee37883f",
+				ResponseTo: "123456f-167a-45cc-9869-1789ee37883f",
 			},
 		},
 		{
 			input: &dbus.Signal{
 				Name: "com.redhat.Yggdrasil1.Worker1.Event",
-				Body: []interface{}{uint32(2), "6925055f-167a-45cc-9869-1789ee37883f"},
+				Body: []interface{}{
+					uint32(2),
+					"6925055f-167a-45cc-9869-1789ee37883f",
+					"123456f-167a-45cc-9869-1789ee37883f",
+				},
 			},
 			want: &ipc.WorkerEvent{
-				Name:      ipc.WorkerEventNameEnd,
-				MessageID: "6925055f-167a-45cc-9869-1789ee37883f",
-			},
-		},
-		{
-			input: &dbus.Signal{
-				Name: "com.redhat.Yggdrasil1.Worker1.Event",
-				Body: []interface{}{uint32(3), "6925055f-167a-45cc-9869-1789ee37883f"},
-			},
-			want: &ipc.WorkerEvent{
-				Name:      ipc.WorkerEventNameWorking,
-				MessageID: "6925055f-167a-45cc-9869-1789ee37883f",
+				Name:       ipc.WorkerEventNameEnd,
+				MessageID:  "6925055f-167a-45cc-9869-1789ee37883f",
+				ResponseTo: "123456f-167a-45cc-9869-1789ee37883f",
 			},
 		},
 		{
@@ -52,13 +52,30 @@ func TestWorkerEventFromSignal(t *testing.T) {
 				Body: []interface{}{
 					uint32(3),
 					"6925055f-167a-45cc-9869-1789ee37883f",
+					"123456f-167a-45cc-9869-1789ee37883f",
+				},
+			},
+			want: &ipc.WorkerEvent{
+				Name:       ipc.WorkerEventNameWorking,
+				MessageID:  "6925055f-167a-45cc-9869-1789ee37883f",
+				ResponseTo: "123456f-167a-45cc-9869-1789ee37883f",
+			},
+		},
+		{
+			input: &dbus.Signal{
+				Name: "com.redhat.Yggdrasil1.Worker1.Event",
+				Body: []interface{}{
+					uint32(3),
+					"6925055f-167a-45cc-9869-1789ee37883f",
+					"123456f-167a-45cc-9869-1789ee37883f",
 					map[string]string{"message": "working message"},
 				},
 			},
 			want: &ipc.WorkerEvent{
-				Name:      ipc.WorkerEventNameWorking,
-				MessageID: "6925055f-167a-45cc-9869-1789ee37883f",
-				Data:      map[string]string{"message": "working message"},
+				Name:       ipc.WorkerEventNameWorking,
+				MessageID:  "6925055f-167a-45cc-9869-1789ee37883f",
+				ResponseTo: "123456f-167a-45cc-9869-1789ee37883f",
+				Data:       map[string]string{"message": "working message"},
 			},
 		},
 		{
@@ -80,7 +97,20 @@ func TestWorkerEventFromSignal(t *testing.T) {
 		{
 			input: &dbus.Signal{
 				Name: "com.redhat.Yggdrasil1.Worker1.Event",
-				Body: []interface{}{uint32(3), "6925055f-167a-45cc-9869-1789ee37883f", 3},
+				Body: []interface{}{uint32(1), "6925055f-167a-45cc-9869-1789ee37883f", 3},
+			},
+			want:      nil,
+			wantError: newStringTypeConversionError(3),
+		},
+		{
+			input: &dbus.Signal{
+				Name: "com.redhat.Yggdrasil1.Worker1.Event",
+				Body: []interface{}{
+					uint32(3),
+					"6925055f-167a-45cc-9869-1789ee37883f",
+					"6925055f-167a-45cc-9869-1789ee37883f",
+					3,
+				},
 			},
 			want:      nil,
 			wantError: newStringMapTypeConversionError(3),

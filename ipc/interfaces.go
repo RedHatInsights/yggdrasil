@@ -54,8 +54,9 @@ func (e WorkerEventName) String() string {
 }
 
 type WorkerEvent struct {
-	Worker    string
-	Name      WorkerEventName
-	MessageID string
-	Data      map[string]string
+	Worker     string
+	Name       WorkerEventName
+	MessageID  string
+	ResponseTo string
+	Data       map[string]string
 }
