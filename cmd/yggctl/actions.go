@@ -193,15 +193,25 @@ func listenAction(ctx *cli.Context) error {
 			if !ok {
 				return cli.Exit(fmt.Errorf("cannot cast %T as string", s.Body[2]), 1)
 			}
-			var data map[string]string
+			data := map[string]string{}
 			if len(s.Body) > 3 {
 				data, ok = s.Body[3].(map[string]string)
 				if !ok {
 					return cli.Exit(fmt.Errorf("cannot cast %T as map[string]string", s.Body[3]), 1)
 				}
 			}
-			log.Printf("%v: %v: %v: %v", worker, messageID, ipc.WorkerEventName(name), data)
+			parsedData, err := json.Marshal(data)
+			if err != nil {
+				return cli.Exit(fmt.Errorf("unable to parse optional data: %v", data), 1)
+			}
 
+			log.Printf(
+				"%v: %v: %v: %v",
+				worker,
+				messageID,
+				ipc.WorkerEventName(name),
+				string(parsedData),
+			)
 		}
 	}
 	return nil
