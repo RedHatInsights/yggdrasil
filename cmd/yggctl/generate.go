@@ -9,7 +9,14 @@ import (
 	"github.com/redhatinsights/yggdrasil"
 )
 
-func generateDataMessage(messageType yggdrasil.MessageType, responseTo string, directive string, content []byte, metadata map[string]string, version int) (*yggdrasil.Data, error) {
+func generateDataMessage(
+	messageType yggdrasil.MessageType,
+	responseTo string,
+	directive string,
+	content []byte,
+	metadata map[string]string,
+	version int,
+) (*yggdrasil.Data, error) {
 	msg := yggdrasil.Data{
 		Type:       messageType,
 		MessageID:  uuid.New().String(),
@@ -26,7 +33,12 @@ func generateDataMessage(messageType yggdrasil.MessageType, responseTo string, d
 
 // generateControlMessage creates a control message of the appropriate type by
 // switching on the value of messageType.
-func generateControlMessage(messageType yggdrasil.MessageType, responseTo string, version int, content []byte) (*yggdrasil.Control, error) {
+func generateControlMessage(
+	messageType yggdrasil.MessageType,
+	responseTo string,
+	version int,
+	content []byte,
+) (*yggdrasil.Control, error) {
 	switch messageType {
 	case yggdrasil.MessageTypeCommand:
 		ctrl := yggdrasil.Control{
@@ -73,7 +85,12 @@ func generateCommandContent(content []byte) (*yggdrasil.Command, error) {
 	return &command, nil
 }
 
-func generateEventMessage(messageType yggdrasil.MessageType, responseTo string, version int, content []byte) (*yggdrasil.Event, error) {
+func generateEventMessage(
+	messageType yggdrasil.MessageType,
+	responseTo string,
+	version int,
+	content []byte,
+) (*yggdrasil.Event, error) {
 	msg := yggdrasil.Event{
 		Type:       messageType,
 		MessageID:  uuid.New().String(),

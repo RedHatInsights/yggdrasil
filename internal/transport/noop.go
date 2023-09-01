@@ -16,7 +16,11 @@ func (t *Noop) Connect() error {
 
 func (t *Noop) Disconnect(quiesce uint) {}
 
-func (t *Noop) Tx(addr string, metadata map[string]string, data []byte) (responseCode int, responseMetadata map[string]string, responseData []byte, err error) {
+func (t *Noop) Tx(
+	addr string,
+	metadata map[string]string,
+	data []byte,
+) (responseCode int, responseMetadata map[string]string, responseData []byte, err error) {
 	return
 }
 

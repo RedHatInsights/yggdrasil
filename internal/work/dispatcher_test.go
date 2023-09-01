@@ -49,7 +49,11 @@ func TestWorkerEventFromSignal(t *testing.T) {
 		{
 			input: &dbus.Signal{
 				Name: "com.redhat.Yggdrasil1.Worker1.Event",
-				Body: []interface{}{uint32(3), "6925055f-167a-45cc-9869-1789ee37883f", "working message"},
+				Body: []interface{}{
+					uint32(3),
+					"6925055f-167a-45cc-9869-1789ee37883f",
+					"working message",
+				},
 			},
 			want: &ipc.WorkerEvent{
 				Name:      ipc.WorkerEventNameWorking,

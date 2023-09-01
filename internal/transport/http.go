@@ -39,7 +39,13 @@ type HTTP struct {
 	eventHandler    EventHandlerFunc
 }
 
-func NewHTTPTransport(clientID string, server string, tlsConfig *tls.Config, userAgent string, pollingInterval time.Duration) (*HTTP, error) {
+func NewHTTPTransport(
+	clientID string,
+	server string,
+	tlsConfig *tls.Config,
+	userAgent string,
+	pollingInterval time.Duration,
+) (*HTTP, error) {
 	disconnected := atomic.Value{}
 	disconnected.Store(false)
 	isTls := atomic.Value{}
@@ -143,7 +149,11 @@ func (t *HTTP) Disconnect(quiesce uint) {
 	t.events <- TransporterEventDisconnected
 }
 
-func (t *HTTP) Tx(addr string, metadata map[string]string, data []byte) (responseCode int, responseMetadata map[string]string, responseData []byte, err error) {
+func (t *HTTP) Tx(
+	addr string,
+	metadata map[string]string,
+	data []byte,
+) (responseCode int, responseMetadata map[string]string, responseData []byte, err error) {
 	if t.disconnected.Load().(bool) {
 		return TxResponseErr, nil, nil, fmt.Errorf("cannot perform Tx: transport is disconnected")
 	}

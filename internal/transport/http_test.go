@@ -159,12 +159,22 @@ func TestTx(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-			httpTransport, err := transport.NewHTTPTransport(test.clientID, test.serverAddr, nil, "testUA", time.Second)
+			httpTransport, err := transport.NewHTTPTransport(
+				test.clientID,
+				test.serverAddr,
+				nil,
+				"testUA",
+				time.Second,
+			)
 			if err != nil {
 				t.Fatalf("cannot create new transport: %v", err)
 			}
 
-			responseCode, responseMetadata, responseData, err := httpTransport.Tx("test", nil, []byte("test"))
+			responseCode, responseMetadata, responseData, err := httpTransport.Tx(
+				"test",
+				nil,
+				[]byte("test"),
+			)
 
 			if test.wantError != nil {
 				if !cmp.Equal(test.wantError, cmpopts.AnyError, cmpopts.EquateErrors()) {

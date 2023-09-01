@@ -119,7 +119,12 @@ func NewMQTTTransport(clientID string, brokers []string, tlsConfig *tls.Config) 
 		return nil, fmt.Errorf("cannot marshal message to JSON: %w", err)
 	}
 
-	opts.SetBinaryWill(fmt.Sprintf("%v/%v/control/out", config.DefaultConfig.PathPrefix, opts.ClientID), data, 1, false)
+	opts.SetBinaryWill(
+		fmt.Sprintf("%v/%v/control/out", config.DefaultConfig.PathPrefix, opts.ClientID),
+		data,
+		1,
+		false,
+	)
 
 	t.opts = opts
 	t.client = mqtt.NewClient(opts)
@@ -166,7 +171,11 @@ func (t *MQTT) Disconnect(quiesce uint) {
 
 // Tx publishes data to an MQTT topic created by combining client information
 // with addr.
-func (t *MQTT) Tx(addr string, metadata map[string]string, data []byte) (responseCode int, responseMetadata map[string]string, responseData []byte, err error) {
+func (t *MQTT) Tx(
+	addr string,
+	metadata map[string]string,
+	data []byte,
+) (responseCode int, responseMetadata map[string]string, responseData []byte, err error) {
 	opts := t.client.OptionsReader()
 	topic := fmt.Sprintf("%v/%v/%v/out", config.DefaultConfig.PathPrefix, opts.ClientID(), addr)
 

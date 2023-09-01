@@ -33,7 +33,11 @@ type Transporter interface {
 	// Tx sends a message to the given address, using metadata and data
 	// according to the specific nature of the transport.Transporter
 	// implementation.
-	Tx(addr string, metadata map[string]string, data []byte) (responseCode int, responseMetadata map[string]string, responseData []byte, err error)
+	Tx(
+		addr string,
+		metadata map[string]string,
+		data []byte,
+	) (responseCode int, responseMetadata map[string]string, responseData []byte, err error)
 
 	// SetRxHandler stores a reference to f, which is then called whenever data
 	// is received over the network.
