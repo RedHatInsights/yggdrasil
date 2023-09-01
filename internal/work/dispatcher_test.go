@@ -78,10 +78,7 @@ func TestWorkerEventFromSignal(t *testing.T) {
 			wantError: newStringTypeConversionError(3),
 		},
 		{
-			input: &dbus.Signal{
-				Name: "com.redhat.Yggdrasil1.Worker1.Event",
-				Body: []interface{}{uint32(3), "6925055f-167a-45cc-9869-1789ee37883f", 3},
-			},
+			input:     &dbus.Signal{Name: "com.redhat.Yggdrasil1.Worker1.Event", Body: []interface{}{uint32(3), "6925055f-167a-45cc-9869-1789ee37883f", 3}},
 			want:      nil,
 			wantError: newStringTypeConversionError(3),
 		},
