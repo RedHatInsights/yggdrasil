@@ -62,7 +62,10 @@ func NewDispatcher(client *internalhttp.Client) *Dispatcher {
 func (d *Dispatcher) Connect() error {
 	var err error
 	if os.Getenv("DBUS_SESSION_BUS_ADDRESS") != "" {
-		log.Debugf("connecting to session bus for worker IPC: %v", os.Getenv("DBUS_SESSION_BUS_ADDRESS"))
+		log.Debugf(
+			"connecting to session bus for worker IPC: %v",
+			os.Getenv("DBUS_SESSION_BUS_ADDRESS"),
+		)
 		d.conn, err = dbus.ConnectSessionBus()
 	} else {
 		log.Debug("connecting to system bus for worker IPC")
@@ -117,14 +120,20 @@ func (d *Dispatcher) Connect() error {
 			case "org.freedesktop.DBus.Properties.PropertiesChanged":
 				changedProperties, ok := s.Body[1].(map[string]dbus.Variant)
 				if !ok {
-					log.Errorf("cannot convert body element 1 (changed_properties) to map[string]dbus.Variant: %v", err)
+					log.Errorf(
+						"cannot convert body element 1 (changed_properties) to map[string]dbus.Variant: %v",
+						err,
+					)
 					continue
 				}
 				log.Debugf("%+v", changedProperties)
 				directive := strings.TrimPrefix(dest, "com.redhat.Yggdrasil1.Worker1.")
 
 				if _, has := changedProperties["Features"]; has {
-					d.features.Set(directive, changedProperties["Features"].Value().(map[string]string))
+					d.features.Set(
+						directive,
+						changedProperties["Features"].Value().(map[string]string),
+					)
 					d.Dispatchers <- d.FlattenDispatchers()
 				}
 			case "com.redhat.Yggdrasil1.Worker1.Event":
@@ -155,10 +164,16 @@ func (d *Dispatcher) Connect() error {
 }
 
 func (d *Dispatcher) Dispatch(data yggdrasil.Data) error {
-	obj := d.conn.Object("com.redhat.Yggdrasil1.Worker1."+data.Directive, dbus.ObjectPath(filepath.Join("/com/redhat/Yggdrasil1/Worker1/", data.Directive)))
+	obj := d.conn.Object(
+		"com.redhat.Yggdrasil1.Worker1."+data.Directive,
+		dbus.ObjectPath(filepath.Join("/com/redhat/Yggdrasil1/Worker1/", data.Directive)),
+	)
 	r, err := obj.GetProperty("com.redhat.Yggdrasil1.Worker1.RemoteContent")
 	if err != nil {
-		return fmt.Errorf("cannot get property 'com.redhat.Yggdrasil1.Worker1.RemoteContent': %v", err)
+		return fmt.Errorf(
+			"cannot get property 'com.redhat.Yggdrasil1.Worker1.RemoteContent': %v",
+			err,
+		)
 	}
 
 	if r.Value().(bool) {
@@ -184,7 +199,15 @@ func (d *Dispatcher) Dispatch(data yggdrasil.Data) error {
 		data.Content = content
 	}
 
-	call := obj.Call("com.redhat.Yggdrasil1.Worker1.Dispatch", 0, data.Directive, data.MessageID, data.ResponseTo, data.Metadata, data.Content)
+	call := obj.Call(
+		"com.redhat.Yggdrasil1.Worker1.Dispatch",
+		0,
+		data.Directive,
+		data.MessageID,
+		data.ResponseTo,
+		data.Metadata,
+		data.Content,
+	)
 	if err := call.Store(); err != nil {
 		return fmt.Errorf("cannot call Dispatch method on worker: %v", err)
 	}
@@ -220,28 +243,51 @@ func (d *Dispatcher) FlattenDispatchers() map[string]map[string]string {
 }
 
 func (d *Dispatcher) EmitEvent(event ipc.DispatcherEvent) error {
-	return d.conn.Emit("/com/redhat/Yggdrasil1/Dispatcher1", "com.redhat.Yggdrasil1.Dispatcher1.Event", event)
+	return d.conn.Emit(
+		"/com/redhat/Yggdrasil1/Dispatcher1",
+		"com.redhat.Yggdrasil1.Dispatcher1.Event",
+		event,
+	)
 }
 
 // Transmit implements the com.redhat.Yggdrasil1.Dispatcher1.Transmit method.
-func (d *Dispatcher) Transmit(sender dbus.Sender, addr string, messageID string, responseTo string, metadata map[string]string, data []byte) (responseCode int, responseMetadata map[string]string, responseData []byte, responseError *dbus.Error) {
+func (d *Dispatcher) Transmit(
+	sender dbus.Sender,
+	addr string,
+	messageID string,
+	responseTo string,
+	metadata map[string]string,
+	data []byte,
+) (responseCode int, responseMetadata map[string]string, responseData []byte, responseError *dbus.Error) {
 	name, err := d.senderName(sender)
 	if err != nil {
-		return TransmitResponseErr, nil, nil, NewDBusError("Transmit", fmt.Sprintf("cannot get name for sender: %v", err))
+		return TransmitResponseErr, nil, nil, NewDBusError(
+			"Transmit",
+			fmt.Sprintf("cannot get name for sender: %v", err),
+		)
 	}
 
 	directive := strings.TrimPrefix(name, "com.redhat.Yggdrasil1.Worker1.")
 
-	obj := d.conn.Object("com.redhat.Yggdrasil1.Worker1."+directive, dbus.ObjectPath(filepath.Join("/com/redhat/Yggdrasil1/Worker1/", directive)))
+	obj := d.conn.Object(
+		"com.redhat.Yggdrasil1.Worker1."+directive,
+		dbus.ObjectPath(filepath.Join("/com/redhat/Yggdrasil1/Worker1/", directive)),
+	)
 	r, err := obj.GetProperty("com.redhat.Yggdrasil1.Worker1.RemoteContent")
 	if err != nil {
-		return -1, nil, nil, NewDBusError("Transmit", "cannot get property 'com.redhat.Yggdrasil1.Worker1.RemoteContent'")
+		return -1, nil, nil, NewDBusError(
+			"Transmit",
+			"cannot get property 'com.redhat.Yggdrasil1.Worker1.RemoteContent'",
+		)
 	}
 
 	if r.Value().(bool) {
 		URL, err := url.Parse(addr)
 		if err != nil {
-			return TransmitResponseErr, nil, nil, NewDBusError("Transmit", fmt.Sprintf("cannot parse addr as URL: %v", err))
+			return TransmitResponseErr, nil, nil, NewDBusError(
+				"Transmit",
+				fmt.Sprintf("cannot parse addr as URL: %v", err),
+			)
 		}
 		if URL.Scheme != "" {
 			if config.DefaultConfig.DataHost != "" {
@@ -249,16 +295,25 @@ func (d *Dispatcher) Transmit(sender dbus.Sender, addr string, messageID string,
 			}
 			resp, err := d.HTTPClient.Post(URL.String(), metadata, data)
 			if err != nil {
-				return TransmitResponseErr, nil, nil, NewDBusError("Transmit", fmt.Sprintf("cannot perform HTTP request: %v", err))
+				return TransmitResponseErr, nil, nil, NewDBusError(
+					"Transmit",
+					fmt.Sprintf("cannot perform HTTP request: %v", err),
+				)
 			}
 			data, err = io.ReadAll(resp.Body)
 			if err != nil {
-				return TransmitResponseErr, nil, nil, NewDBusError("Transmit", fmt.Sprintf("cannot read HTTP response body: %v", err))
+				return TransmitResponseErr, nil, nil, NewDBusError(
+					"Transmit",
+					fmt.Sprintf("cannot read HTTP response body: %v", err),
+				)
 			}
 
 			err = resp.Body.Close()
 			if err != nil {
-				return TransmitResponseErr, nil, nil, NewDBusError("Transmit", fmt.Sprintf("cannot close HTTP response body: %v", err))
+				return TransmitResponseErr, nil, nil, NewDBusError(
+					"Transmit",
+					fmt.Sprintf("cannot close HTTP response body: %v", err),
+				)
 			}
 			responseCode = resp.StatusCode
 			responseMetadata = make(map[string]string)

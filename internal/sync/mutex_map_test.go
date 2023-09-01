@@ -37,7 +37,12 @@ func TestSet(t *testing.T) {
 			got := &RWMutexMap[string]{}
 			got.Set(test.input.key, test.input.val)
 
-			if !cmp.Equal(got, test.want, cmp.AllowUnexported(RWMutexMap[string]{}), cmpopts.IgnoreFields(RWMutexMap[string]{}, "mu")) {
+			if !cmp.Equal(
+				got,
+				test.want,
+				cmp.AllowUnexported(RWMutexMap[string]{}),
+				cmpopts.IgnoreFields(RWMutexMap[string]{}, "mu"),
+			) {
 				t.Errorf("%#v != %#v", got, test.want)
 			}
 		})
@@ -118,7 +123,12 @@ func TestDel(t *testing.T) {
 
 			got.Del(test.input.k)
 
-			if !cmp.Equal(got, test.want, cmp.AllowUnexported(RWMutexMap[string]{}), cmpopts.IgnoreFields(RWMutexMap[string]{}, "mu")) {
+			if !cmp.Equal(
+				got,
+				test.want,
+				cmp.AllowUnexported(RWMutexMap[string]{}),
+				cmpopts.IgnoreFields(RWMutexMap[string]{}, "mu"),
+			) {
 				t.Errorf("%v", cmp.Diff(got, test.want))
 			}
 		})

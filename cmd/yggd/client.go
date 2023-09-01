@@ -103,31 +103,33 @@ func (c *Client) Connect() error {
 
 	// set a transport RxHandlerFunc that calls the client's control and data
 	// receive handler functions.
-	err := c.transporter.SetRxHandler(func(addr string, metadata map[string]interface{}, data []byte) error {
-		switch addr {
-		case "data":
-			var message yggdrasil.Data
+	err := c.transporter.SetRxHandler(
+		func(addr string, metadata map[string]interface{}, data []byte) error {
+			switch addr {
+			case "data":
+				var message yggdrasil.Data
 
-			if err := json.Unmarshal(data, &message); err != nil {
-				return fmt.Errorf("cannot unmarshal data message: %w", err)
-			}
-			if err := c.ReceiveDataMessage(&message); err != nil {
-				return fmt.Errorf("cannot process data message: %w", err)
-			}
-		case "control":
-			var message yggdrasil.Control
+				if err := json.Unmarshal(data, &message); err != nil {
+					return fmt.Errorf("cannot unmarshal data message: %w", err)
+				}
+				if err := c.ReceiveDataMessage(&message); err != nil {
+					return fmt.Errorf("cannot process data message: %w", err)
+				}
+			case "control":
+				var message yggdrasil.Control
 
-			if err := json.Unmarshal(data, &message); err != nil {
-				return fmt.Errorf("cannot unmarshal control message: %w", err)
+				if err := json.Unmarshal(data, &message); err != nil {
+					return fmt.Errorf("cannot unmarshal control message: %w", err)
+				}
+				if err := c.ReceiveControlMessage(&message); err != nil {
+					return fmt.Errorf("cannot process control message: %w", err)
+				}
+			default:
+				return fmt.Errorf("unsupported destination type: %v", addr)
 			}
-			if err := c.ReceiveControlMessage(&message); err != nil {
-				return fmt.Errorf("cannot process control message: %w", err)
-			}
-		default:
-			return fmt.Errorf("unsupported destination type: %v", addr)
-		}
-		return nil
-	})
+			return nil
+		},
+	)
 	if err != nil {
 		return fmt.Errorf("cannot set RxHandler: %v", err)
 	}
@@ -199,7 +201,12 @@ func (c *Client) ListWorkers() (map[string]map[string]string, *dbus.Error) {
 }
 
 // Dispatch implements the com.redhat.Yggdrasil1.Dispatch method.
-func (c *Client) Dispatch(directive string, messageID string, metadata map[string]string, data []byte) *dbus.Error {
+func (c *Client) Dispatch(
+	directive string,
+	messageID string,
+	metadata map[string]string,
+	data []byte,
+) *dbus.Error {
 	msg := yggdrasil.Data{
 		Type:       yggdrasil.MessageTypeData,
 		MessageID:  messageID,
@@ -211,16 +218,24 @@ func (c *Client) Dispatch(directive string, messageID string, metadata map[strin
 		Content:    data,
 	}
 	if err := c.dispatcher.Dispatch(msg); err != nil {
-		return work.NewDBusError("com.redhat.Yggdrasil1.Dispatch", fmt.Sprintf("cannot dispatch to directive: %v", err))
+		return work.NewDBusError(
+			"com.redhat.Yggdrasil1.Dispatch",
+			fmt.Sprintf("cannot dispatch to directive: %v", err),
+		)
 	}
 	return nil
 }
 
-func (c *Client) SendDataMessage(msg *yggdrasil.Data, metadata map[string]string) (int, map[string]string, []byte, error) {
+func (c *Client) SendDataMessage(
+	msg *yggdrasil.Data,
+	metadata map[string]string,
+) (int, map[string]string, []byte, error) {
 	return c.sendMessage("data", metadata, msg)
 }
 
-func (c *Client) SendConnectionStatusMessage(msg *yggdrasil.ConnectionStatus) (int, map[string]string, []byte, error) {
+func (c *Client) SendConnectionStatusMessage(
+	msg *yggdrasil.ConnectionStatus,
+) (int, map[string]string, []byte, error) {
 	code, metadata, data, err := c.sendMessage("control", nil, msg)
 	if err != nil {
 		return transport.TxResponseErr, nil, nil, err
@@ -237,7 +252,11 @@ func (c *Client) SendEventMessage(msg *yggdrasil.Event) (int, map[string]string,
 }
 
 // sendMessage marshals msg as data and transmits it via the transport.
-func (c *Client) sendMessage(dest string, metadata map[string]string, msg interface{}) (int, map[string]string, []byte, error) {
+func (c *Client) sendMessage(
+	dest string,
+	metadata map[string]string,
+	msg interface{},
+) (int, map[string]string, []byte, error) {
 	data, err := json.Marshal(msg)
 	if err != nil {
 		return transport.TxResponseErr, nil, nil, fmt.Errorf("cannot marshal message: %w", err)

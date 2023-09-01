@@ -33,7 +33,13 @@ type Worker struct {
 }
 
 // NewWorker creates a new worker.
-func NewWorker(directive string, remoteContent bool, features map[string]string, rx RxFunc, events EventHandlerFunc) (*Worker, error) {
+func NewWorker(
+	directive string,
+	remoteContent bool,
+	features map[string]string,
+	rx RxFunc,
+	events EventHandlerFunc,
+) (*Worker, error) {
 	r := regexp.MustCompile("-")
 	if r.Match([]byte(directive)) {
 		return nil, fmt.Errorf("invalid directive '%v'", directive)
@@ -136,7 +142,12 @@ func (w *Worker) Connect(quit <-chan os.Signal) error {
 // PropertiesChanged signal.
 func (w *Worker) SetFeature(name, value string) error {
 	w.features[name] = value
-	return w.conn.Emit(w.objectPath, "org.freedesktop.DBus.Properties.PropertiesChanged", "com.redhat.Yggdrasil1.Worker1.Features", map[string]dbus.Variant{"Features": dbus.MakeVariant(w.features)})
+	return w.conn.Emit(
+		w.objectPath,
+		"org.freedesktop.DBus.Properties.PropertiesChanged",
+		"com.redhat.Yggdrasil1.Worker1.Features",
+		map[string]dbus.Variant{"Features": dbus.MakeVariant(w.features)},
+	)
 }
 
 // GetFeature retrieves the value from the feature map for given key.
@@ -146,11 +157,18 @@ func (w *Worker) GetFeature(name string) string {
 
 // Transmit wraps a com.redhat.Yggdrasil1.Dispatcher1.Transmit method call for
 // ease of use from the worker.
-func (w *Worker) Transmit(addr string, id string, responseTo string, metadata map[string]string, data []byte) (responseCode int, responseMetadata map[string]string, responseData []byte, err error) {
+func (w *Worker) Transmit(
+	addr string,
+	id string,
+	responseTo string,
+	metadata map[string]string,
+	data []byte,
+) (responseCode int, responseMetadata map[string]string, responseData []byte, err error) {
 	// Look up the Dispatcher object on the bus connection and call its Transmit
 	// method, returning the data received.
 	obj := w.conn.Object("com.redhat.Yggdrasil1.Dispatcher1", "/com/redhat/Yggdrasil1/Dispatcher1")
-	err = obj.Call("com.redhat.Yggdrasil1.Dispatcher1.Transmit", 0, addr, id, responseTo, metadata, data).Store(&responseCode, &responseMetadata, &responseData)
+	err = obj.Call("com.redhat.Yggdrasil1.Dispatcher1.Transmit", 0, addr, id, responseTo, metadata, data).
+		Store(&responseCode, &responseMetadata, &responseData)
 	if err != nil {
 		responseCode = -1
 		return
@@ -165,12 +183,21 @@ func (w *Worker) EmitEvent(event ipc.WorkerEventName, messageID string, message 
 		args = append(args, message)
 	}
 	log.Debugf("emitting event %v", event)
-	return w.conn.Emit(dbus.ObjectPath(path.Join("/com/redhat/Yggdrasil1/Worker1", w.directive)), "com.redhat.Yggdrasil1.Worker1.Event", args...)
+	return w.conn.Emit(
+		dbus.ObjectPath(path.Join("/com/redhat/Yggdrasil1/Worker1", w.directive)),
+		"com.redhat.Yggdrasil1.Worker1.Event",
+		args...)
 }
 
 // dispatch implements com.redhat.Yggdrasil1.Worker1.Dispatch by calling the
 // worker's RxFunc in a goroutine.
-func (w *Worker) dispatch(addr string, id string, responseTo string, metadata map[string]string, data []byte) *dbus.Error {
+func (w *Worker) dispatch(
+	addr string,
+	id string,
+	responseTo string,
+	metadata map[string]string,
+	data []byte,
+) *dbus.Error {
 	// Log the data received at a high log level for debugging purposes.
 	log.Tracef("addr = %v", addr)
 	log.Tracef("id = %v", id)

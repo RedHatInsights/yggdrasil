@@ -146,7 +146,9 @@ func setupClient(
 		if err != nil {
 			return nil, nil, cli.Exit(fmt.Errorf("cannot create no-op transport: %w", err), 1)
 		}
-		log.Info("no network protocol specified - no data will be sent or received over the network")
+		log.Info(
+			"no network protocol specified - no data will be sent or received over the network",
+		)
 		for _, server := range config.DefaultConfig.Server {
 			log.Warnf("no network protocol specified - ignoring server option '%v'", server)
 		}
