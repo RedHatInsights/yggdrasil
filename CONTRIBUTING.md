@@ -288,7 +288,7 @@ echo -n "hello" | yggctl dispatch -w "echo" -
 * Code should be formatted using `gofmt` and `goimports` before committing. As
   the saying goes ["gofmt's style is no one's favorite, yet gofmt is everyone's
   favorite."](https://www.youtube.com/watch?v=PAAkCSZUG1c&t=8m43s).
-* Code may optionally be formatted using
+* Code should be formatted using
   [`golines`](https://github.com/segmentio/golines), to wrap long lines.
 
 ## Required Reading
