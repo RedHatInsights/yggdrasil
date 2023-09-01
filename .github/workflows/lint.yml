@@ -36,6 +36,11 @@ jobs:
         with:
           version: latest
           args: --verbose --timeout=3m
+      - name: Set up golines
+        run: go install github.com/segmentio/golines@latest
+      - name: Run golines
+        run: if [ "$(golines . --dry-run | wc -l)" -gt 0 ]; then exit 1; fi
+
   lint-language:
     name: Lint language
     runs-on: ubuntu-latest
