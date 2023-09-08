@@ -17,6 +17,7 @@ import (
 )
 
 var sleepTime time.Duration
+var loopIt int
 
 // echo opens a new dbus connection and calls the
 // com.redhat.Yggdrasil1.Dispatcher1.Transmit method, returning the
@@ -38,35 +39,39 @@ func echo(
 		return fmt.Errorf("cannot call EmitEvent: %w", err)
 	}
 
-	// Sleep time between receiving the message and sending it
-	if sleepTime > 0 {
-		log.Infof("sleeping: %v", sleepTime)
-		time.Sleep(sleepTime)
-	}
+	// Loop the echoes
+	for i := 0; i < loopIt; i++ {
+		// Sleep time between receiving the message and sending it
+		if sleepTime > 0 {
+			log.Infof("sleeping: %v", sleepTime)
+			time.Sleep(sleepTime)
+		}
 
-	// Set "response_to" according to the rcvId of the message we received
-	echoResponseTo := rcvId
-	// Create new echoId for the message we are going to send
-	echoId := uuid.New().String()
+		// Set "response_to" according to the rcvId of the message we received
+		echoResponseTo := rcvId
+		// Create new echoId for the message we are going to send
+		echoId := uuid.New().String()
 
-	responseCode, responseMetadata, responseData, err := w.Transmit(
-		addr,
-		echoId,
-		echoResponseTo,
-		metadata,
-		data,
-	)
-	if err != nil {
-		return fmt.Errorf("cannot call Transmit: %w", err)
-	}
+		responseCode, responseMetadata, responseData, err := w.Transmit(
+			addr,
+			echoId,
+			echoResponseTo,
+			metadata,
+			data,
+		)
+		if err != nil {
+			return fmt.Errorf("cannot call Transmit: %w", err)
+		}
 
-	// Log the responses received from the Dispatcher, if any.
-	log.Infof("responseCode = %v", responseCode)
-	log.Infof("responseMetadata = %#v", responseMetadata)
-	log.Infof("responseData = %v", responseData)
+		// Log the responses received from the Dispatcher, if any.
+		log.Infof("responseCode = %v", responseCode)
+		log.Infof("responseMetadata = %#v", responseMetadata)
+		log.Infof("responseData = %v", responseData)
+		log.Infof("message %v of %v", i+1, loopIt)
 
-	if err := w.SetFeature("DispatchedAt", time.Now().Format(time.RFC3339)); err != nil {
-		return fmt.Errorf("cannot set feature: %w", err)
+		if err := w.SetFeature("DispatchedAt", time.Now().Format(time.RFC3339)); err != nil {
+			return fmt.Errorf("cannot set feature: %w", err)
+		}
 	}
 
 	return nil
@@ -88,6 +93,7 @@ func main() {
 	flag.StringVar(&logLevel, "log-level", "error", "set log level")
 	flag.BoolVar(&remoteContent, "remote-content", false, "connect as a remote content worker")
 	flag.DurationVar(&sleepTime, "sleep", 0, "sleep time in seconds before echoing the response")
+	flag.IntVar(&loopIt, "loop", 1, "number of loop echoes before finish echoing.")
 	flag.Parse()
 
 	level, err := log.ParseLevel(logLevel)
