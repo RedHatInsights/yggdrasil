@@ -38,7 +38,7 @@ jobs:
       - uses: actions/download-artifact@v3
         with:
           name: yggdrasil-${{ github.sha }}
-      - run: mock --enable-network --rebuild --resultdir $GITHUB_WORKSPACE $GITHUB_WORKSPACE/*.src.rpm
+      - run: mock --verbose --enable-network --rebuild --resultdir $GITHUB_WORKSPACE $GITHUB_WORKSPACE/*.src.rpm
       - uses: actions/upload-artifact@v3
         with:
           name: yggdrasil-${{ matrix.image }}-${{ matrix.version }}
