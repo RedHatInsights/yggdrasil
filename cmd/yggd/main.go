@@ -65,6 +65,7 @@ func setupDefaultConfig(c *cli.Context) {
 		MQTTConnectRetry:         c.Bool(config.FlagNameMQTTConnectRetry),
 		MQTTConnectRetryInterval: c.Duration(config.FlagNameMQTTConnectRetryInterval),
 		MQTTAutoReconnect:        c.Bool(config.FlagNameMQTTAutoReconnect),
+		MQTTReconnectDelay:       c.Duration(config.FlagNameMQTTReconnectDelay),
 	}
 }
 
@@ -506,6 +507,12 @@ func main() {
 			Name:   config.FlagNameMQTTAutoReconnect,
 			Usage:  "Enable automatic reconnection when the client disconnects",
 			Value:  true,
+			Hidden: true,
+		}),
+		altsrc.NewDurationFlag(&cli.DurationFlag{
+			Name:   config.FlagNameMQTTReconnectDelay,
+			Usage:  "Sets the time to wait before attempting to reconnect to `DURATION`",
+			Value:  0 * time.Second,
 			Hidden: true,
 		}),
 	}
