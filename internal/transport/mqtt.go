@@ -99,6 +99,17 @@ func NewMQTTTransport(clientID string, brokers []string, tlsConfig *tls.Config) 
 		t.events <- TransporterEventDisconnected
 	})
 
+	opts.SetReconnectingHandler(func(c mqtt.Client, co *mqtt.ClientOptions) {
+		if config.DefaultConfig.MQTTReconnectDelay > 0 {
+			log.Infof(
+				"delaying for %v before reconnecting...",
+				config.DefaultConfig.MQTTReconnectDelay,
+			)
+			time.Sleep(config.DefaultConfig.MQTTReconnectDelay)
+		}
+		log.Debugf("reconnecting to broker: %v", co.Servers)
+	})
+
 	data, err := json.Marshal(&yggdrasil.ConnectionStatus{
 		Type:      yggdrasil.MessageTypeConnectionStatus,
 		MessageID: uuid.New().String(),

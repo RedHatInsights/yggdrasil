@@ -27,6 +27,7 @@ const (
 	FlagNameMQTTConnectRetry         = "mqtt-connect-retry"
 	FlagNameMQTTConnectRetryInterval = "mqtt-connect-retry-interval"
 	FlagNameMQTTAutoReconnect        = "mqtt-auto-reconnect"
+	FlagNameMQTTReconnectDelay       = "mqtt-reconnect-delay"
 )
 
 var DefaultConfig = Config{
@@ -91,6 +92,10 @@ type Config struct {
 	// MQTTAutoReconnect is the MQTT client option that enables automatic
 	// reconnection logic when the client unexpectedly disconnects.
 	MQTTAutoReconnect bool
+
+	// MQTTReconnectDelay is the duration the client with wait before attempting
+	// to reconnect to the MQTT broker.
+	MQTTReconnectDelay time.Duration
 }
 
 // CreateTLSConfig creates a tls.Config object from the current configuration.
