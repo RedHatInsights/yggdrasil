@@ -116,6 +116,12 @@ func main() {
 			Value:  false,
 			Hidden: true,
 		}),
+		altsrc.NewDurationFlag(&cli.DurationFlag{
+			Name:   "mqtt-reconnect-delay",
+			Usage:  "Sets the time to wait before attempting to reconnect to `DURATION`",
+			Value:  0 * time.Second,
+			Hidden: true,
+		}),
 	}
 
 	// This BeforeFunc will load flag values from a config file only if the
@@ -279,6 +285,20 @@ func main() {
 		})
 		mqttClientOpts.SetConnectionLostHandler(func(c mqtt.Client, e error) {
 			log.Errorf("connection lost unexpectedly: %v", e)
+		})
+
+		mqttClientOpts.SetReconnectingHandler(func(_ mqtt.Client, co *mqtt.ClientOptions) {
+			log.Debugf("reconnecting to broker: %v", co.Servers)
+
+			reconnectDelay := c.Duration("mqtt-reconnect-delay")
+
+			if reconnectDelay > 0 {
+				log.Infof(
+					"delaying for %v before reconnection",
+					reconnectDelay,
+				)
+				time.Sleep(reconnectDelay)
+			}
 		})
 
 		data, err := json.Marshal(&yggdrasil.ConnectionStatus{
