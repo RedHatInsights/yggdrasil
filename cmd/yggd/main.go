@@ -50,18 +50,21 @@ func generateDocumentation(c *cli.Context) error {
 // CLI flags and arguments.
 func setupDefaultConfig(c *cli.Context) {
 	config.DefaultConfig = config.Config{
-		LogLevel:       c.String(config.FlagNameLogLevel),
-		ClientID:       c.String(config.FlagNameClientID),
-		Server:         c.StringSlice(config.FlagNameServer),
-		CertFile:       c.String(config.FlagNameCertFile),
-		KeyFile:        c.String(config.FlagNameKeyFile),
-		CARoot:         c.StringSlice(config.FlagNameCaRoot),
-		PathPrefix:     c.String(config.FlagNamePathPrefix),
-		Protocol:       c.String(config.FlagNameProtocol),
-		DataHost:       c.String(config.FlagNameDataHost),
-		CanonicalFacts: c.String(config.FlagNameCanonicalFacts),
-		HTTPRetries:    c.Int(config.FlagNameHTTPRetries),
-		HTTPTimeout:    c.Duration(config.FlagNameHTTPTimeout),
+		LogLevel:                 c.String(config.FlagNameLogLevel),
+		ClientID:                 c.String(config.FlagNameClientID),
+		Server:                   c.StringSlice(config.FlagNameServer),
+		CertFile:                 c.String(config.FlagNameCertFile),
+		KeyFile:                  c.String(config.FlagNameKeyFile),
+		CARoot:                   c.StringSlice(config.FlagNameCaRoot),
+		PathPrefix:               c.String(config.FlagNamePathPrefix),
+		Protocol:                 c.String(config.FlagNameProtocol),
+		DataHost:                 c.String(config.FlagNameDataHost),
+		CanonicalFacts:           c.String(config.FlagNameCanonicalFacts),
+		HTTPRetries:              c.Int(config.FlagNameHTTPRetries),
+		HTTPTimeout:              c.Duration(config.FlagNameHTTPTimeout),
+		MQTTConnectRetry:         c.Bool(config.FlagNameMQTTConnectRetry),
+		MQTTConnectRetryInterval: c.Duration(config.FlagNameMQTTConnectRetryInterval),
+		MQTTAutoReconnect:        c.Bool(config.FlagNameMQTTAutoReconnect),
 	}
 }
 
