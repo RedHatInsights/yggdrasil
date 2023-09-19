@@ -113,7 +113,7 @@ func main() {
 		altsrc.NewBoolFlag(&cli.BoolFlag{
 			Name:   "mqtt-auto-reconnect",
 			Usage:  "Enable automatic reconnection when the client disconnects",
-			Value:  false,
+			Value:  true,
 			Hidden: true,
 		}),
 		altsrc.NewDurationFlag(&cli.DurationFlag{
@@ -288,17 +288,16 @@ func main() {
 		})
 
 		mqttClientOpts.SetReconnectingHandler(func(_ mqtt.Client, co *mqtt.ClientOptions) {
-			log.Debugf("reconnecting to broker: %v", co.Servers)
-
 			reconnectDelay := c.Duration("mqtt-reconnect-delay")
 
 			if reconnectDelay > 0 {
 				log.Infof(
-					"delaying for %v before reconnection",
+					"delaying for %v before reconnecting...",
 					reconnectDelay,
 				)
 				time.Sleep(reconnectDelay)
 			}
+			log.Debugf("reconnecting to broker: %v", co.Servers)
 		})
 
 		data, err := json.Marshal(&yggdrasil.ConnectionStatus{
@@ -318,7 +317,12 @@ func main() {
 		if err != nil {
 			return cli.Exit(fmt.Errorf("cannot marshal message to JSON: %w", err), 1)
 		}
-		mqttClientOpts.SetBinaryWill(fmt.Sprintf("%v/%v/control/out", yggdrasil.TopicPrefix, ClientID), data, 1, false)
+		mqttClientOpts.SetBinaryWill(
+			fmt.Sprintf("%v/%v/control/out", yggdrasil.TopicPrefix, ClientID),
+			data,
+			1,
+			false,
+		)
 
 		mqttClient := mqtt.NewClient(mqttClientOpts)
 		if token := mqttClient.Connect(); token.Wait() && token.Error() != nil {
