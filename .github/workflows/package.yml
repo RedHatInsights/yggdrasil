@@ -8,7 +8,7 @@ jobs:
     runs-on: ubuntu-latest
     container: registry.fedoraproject.org/fedora:rawhide
     steps:
-      - run: dnf install --assumeyes bash-completion git go meson 'pkgconfig(dbus-1)' rpm-build
+      - run: dnf install --assumeyes bash-completion git go meson 'pkgconfig(dbus-1)' 'pkgconfig(systemd)' rpm-build
       - uses: actions/checkout@v3
       - run: git config --system --add safe.directory $GITHUB_WORKSPACE
       - run: meson setup $GITHUB_WORKSPACE/builddir -Dbuild_srpm=True
