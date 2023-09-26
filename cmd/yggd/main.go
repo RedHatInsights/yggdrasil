@@ -66,6 +66,8 @@ func setupDefaultConfig(c *cli.Context) {
 		MQTTConnectRetryInterval: c.Duration(config.FlagNameMQTTConnectRetryInterval),
 		MQTTAutoReconnect:        c.Bool(config.FlagNameMQTTAutoReconnect),
 		MQTTReconnectDelay:       c.Duration(config.FlagNameMQTTReconnectDelay),
+		MQTTConnectTimeout:       c.Duration(config.FlagNameMQTTConnectTimeout),
+		MQTTPublishTimeout:       c.Duration(config.FlagNameMQTTPublishTimeout),
 	}
 }
 
@@ -346,7 +348,7 @@ func mainAction(c *cli.Context) error {
 	// from the Transporter
 	client, transporter, err := setupClient(dispatcher, tlsConfig)
 	if err != nil {
-		return err
+		return cli.Exit(fmt.Errorf("cannot setup client: %w", err), 1)
 	}
 
 	// Create watcher for certificate changes
@@ -513,6 +515,18 @@ func main() {
 			Name:   config.FlagNameMQTTReconnectDelay,
 			Usage:  "Sets the time to wait before attempting to reconnect to `DURATION`",
 			Value:  0 * time.Second,
+			Hidden: true,
+		}),
+		altsrc.NewDurationFlag(&cli.DurationFlag{
+			Name:   config.FlagNameMQTTConnectTimeout,
+			Usage:  "Sets the time to wait before giving up to `DURATION` when connecting to an MQTT broker",
+			Value:  30 * time.Second,
+			Hidden: true,
+		}),
+		altsrc.NewDurationFlag(&cli.DurationFlag{
+			Name:   config.FlagNameMQTTPublishTimeout,
+			Usage:  "Sets the time to wait before giving up to `DURATION` when publishing a message to an MQTT broker",
+			Value:  30 * time.Second,
 			Hidden: true,
 		}),
 	}
