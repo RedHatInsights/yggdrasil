@@ -28,6 +28,8 @@ const (
 	FlagNameMQTTConnectRetryInterval = "mqtt-connect-retry-interval"
 	FlagNameMQTTAutoReconnect        = "mqtt-auto-reconnect"
 	FlagNameMQTTReconnectDelay       = "mqtt-reconnect-delay"
+	FlagNameMQTTConnectTimeout       = "mqtt-connect-timeout"
+	FlagNameMQTTPublishTimeout       = "mqtt-publish-timeout"
 )
 
 var DefaultConfig = Config{
@@ -96,6 +98,14 @@ type Config struct {
 	// MQTTReconnectDelay is the duration the client with wait before attempting
 	// to reconnect to the MQTT broker.
 	MQTTReconnectDelay time.Duration
+
+	// MQTTConnectTimeout is the duration the client will wait for an MQTT
+	// connection to be established before giving up.
+	MQTTConnectTimeout time.Duration
+
+	// MQTTPublishTimeout is the duration the client will wait for an MQTT
+	// connection to publish a message before giving up.
+	MQTTPublishTimeout time.Duration
 }
 
 // CreateTLSConfig creates a tls.Config object from the current configuration.

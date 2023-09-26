@@ -155,7 +155,15 @@ func (t *MQTT) Connect() error {
 		}
 	}()
 
-	if token := t.client.Connect(); token.Wait() && token.Error() != nil {
+	log.Infof("connecting to broker: %v", config.DefaultConfig.Server)
+	token := t.client.Connect()
+	if !token.WaitTimeout(config.DefaultConfig.MQTTConnectTimeout) {
+		return fmt.Errorf(
+			"cannot connect to broker: connection timeout: %v elapsed",
+			config.DefaultConfig.MQTTConnectTimeout,
+		)
+	}
+	if token.Error() != nil {
 		return fmt.Errorf("cannot connect to broker: %w", token.Error())
 	}
 	return nil
@@ -190,7 +198,14 @@ func (t *MQTT) Tx(
 	opts := t.client.OptionsReader()
 	topic := fmt.Sprintf("%v/%v/%v/out", config.DefaultConfig.PathPrefix, opts.ClientID(), addr)
 
-	if token := t.client.Publish(topic, 1, false, data); token.Wait() && token.Error() != nil {
+	token := t.client.Publish(topic, 1, false, data)
+	if !token.WaitTimeout(config.DefaultConfig.MQTTPublishTimeout) {
+		return TxResponseErr, nil, nil, fmt.Errorf(
+			"cannot publish message: connection timeout: %v elapsed",
+			config.DefaultConfig.MQTTPublishTimeout,
+		)
+	}
+	if token.Error() != nil {
 		log.Errorf("failed to publish message: %v", token.Error())
 		return TxResponseErr, nil, nil, token.Error()
 	}
