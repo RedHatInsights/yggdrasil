@@ -6,7 +6,9 @@ import (
 	"fmt"
 	"math/rand"
 	"os"
+	"os/user"
 	"path/filepath"
+	"strconv"
 	"time"
 )
 
@@ -56,28 +58,65 @@ func parseCertCN(filename string) (string, error) {
 
 // createClientID will generate a semi-random string to be used as the MQTT
 // client ID and save the value to the client-id file.
-func createClientID(file string) ([]byte, error) {
+func createClientID(file string, serviceUser *user.User) ([]byte, error) {
 	if _, err := os.Stat(file); os.IsExist(err) {
 		return nil, fmt.Errorf("cannot create client-id: %w", err)
 	}
 
 	data := []byte(randomString(64))
 
-	if err := setClientID(data, file); err != nil {
+	if err := setClientID(data, file, serviceUser); err != nil {
 		return nil, fmt.Errorf("cannot set client-id: %w", err)
 	}
 
 	return data, nil
 }
 
-// setClientID writes data to the client ID file.
-func setClientID(data []byte, file string) error {
-	if err := os.MkdirAll(filepath.Dir(file), 0750); err != nil {
+// setClientID writes data to the client ID file and set ownership of file to
+// given service user, when this user is specified
+func setClientID(data []byte, file string, serviceUser *user.User) error {
+	var uid int
+	var gid int
+	var err error
+
+	if serviceUser != nil {
+		uid, err = strconv.Atoi(serviceUser.Uid)
+		if err != nil {
+			return fmt.Errorf("unable to convert uid: %s to int: %s", serviceUser.Uid, err)
+		}
+		gid, err = strconv.Atoi(serviceUser.Gid)
+		if err != nil {
+			return fmt.Errorf("unable to convert gid: %s to int: %s", serviceUser.Gid, err)
+		}
+	}
+
+	dirPath := filepath.Dir(file)
+	if err := os.MkdirAll(dirPath, 0750); err != nil {
 		return fmt.Errorf("cannot create directory: %w", err)
+	}
+
+	// Change owner of directory containing client ID file
+	if serviceUser != nil {
+		err := os.Chown(file, uid, gid)
+		if err != nil {
+			return fmt.Errorf("unable to chance owner of %s to service user: %s, %s",
+				dirPath, serviceUser.Username, err)
+		}
 	}
 
 	if err := os.WriteFile(file, data, 0600); err != nil {
 		return fmt.Errorf("cannot write file: %w", err)
+	}
+
+	// Change owner of client-id
+	if serviceUser != nil {
+		err := os.Chown(file, uid, gid)
+		if err != nil {
+			// When it wasn't possible to change owner of the file, then delete the file first
+			_ = os.Remove(file)
+			return fmt.Errorf("unable to chance owner of %s to service user: %s, %s",
+				file, serviceUser.Username, err)
+		}
 	}
 
 	return nil

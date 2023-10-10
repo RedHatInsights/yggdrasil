@@ -31,6 +31,7 @@ const (
 	FlagNameMQTTConnectTimeout       = "mqtt-connect-timeout"
 	FlagNameMQTTPublishTimeout       = "mqtt-publish-timeout"
 	FlagNameMessageJournal           = "message-journal"
+	FlagNameServiceUser              = "user"
 )
 
 var DefaultConfig = Config{
@@ -111,6 +112,9 @@ type Config struct {
 	// MessageJournal is used to enable the storage of worker events
 	// and message data in a SQLite file at the specified file path.
 	MessageJournal string
+
+	// ServiceUser is the user used for running yggd service
+	ServiceUser string
 }
 
 // CreateTLSConfig creates a tls.Config object from the current configuration.

@@ -116,8 +116,12 @@ export %gomodulesmode
 %{_datadir}/bash-completion/completions/*
 %{_datadir}/dbus-1/{interfaces,system-services,system.d}/*
 %{_datadir}/doc/%{name}/*
+%{_sysusersdir}/yggd.conf
 %{_mandir}/man1/*
 
 %if %{has_go_rpm_macros}
 %gopkgfiles
 %endif
+
+%post
+systemd-sysusers $(pkg-config systemd --variable=sysusersdir)/yggd.conf
