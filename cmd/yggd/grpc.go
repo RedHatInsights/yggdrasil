@@ -12,6 +12,7 @@ import (
 	"github.com/redhatinsights/yggdrasil"
 	pb "github.com/redhatinsights/yggdrasil/protocol"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 )
 
 type worker struct {
@@ -147,7 +148,10 @@ func (d *dispatcher) sendData() {
 				data.Content = content
 			}
 
-			conn, err := grpc.Dial("unix:"+w.addr, grpc.WithInsecure())
+			conn, err := grpc.Dial(
+				"unix:"+w.addr,
+				grpc.WithTransportCredentials(insecure.NewCredentials()),
+			)
 			if err != nil {
 				log.Errorf("cannot dial socket: %v", err)
 				return

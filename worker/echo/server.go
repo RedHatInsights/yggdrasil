@@ -8,6 +8,7 @@ import (
 	"github.com/google/uuid"
 	pb "github.com/redhatinsights/yggdrasil/protocol"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 )
 
 // echoServer implements the Worker gRPC service as defined by the yggdrasil
@@ -26,7 +27,10 @@ func (s *echoServer) Send(ctx context.Context, d *pb.Data) (*pb.Receipt, error) 
 		log.Infof("echoing %v", message)
 
 		// Dial the Dispatcher and call "Finish"
-		conn, err := grpc.Dial(yggdDispatchSocketAddr, grpc.WithInsecure())
+		conn, err := grpc.Dial(
+			yggdDispatchSocketAddr,
+			grpc.WithTransportCredentials(insecure.NewCredentials()),
+		)
 		if err != nil {
 			log.Fatal(err)
 		}
