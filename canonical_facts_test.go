@@ -104,7 +104,9 @@ func TestCanonicalFactsUnmarshalJSON(t *testing.T) {
 		},
 		{
 			description: "valid",
-			input:       []byte(`{"insights_id":"bb69cd34-263f-444c-9278-5935b61d7f60","machine_id":"acc046d0-0add-4550-ac7c-5a833b1b6470","bios_uuid":"d8ec3cd5-a6bc-4742-bd2f-32940da182b0","subscription_manager_id":"bc452b83-c4ee-4b80-91d8-98ff816b2440","ip_addresses":["1.2.3.4", "5.6.7.8"],"fqdn":"foo.bar.com","mac_addresses":["CC:D1:7A:44:6D:1B", "A7:03:90:D0:05:A7"]}`),
+			input: []byte(
+				`{"insights_id":"bb69cd34-263f-444c-9278-5935b61d7f60","machine_id":"acc046d0-0add-4550-ac7c-5a833b1b6470","bios_uuid":"d8ec3cd5-a6bc-4742-bd2f-32940da182b0","subscription_manager_id":"bc452b83-c4ee-4b80-91d8-98ff816b2440","ip_addresses":["1.2.3.4", "5.6.7.8"],"fqdn":"foo.bar.com","mac_addresses":["CC:D1:7A:44:6D:1B", "A7:03:90:D0:05:A7"]}`,
+			),
 			want: CanonicalFacts{
 				InsightsID:            "bb69cd34-263f-444c-9278-5935b61d7f60",
 				MachineID:             "acc046d0-0add-4550-ac7c-5a833b1b6470",

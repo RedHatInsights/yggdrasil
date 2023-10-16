@@ -6,7 +6,11 @@ import (
 	"fmt"
 )
 
-func newTLSConfig(certPEMBlock []byte, keyPEMBlock []byte, CARootPEMBlocks [][]byte) (*tls.Config, error) {
+func newTLSConfig(
+	certPEMBlock []byte,
+	keyPEMBlock []byte,
+	CARootPEMBlocks [][]byte,
+) (*tls.Config, error) {
 	config := &tls.Config{}
 
 	cert, err := tls.X509KeyPair(certPEMBlock, keyPEMBlock)

@@ -51,7 +51,10 @@ func get(url string) ([]byte, error) {
 	log.Debugf("received HTTP %v", resp.Status)
 
 	if resp.StatusCode >= 400 {
-		return nil, &yggdrasil.APIResponseError{Code: resp.StatusCode, Body: strings.TrimSpace(string(data))}
+		return nil, &yggdrasil.APIResponseError{
+			Code: resp.StatusCode,
+			Body: strings.TrimSpace(string(data)),
+		}
 	}
 
 	return data, nil
@@ -84,7 +87,10 @@ func post(url string, headers map[string]string, body []byte) error {
 	log.Debugf("received HTTP %v", resp.Status)
 
 	if resp.StatusCode >= 400 {
-		return &yggdrasil.APIResponseError{Code: resp.StatusCode, Body: strings.TrimSpace(string(data))}
+		return &yggdrasil.APIResponseError{
+			Code: resp.StatusCode,
+			Body: strings.TrimSpace(string(data)),
+		}
 	}
 
 	return nil
