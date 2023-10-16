@@ -4,7 +4,6 @@ import (
 	"crypto/sha256"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"net"
 	"os"
 	"os/signal"
@@ -194,17 +193,17 @@ func main() {
 		}
 
 		// Read certificates, create a TLS config, and initialize HTTP client
-		certData, err := ioutil.ReadFile(c.String("cert-file"))
+		certData, err := os.ReadFile(c.String("cert-file"))
 		if err != nil {
 			return cli.Exit(fmt.Errorf("cannot read certificate file: %v", err), 1)
 		}
-		keyData, err := ioutil.ReadFile(c.String("key-file"))
+		keyData, err := os.ReadFile(c.String("key-file"))
 		if err != nil {
 			return cli.Exit(fmt.Errorf("cannot read key file: %w", err), 1)
 		}
 		rootCAs := make([][]byte, 0)
 		for _, file := range c.StringSlice("ca-root") {
-			data, err := ioutil.ReadFile(file)
+			data, err := os.ReadFile(file)
 			if err != nil {
 				return cli.Exit(fmt.Errorf("cannot read certificate authority: %v", err), 1)
 			}
@@ -369,7 +368,7 @@ func main() {
 			return cli.Exit(fmt.Errorf("cannot create directory: %w", err), 1)
 		}
 
-		fileInfos, err := ioutil.ReadDir(workerPath)
+		fileInfos, err := os.ReadDir(workerPath)
 		if err != nil {
 			return cli.Exit(fmt.Errorf("cannot read contents of directory: %w", err), 1)
 		}
