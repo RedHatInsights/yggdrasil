@@ -4,8 +4,8 @@ import (
 	"crypto/x509"
 	"encoding/pem"
 	"fmt"
-	"io/ioutil"
 	"math/rand"
+	"os"
 	"path/filepath"
 	"time"
 )
@@ -29,7 +29,7 @@ func parseCertCN(filename string) (string, error) {
 	var asn1Data []byte
 	switch filepath.Ext(filename) {
 	case ".pem":
-		data, err := ioutil.ReadFile(filename)
+		data, err := os.ReadFile(filename)
 		if err != nil {
 			return "", err
 		}
@@ -41,7 +41,7 @@ func parseCertCN(filename string) (string, error) {
 		asn1Data = append(asn1Data, block.Bytes...)
 	default:
 		var err error
-		asn1Data, err = ioutil.ReadFile(filename)
+		asn1Data, err = os.ReadFile(filename)
 		if err != nil {
 			return "", err
 		}

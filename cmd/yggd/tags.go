@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"reflect"
 	"strconv"
@@ -27,7 +26,7 @@ func (e *errorTag) Is(o error) bool {
 // readTags reads from its input, unmarshalling the TOML-encoded value to a map.
 // It then parses the map values into a map of string values.
 func readTags(in io.Reader) (map[string]string, error) {
-	data, err := ioutil.ReadAll(in)
+	data, err := io.ReadAll(in)
 	if err != nil {
 		return nil, fmt.Errorf("cannot read input: %w", err)
 	}

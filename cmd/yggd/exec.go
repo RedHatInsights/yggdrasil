@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -100,7 +99,7 @@ func startProcess(file string, env []string, delay time.Duration, died chan int)
 		return
 	}
 
-	if err := ioutil.WriteFile(filepath.Join(pidDirPath, filepath.Base(file)+".pid"), []byte(fmt.Sprintf("%v", cmd.Process.Pid)), 0644); err != nil {
+	if err := os.WriteFile(filepath.Join(pidDirPath, filepath.Base(file)+".pid"), []byte(fmt.Sprintf("%v", cmd.Process.Pid)), 0644); err != nil {
 		log.Errorf("cannot write to file: %v", err)
 		return
 	}
@@ -142,7 +141,7 @@ func killProcess(pid int) error {
 }
 
 func killWorker(pidFile string) error {
-	data, err := ioutil.ReadFile(pidFile)
+	data, err := os.ReadFile(pidFile)
 	if err != nil {
 		return fmt.Errorf("cannot read contents of file: %w", err)
 	}
@@ -166,7 +165,7 @@ func killWorkers() error {
 	if err := os.MkdirAll(pidDirPath, 0755); err != nil {
 		return fmt.Errorf("cannot create directory: %w", err)
 	}
-	fileInfos, err := ioutil.ReadDir(pidDirPath)
+	fileInfos, err := os.ReadDir(pidDirPath)
 	if err != nil {
 		return fmt.Errorf("cannot read contents of directory: %w", err)
 	}
