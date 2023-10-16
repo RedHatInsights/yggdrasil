@@ -84,16 +84,25 @@ func main() {
 					Usage: "register against `URL`",
 				},
 			},
-			Usage:       "Connects the system to " + yggdrasil.Provider,
-			UsageText:   fmt.Sprintf("%v connect [command options]", app.Name),
-			Description: fmt.Sprintf("The connect command connects the system to Red Hat Subscription Management and %v and activates the %v daemon that enables %v to interact with the system. For details visit: https://red.ht/connector", yggdrasil.Provider, yggdrasil.BrandName, yggdrasil.Provider),
+			Usage:     "Connects the system to " + yggdrasil.Provider,
+			UsageText: fmt.Sprintf("%v connect [command options]", app.Name),
+			Description: fmt.Sprintf(
+				"The connect command connects the system to Red Hat Subscription Management and %v and activates the %v daemon that enables %v to interact with the system. For details visit: https://red.ht/connector",
+				yggdrasil.Provider,
+				yggdrasil.BrandName,
+				yggdrasil.Provider,
+			),
 			Action: func(c *cli.Context) error {
 				hostname, err := os.Hostname()
 				if err != nil {
 					return cli.Exit(err, 1)
 				}
 
-				fmt.Printf("Connecting %v to %v.\nThis might take a few seconds.\n\n", hostname, yggdrasil.Provider)
+				fmt.Printf(
+					"Connecting %v to %v.\nThis might take a few seconds.\n\n",
+					hostname,
+					yggdrasil.Provider,
+				)
 
 				uuid, err := getConsumerUUID()
 				if err != nil {
@@ -128,7 +137,11 @@ func main() {
 					s.Start()
 					var err error
 					if c.String("organization") != "" {
-						err = registerActivationKey(c.String("organization"), c.StringSlice("activation-key"), c.String("server"))
+						err = registerActivationKey(
+							c.String("organization"),
+							c.StringSlice("activation-key"),
+							c.String("server"),
+						)
 					} else {
 						err = registerPassword(username, password, c.String("server"))
 					}
@@ -158,16 +171,25 @@ func main() {
 			},
 		},
 		{
-			Name:        "disconnect",
-			Usage:       "Disconnects the system from " + yggdrasil.Provider,
-			UsageText:   fmt.Sprintf("%v disconnect", app.Name),
-			Description: fmt.Sprintf("The disconnect command disconnects the system from Red Hat Subscription Management and %v and deactivates the %v daemon. %v will no longer be able to interact with the system.", yggdrasil.Provider, yggdrasil.BrandName, yggdrasil.Provider),
+			Name:      "disconnect",
+			Usage:     "Disconnects the system from " + yggdrasil.Provider,
+			UsageText: fmt.Sprintf("%v disconnect", app.Name),
+			Description: fmt.Sprintf(
+				"The disconnect command disconnects the system from Red Hat Subscription Management and %v and deactivates the %v daemon. %v will no longer be able to interact with the system.",
+				yggdrasil.Provider,
+				yggdrasil.BrandName,
+				yggdrasil.Provider,
+			),
 			Action: func(c *cli.Context) error {
 				hostname, err := os.Hostname()
 				if err != nil {
 					return cli.Exit(err, 1)
 				}
-				fmt.Printf("Disconnecting %v from %v.\nThis might take a few seconds.\n\n", hostname, yggdrasil.Provider)
+				fmt.Printf(
+					"Disconnecting %v from %v.\nThis might take a few seconds.\n\n",
+					hostname,
+					yggdrasil.Provider,
+				)
 
 				s := spinner.New(spinner.CharSets[9], 100*time.Millisecond)
 				s.Suffix = fmt.Sprintf(" Deactivating the %v daemon", yggdrasil.BrandName)
@@ -192,11 +214,14 @@ func main() {
 			},
 		},
 		{
-			Name:        "canonical-facts",
-			Hidden:      true,
-			Usage:       "Prints canonical facts about the system.",
-			UsageText:   fmt.Sprintf("%v canonical-facts", app.Name),
-			Description: fmt.Sprintf("The canonical-facts command prints data that uniquely identifies the system in the %v inventory service. Use only as directed for debugging purposes.", yggdrasil.Provider),
+			Name:      "canonical-facts",
+			Hidden:    true,
+			Usage:     "Prints canonical facts about the system.",
+			UsageText: fmt.Sprintf("%v canonical-facts", app.Name),
+			Description: fmt.Sprintf(
+				"The canonical-facts command prints data that uniquely identifies the system in the %v inventory service. Use only as directed for debugging purposes.",
+				yggdrasil.Provider,
+			),
 			Action: func(c *cli.Context) error {
 				facts, err := yggdrasil.GetCanonicalFacts()
 				if err != nil {
@@ -247,16 +272,22 @@ func main() {
 					}
 					w.Flush()
 				default:
-					return cli.Exit(fmt.Errorf("unsupported value for '--format': %v", c.String("format")), 1)
+					return cli.Exit(
+						fmt.Errorf("unsupported value for '--format': %v", c.String("format")),
+						1,
+					)
 				}
 				return nil
 			},
 		},
 		{
-			Name:        "status",
-			Usage:       "Prints status of the system's connection to " + yggdrasil.Provider,
-			UsageText:   fmt.Sprintf("%v status", app.Name),
-			Description: fmt.Sprintf("The status command prints the state of the connection to Red Hat Subscription Management and %v.", yggdrasil.Provider),
+			Name:      "status",
+			Usage:     "Prints status of the system's connection to " + yggdrasil.Provider,
+			UsageText: fmt.Sprintf("%v status", app.Name),
+			Description: fmt.Sprintf(
+				"The status command prints the state of the connection to Red Hat Subscription Management and %v.",
+				yggdrasil.Provider,
+			),
 			Action: func(c *cli.Context) error {
 				hostname, err := os.Hostname()
 				if err != nil {

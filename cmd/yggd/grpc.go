@@ -44,7 +44,10 @@ func newDispatcher() *dispatcher {
 	}
 }
 
-func (d *dispatcher) Register(ctx context.Context, r *pb.RegistrationRequest) (*pb.RegistrationResponse, error) {
+func (d *dispatcher) Register(
+	ctx context.Context,
+	r *pb.RegistrationRequest,
+) (*pb.RegistrationResponse, error) {
 	d.RLock()
 	if _, prs := d.workers[r.GetHandler()]; prs {
 		d.RUnlock()

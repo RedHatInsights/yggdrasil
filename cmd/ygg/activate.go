@@ -31,7 +31,11 @@ func activate() error {
 	}
 	activeState := properties["ActiveState"]
 	if activeState.(string) != "active" {
-		return fmt.Errorf("error: The unit %v failed to start. Run 'systemctl status %v' for more information", unitName, unitName)
+		return fmt.Errorf(
+			"error: The unit %v failed to start. Run 'systemctl status %v' for more information",
+			unitName,
+			unitName,
+		)
 	}
 
 	return nil

@@ -203,7 +203,13 @@ func watchWorkerDir(dir string, env []string, died chan int) {
 			}
 		case notify.InDelete, notify.InMovedFrom:
 			workerName := filepath.Base(e.Path())
-			pidFilePath := filepath.Join(yggdrasil.LocalstateDir, "run", yggdrasil.LongName, "workers", workerName+".pid")
+			pidFilePath := filepath.Join(
+				yggdrasil.LocalstateDir,
+				"run",
+				yggdrasil.LongName,
+				"workers",
+				workerName+".pid",
+			)
 
 			if err := killWorker(pidFilePath); err != nil {
 				log.Errorf("cannot kill worker: %v", err)
