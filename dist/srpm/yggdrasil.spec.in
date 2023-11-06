@@ -62,6 +62,7 @@ BuildRequires:  meson
 BuildRequires:  pkgconfig(dbus-1)
 BuildRequires:  pkgconfig(systemd)
 BuildRequires:  pkgconfig(bash-completion)
+BuildRequires:  golang >= 1.18
 
 %description %{common_description}
 
