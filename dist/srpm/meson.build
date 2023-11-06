@@ -17,7 +17,7 @@ tarball = custom_target('tarball',
     '--gzip',
     '--absolute-names',
     '--file', '@OUTPUT@',
-    '--transform', 's+@0@+@1@-@2@+'.format(meson.project_source_root(), meson.project_name(), commit),
+    '--transform', 's+@0@+@1@-@2@+'.format(meson.project_source_root(), meson.project_name(), meson.project_version()),
     '--exclude', build_root_basename,
     '--exclude', '.git',
     '--exclude', '.vscode',
@@ -25,7 +25,7 @@ tarball = custom_target('tarball',
     '--exclude', '.copr',
     meson.project_source_root()
   ],
-  output: '@0@-@1@.tar.gz'.format(meson.project_name(), commit)
+  output: '@0@-@1@.tar.gz'.format(meson.project_name(), meson.project_version())
 )
 
 specfile = configure_file(
