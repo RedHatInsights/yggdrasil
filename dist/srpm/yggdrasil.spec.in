@@ -8,6 +8,8 @@
 
 %bcond_without check
 
+%global has_go_rpm_macros (0%{?fedora} || 0%{?rhel} >= 9)
+
 # must be before %%gometa
 Version:        @VERSION@
 
@@ -17,10 +19,13 @@ Version:        @VERSION@
 %global shortcommit     %(c=%{commit}; echo ${c:0:7})
 %global archivename     yggdrasil-%{version}
 
-%if 0%{?fedora}
-%gometa -f
+%if %{has_go_rpm_macros}
+%gometa %{?fedora:-f}
 %else
-%gometa
+%global gourl https://github.com/RedHatInsights/%{name}
+%global gomodulesmode GO111MODULES=off
+%global gosource %{gourl}/releases/download/%{version}/yggdrasil-%{version}.tar.gz
+%global gocompilerflags "-buildmode pie -compiler gc"
 %endif
 
 # Manually redefine %%dist to work around an issue in COPR where the build root
@@ -60,13 +65,15 @@ BuildRequires:  pkgconfig(bash-completion)
 
 %description %{common_description}
 
+%if %{has_go_rpm_macros}
 %gopkg
+%endif
 
 %prep
-%if 0%{?fedora}
-%goprep
+%if %{has_go_rpm_macros}
+%goprep %{?rhel:-k}
 %else
-%goprep -k
+%autosetup
 %endif
 
 %if 0%{?fedora}
@@ -84,11 +91,17 @@ export %gomodulesmode
 %global gosupfiles ./ipc/com.redhat.Yggdrasil1.Dispatcher1.xml ./ipc/com.redhat.Yggdrasil1.Worker1.xml
 %install
 %meson_install
+%if %{has_go_rpm_macros}
 %gopkginstall
+%endif
 
 %if %{with check}
 %check
+%if %{has_go_rpm_macros}
 %gocheck
+%else
+%meson_test
+%endif
 %endif
 
 %files
@@ -104,4 +117,6 @@ export %gomodulesmode
 %{_datadir}/doc/%{name}/*
 %{_mandir}/man1/*
 
+%if %{has_go_rpm_macros}
 %gopkgfiles
+%endif
