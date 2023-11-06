@@ -8,10 +8,14 @@
 
 %bcond_without check
 
+# must be before %%gometa
+Version:        @VERSION@
+
 # https://github.com/redhatinsights/yggdrasil
 %global goipath         github.com/redhatinsights/yggdrasil
 %global commit          @COMMIT@
 %global shortcommit     %(c=%{commit}; echo ${c:0:7})
+%global archivename     yggdrasil-%{version}
 
 %if 0%{?fedora}
 %gometa -f
@@ -41,7 +45,6 @@ exchanging data with its worker processes through a D-Bus message broker.}
 %global godocs          CONTRIBUTING.md README.md
 
 Name:           yggdrasil
-Version:        @VERSION@
 Release:        0%{?dist}
 Summary:        Remote data transmission and processing client
 
