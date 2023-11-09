@@ -20,7 +20,7 @@ jobs:
             ${{ runner.os }}-go-
       - run: go mod download
       - name: Run commitsar
-        uses: aevea/commitsar@v0.16.0
+        uses: aevea/commitsar@v0.20.2
   lint-code:
     name: Lint code
     runs-on: ubuntu-latest
