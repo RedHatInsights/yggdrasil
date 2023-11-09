@@ -377,6 +377,11 @@ func main() {
 		env := []string{
 			"YGG_SOCKET_ADDR=unix:" + c.String("socket-addr"),
 			"PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+			"http_proxy=" + os.Getenv("http_proxy"),
+			"https_proxy=" + os.Getenv("https_proxy"),
+			"HTTPS_PROXY=" + os.Getenv("HTTPS_PROXY"),
+			"no_proxy=" + os.Getenv("no_proxy"),
+			"NO_PROXY=" + os.Getenv("NO_PROXY"),
 		}
 		for _, info := range fileInfos {
 			if strings.HasSuffix(info.Name(), "worker") {

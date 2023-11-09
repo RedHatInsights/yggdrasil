@@ -59,6 +59,12 @@ export CONSUMER_ID=$(openssl x509 -in cert.pem -subject -nocert | cut -f3 -d" ")
 mosquitto_pub --host 127.0.0.1 --port 1883 --topic "yggdrasil/${CONSUMER_ID}/control/in" --message "{\"type\":\"command\",\"message_id\":\"$(uuidgen | tr -d '\n')\",\"version\":1,\"sent\":\"$(date --iso-8601=seconds --utc | tr -d '\n')\",\"content\":{\"command\":\"ping\"}}"
 ```
 
+Send a data message to `echo worker`
+```
+mosquitto_pub --host 127.0.0.1 --port 1883 --topic yggdrasil/${CONSUMER_ID}/data/in --message "{\"type\":\"data\",\"message_id\":\"$(uuidgen | tr -d '\n')\", \"response_to\":\" \",\"version\":1,\"sent\":\"$(date --iso-8601=seconds --utc | tr -d '\n')\",\"directive\":\"echo\",\"metadata\":\"{}\",\"content\":{\"hello world\"}}"
+```
+
+
 # Call Graphs
 
 Call graphs can be generated to provide a high-level overview of the
