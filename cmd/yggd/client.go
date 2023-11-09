@@ -281,8 +281,8 @@ func (c *Client) ReceiveControlMessage(msg *yggdrasil.Control) error {
 		}
 
 		log.Debugf("received message %v", msg.MessageID)
+		log.Tracef("control message: %v", msg)
 		log.Tracef("command: %+v", cmd.Command)
-		log.Tracef("Control message: %v", msg)
 
 		switch cmd.Command {
 		case yggdrasil.CommandNamePing:
@@ -320,7 +320,7 @@ func (c *Client) ReceiveControlMessage(msg *yggdrasil.Control) error {
 			}
 		case yggdrasil.CommandNameCancel:
 			log.Info("cancelling message...")
-			// Unmarshall comand arguments
+			// Unmarshall command arguments
 			// cmd contains the directive and the message id to be canceled.
 			directive, exists := cmd.Arguments["directive"]
 			if !exists {
