@@ -2,6 +2,8 @@ package yggdrasil
 
 import (
 	"encoding/json"
+	"fmt"
+	"strconv"
 	"time"
 )
 
@@ -98,6 +100,20 @@ type Event struct {
 	Content    string      `json:"content"`
 }
 
+func (e *Event) String() string {
+	result := fmt.Sprintf("{Type:%s MessageID:%s", e.Type, e.MessageID)
+	if len(e.ResponseTo) > 0 {
+		result += fmt.Sprintf(" ResponseTo:%s", e.ResponseTo)
+	}
+	result += fmt.Sprintf(
+		" Version:%d Sent:%s Content:%s}",
+		e.Version,
+		e.Sent.Format(time.RFC3339),
+		e.Content,
+	)
+	return result
+}
+
 type Control struct {
 	Type       MessageType     `json:"type"`
 	MessageID  string          `json:"message_id"`
@@ -105,6 +121,20 @@ type Control struct {
 	Version    int             `json:"version"`
 	Sent       time.Time       `json:"sent"`
 	Content    json.RawMessage `json:"content"`
+}
+
+func (c *Control) String() string {
+	result := fmt.Sprintf("{Type:%s MessageID:%s", c.Type, c.MessageID)
+	if len(c.ResponseTo) > 0 {
+		result += fmt.Sprintf(" ResponseTo:%s", c.ResponseTo)
+	}
+	result += fmt.Sprintf(
+		" Version:%d Sent:%s Content:%s}",
+		c.Version,
+		c.Sent.Format(time.RFC3339),
+		strconv.QuoteToASCII(string(c.Content)),
+	)
+	return result
 }
 
 // Data messages are published by both client and server on their respective
@@ -121,12 +151,37 @@ type Data struct {
 	Content    []byte            `json:"content"`
 }
 
+func (d *Data) String() string {
+	result := fmt.Sprintf("{Type:%s MessageID:%s", d.Type, d.MessageID)
+	if len(d.ResponseTo) > 0 {
+		result += fmt.Sprintf(" ResponseTo:%s", d.ResponseTo)
+	}
+	result += fmt.Sprintf(
+		" Version:%d Sent:%s Directive:%s Metadata:%v Content:%s}",
+		d.Version,
+		d.Sent.Format(time.RFC3339),
+		d.Directive,
+		d.Metadata,
+		strconv.QuoteToASCII(string(d.Content)),
+	)
+	return result
+}
+
 // Response messages are published by the server as a response to a data
-// message. This is most often used as a receipt to indicate the receiption of a
+// message. This is most often used as a receipt to indicate the reception of a
 // message by a synchronous request/response transport (such as the HTTP polling
 // transport).
 type Response struct {
 	Code     int               `json:"code"`
 	Metadata map[string]string `json:"metadata"`
 	Data     []byte            `json:"data"`
+}
+
+func (r *Response) String() string {
+	return fmt.Sprintf(
+		"{Code:%d Metadata:%v Data:%s}",
+		r.Code,
+		r.Metadata,
+		strconv.QuoteToASCII(string(r.Data)),
+	)
 }
