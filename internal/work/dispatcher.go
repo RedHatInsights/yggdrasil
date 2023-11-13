@@ -111,6 +111,7 @@ func (d *Dispatcher) Connect() error {
 	go func() {
 		for s := range signals {
 			log.Tracef("received signal: %#v", s)
+
 			dest, err := d.senderName(dbus.Sender(s.Sender))
 			if err != nil {
 				log.Errorf("cannot find sender: %v", err)

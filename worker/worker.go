@@ -125,6 +125,17 @@ func (w *Worker) Connect(quit <-chan os.Signal) error {
 		return fmt.Errorf("request name failed")
 	}
 
+	// Emit a started event
+	err = w.EmitEvent(
+		ipc.WorkerEventNameStarted,
+		"",
+		"",
+		map[string]string{},
+	)
+	if err != nil {
+		return fmt.Errorf("cannot emit event: %w", err)
+	}
+
 	signals := make(chan *dbus.Signal)
 	w.conn.Signal(signals)
 	go func() {
@@ -141,6 +152,17 @@ func (w *Worker) Connect(quit <-chan os.Signal) error {
 	}()
 
 	<-quit
+
+	// Emit a stopped event
+	err = w.EmitEvent(
+		ipc.WorkerEventNameStopped,
+		"",
+		"",
+		map[string]string{},
+	)
+	if err != nil {
+		return fmt.Errorf("cannot emit event: %w", err)
+	}
 
 	return nil
 }
