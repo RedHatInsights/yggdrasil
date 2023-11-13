@@ -74,6 +74,16 @@
             3 = WORKING
             Emitted when the worker wishes to continue to announce it is
             working.
+
+            4 = STARTED
+            Emitted when the worker is started, and it is ready
+            to handle received messages. The message_id and response_id are
+            empty.
+
+            5 = STOPPED
+            Emitted when the worker is stopped, and it is not able
+            to handle received messages anymore. The message_id and
+            response_id are also empty.
         -->
         <signal name="Event">
             <arg type="u" name="name" />

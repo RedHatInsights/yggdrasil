@@ -2,6 +2,7 @@ package ipc
 
 import (
 	_ "embed"
+	"fmt"
 )
 
 //go:embed com.redhat.Yggdrasil1.Dispatcher1.xml
@@ -12,13 +13,16 @@ var InterfaceDispatcher string
 type DispatcherEvent uint
 
 const (
-	// Emitted when the dispatcher receives the "disconnect" command.
+	// DispatcherEventReceivedDisconnect is emitted when the dispatcher receives
+	// the "disconnect" command.
 	DispatcherEventReceivedDisconnect DispatcherEvent = 1
 
-	// Emitted when the transport unexpected disconnects from the network.
+	// DispatcherEventUnexpectedDisconnect is emitted when the transport unexpected
+	// disconnects from the network.
 	DispatcherEventUnexpectedDisconnect DispatcherEvent = 2
 
-	// Emitted when the transport reconnects to the network.
+	// DispatcherEventConnectionRestored is emitted when the transport reconnects
+	// to the network.
 	DispatcherEventConnectionRestored DispatcherEvent = 3
 )
 
@@ -29,28 +33,40 @@ type WorkerEventName uint
 
 const (
 
-	// Emitted when the worker "accepts" a dispatched message and begins
-	// "working".
+	// WorkerEventNameBegin is emitted when the worker "accepts"
+	// a dispatched message and begins "working".
 	WorkerEventNameBegin WorkerEventName = 1
 
-	// Emitted when the worker finishes "working".
+	// WorkerEventNameEnd is emitted when the worker finishes "working".
 	WorkerEventNameEnd WorkerEventName = 2
 
-	// Emitted when the worker wishes to continue to announce it is
-	// working.
+	// WorkerEventNameWorking is emitted when the worker wishes
+	// to continue to announce it is working.
 	WorkerEventNameWorking WorkerEventName = 3
+
+	// WorkerEventNameStarted is emitted when worker finished starting
+	// process, and it can start process received messages.
+	WorkerEventNameStarted WorkerEventName = 4
+
+	// WorkerEventNameStopped is emitted when worker is stopped,
+	// and it cannot process any message.
+	WorkerEventNameStopped WorkerEventName = 5
 )
 
 func (e WorkerEventName) String() string {
 	switch e {
-	case 1:
+	case WorkerEventNameBegin:
 		return "BEGIN"
-	case 2:
+	case WorkerEventNameEnd:
 		return "END"
-	case 3:
+	case WorkerEventNameWorking:
 		return "WORKING"
+	case WorkerEventNameStarted:
+		return "STARTED"
+	case WorkerEventNameStopped:
+		return "STOPPED"
 	}
-	return ""
+	return fmt.Sprintf("UNKNOWN (value: %d)", e)
 }
 
 type WorkerEvent struct {
