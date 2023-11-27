@@ -14,7 +14,7 @@ help:
 
 .PHONY: srpm
 srpm:
-	dnf install --assumeyes bash-completion git go meson 'pkgconfig(dbus-1)' 'pkgconfig(systemd)' rpm-build
+	dnf install --assumeyes bash-completion git-core go meson 'pkgconfig(dbus-1)' 'pkgconfig(systemd)' rpm-build
 	meson setup builddir -Dbuild_srpm=True -Dvendor=True -Dexamples=True
 	meson compile srpm -C builddir
 	mv builddir/dist/srpm/*.src.rpm $(outdir)
