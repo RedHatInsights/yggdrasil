@@ -121,6 +121,18 @@ func main() {
 			Value:  0 * time.Second,
 			Hidden: true,
 		}),
+		altsrc.NewDurationFlag(&cli.DurationFlag{
+			Name:   "mqtt-connect-timeout",
+			Usage:  "Sets the time to wait before giving up to `DURATION` when connecting to an MQTT broker",
+			Value:  30 * time.Second,
+			Hidden: true,
+		}),
+		altsrc.NewDurationFlag(&cli.DurationFlag{
+			Name:   "mqtt-publish-timeout",
+			Usage:  "Sets the time to wait before giving up to `DURATION` when publishing a message to an MQTT broker",
+			Value:  30 * time.Second,
+			Hidden: true,
+		}),
 	}
 
 	// This BeforeFunc will load flag values from a config file only if the
@@ -272,12 +284,21 @@ func main() {
 			log.Tracef("subscribed to topic: %v", topic)
 
 			topic = fmt.Sprintf("%v/%v/control/in", yggdrasil.TopicPrefix, ClientID)
-			client.Subscribe(topic, 1, func(c mqtt.Client, m mqtt.Message) {
-				go handleControlMessage(c, m)
+			client.Subscribe(topic, 1, func(client mqtt.Client, message mqtt.Message) {
+				go handleControlMessage(
+					client,
+					message,
+					c.Duration("mqtt-publish-timeout"),
+					c.Duration("mqtt-publish-timeout"),
+				)
 			})
 			log.Tracef("subscribed to topic: %v", topic)
 
-			go publishConnectionStatus(client, d.makeDispatchersMap())
+			go publishConnectionStatus(
+				client,
+				d.makeDispatchersMap(),
+				c.Duration("mqtt-publish-timeout"),
+			)
 		})
 		mqttClientOpts.SetDefaultPublishHandler(func(c mqtt.Client, m mqtt.Message) {
 			log.Errorf("unhandled message: %v", string(m.Payload()))
@@ -324,7 +345,18 @@ func main() {
 		)
 
 		mqttClient := mqtt.NewClient(mqttClientOpts)
-		if token := mqttClient.Connect(); token.Wait() && token.Error() != nil {
+		log.Infof("connecting to broker: %v", c.StringSlice("broker"))
+		token := mqttClient.Connect()
+		if !token.WaitTimeout(c.Duration("mqtt-connect-timeout")) {
+			return cli.Exit(
+				fmt.Errorf(
+					"cannot connect to broker: connection timeout: %v elapsed",
+					c.Duration("mqtt-connect-timeout"),
+				),
+				1,
+			)
+		}
+		if token.Error() != nil {
 			return cli.Exit(fmt.Errorf("cannot connect to broker: %w", token.Error()), 1)
 		}
 
@@ -350,7 +382,11 @@ func main() {
 					}
 				}
 				prevDispatchersHash.Store(sum)
-				go publishConnectionStatus(mqttClient, dispatchers)
+				go publishConnectionStatus(
+					mqttClient,
+					dispatchers,
+					c.Duration("mqtt-publish-timeout"),
+				)
 			}
 		}()
 
@@ -360,7 +396,7 @@ func main() {
 
 		// Start a goroutine that receives yggdrasil.Data values on a 'recv'
 		// channel and publish them to MQTT.
-		go publishReceivedData(mqttClient, d.recvQ)
+		go publishReceivedData(mqttClient, d.recvQ, c.Duration("mqtt-publish-timeout"))
 
 		// Locate and start worker child processes.
 		workerPath := filepath.Join(yggdrasil.LibexecDir, yggdrasil.LongName)
@@ -402,21 +438,25 @@ func main() {
 		// Start a goroutine that watches the tags file for write events and
 		// publishes connection status messages when the file changes.
 		go func() {
-			c := make(chan notify.EventInfo, 1)
+			events := make(chan notify.EventInfo, 1)
 
 			fp := filepath.Join(yggdrasil.SysconfDir, yggdrasil.LongName, "tags.toml")
 
-			if err := notify.Watch(fp, c, notify.InCloseWrite, notify.InDelete); err != nil {
+			if err := notify.Watch(fp, events, notify.InCloseWrite, notify.InDelete); err != nil {
 				log.Infof("cannot start watching '%v': %v", fp, err)
 				return
 			}
-			defer notify.Stop(c)
+			defer notify.Stop(events)
 
-			for e := range c {
+			for e := range events {
 				log.Debugf("received inotify event %v", e.Event())
 				switch e.Event() {
 				case notify.InCloseWrite, notify.InDelete:
-					go publishConnectionStatus(mqttClient, d.makeDispatchersMap())
+					go publishConnectionStatus(
+						mqttClient,
+						d.makeDispatchersMap(),
+						c.Duration("mqtt-publish-timeout"),
+					)
 				}
 			}
 		}()

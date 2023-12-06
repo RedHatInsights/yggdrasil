@@ -27,7 +27,12 @@ func handleDataMessage(client mqtt.Client, msg mqtt.Message, sendQ chan<- yggdra
 	sendQ <- data
 }
 
-func handleControlMessage(client mqtt.Client, msg mqtt.Message) {
+func handleControlMessage(
+	client mqtt.Client,
+	msg mqtt.Message,
+	publishTimeout time.Duration,
+	connectTimeout time.Duration,
+) {
 	log.Debugf("received a message on topic %v", msg.Topic())
 
 	var cmd yggdrasil.Command
@@ -56,7 +61,11 @@ func handleControlMessage(client mqtt.Client, msg mqtt.Message) {
 		}
 		topic := fmt.Sprintf("%v/%v/control/out", yggdrasil.TopicPrefix, ClientID)
 
-		if token := client.Publish(topic, 1, false, data); token.Wait() && token.Error() != nil {
+		token := client.Publish(topic, 1, false, data)
+		if !token.WaitTimeout(publishTimeout) {
+			log.Errorf("cannot publish message: connection timeout: %v elapsed", publishTimeout)
+		}
+		if token.Error() != nil {
 			log.Errorf("failed to publish message: %v", token.Error())
 		}
 	case yggdrasil.CommandNameDisconnect:
@@ -72,7 +81,12 @@ func handleControlMessage(client mqtt.Client, msg mqtt.Message) {
 		}
 		time.Sleep(time.Duration(delay) * time.Second)
 
-		if token := client.Connect(); token.Wait() && token.Error() != nil {
+		token := client.Connect()
+		if !token.WaitTimeout(connectTimeout) {
+			log.Errorf("cannot reconnect to broker: connection timeout: %v elapsed", connectTimeout)
+			return
+		}
+		if token.Error() != nil {
 			log.Errorf("cannot reconnect to broker: %v", token.Error())
 			return
 		}
@@ -81,7 +95,11 @@ func handleControlMessage(client mqtt.Client, msg mqtt.Message) {
 	}
 }
 
-func publishConnectionStatus(c mqtt.Client, dispatchers map[string]map[string]string) {
+func publishConnectionStatus(
+	c mqtt.Client,
+	dispatchers map[string]map[string]string,
+	timeout time.Duration,
+) {
 	facts, err := yggdrasil.GetCanonicalFacts()
 	if err != nil {
 		log.Errorf("cannot get canonical facts: %v", err)
@@ -125,13 +143,17 @@ func publishConnectionStatus(c mqtt.Client, dispatchers map[string]map[string]st
 
 	topic := fmt.Sprintf("%v/%v/control/out", yggdrasil.TopicPrefix, ClientID)
 
-	if token := c.Publish(topic, 1, false, data); token.Wait() && token.Error() != nil {
+	token := c.Publish(topic, 1, false, data)
+	if !token.WaitTimeout(timeout) {
+		log.Errorf("cannot publish message: connection timeout: %v elapsed", timeout)
+	}
+	if token.Error() != nil {
 		log.Errorf("failed to publish message: %v", token.Error())
 	}
 	log.Debugf("published message %v to topic %v", msg.MessageID, topic)
 }
 
-func publishReceivedData(client mqtt.Client, c <-chan yggdrasil.Data) {
+func publishReceivedData(client mqtt.Client, c <-chan yggdrasil.Data, timeout time.Duration) {
 	for d := range c {
 		topic := fmt.Sprintf("%v/%v/data/out", yggdrasil.TopicPrefix, ClientID)
 
@@ -141,7 +163,11 @@ func publishReceivedData(client mqtt.Client, c <-chan yggdrasil.Data) {
 			continue
 		}
 
-		if token := client.Publish(topic, 1, false, data); token.Wait() && token.Error() != nil {
+		token := client.Publish(topic, 1, false, data)
+		if !token.WaitTimeout(timeout) {
+			log.Errorf("cannot publish message: connection timeout: %v elapsed", timeout)
+		}
+		if token.Error() != nil {
 			log.Errorf("failed to publish message: %v", token.Error())
 		}
 		log.Debugf("published message %v to topic %v", d.MessageID, topic)
