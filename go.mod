@@ -3,7 +3,7 @@ module github.com/redhatinsights/yggdrasil
 go 1.18
 
 require (
-	git.sr.ht/~spc/go-log v0.0.0-20210409014304-ce6a6f3602dc
+	git.sr.ht/~spc/go-log v0.1.1
 	github.com/adrg/xdg v0.4.0
 	github.com/coreos/go-systemd/v22 v22.5.0
 	github.com/eclipse/paho.mqtt.golang v1.4.3

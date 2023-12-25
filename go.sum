@@ -1,5 +1,5 @@
-git.sr.ht/~spc/go-log v0.0.0-20210409014304-ce6a6f3602dc h1:jrsDG/OBvZz/ToHTMIsWXTQ0L1N7A8XGx77aifPethE=
-git.sr.ht/~spc/go-log v0.0.0-20210409014304-ce6a6f3602dc/go.mod h1:IKiYUc0lWbZO4uSV0kWNzJSFnABNdrybpPWo46CGgFM=
+git.sr.ht/~spc/go-log v0.1.1 h1:pdfV6Q1pNcGVT77DAWzc6LxJyi83PRu1ioZo98ZobAU=
+git.sr.ht/~spc/go-log v0.1.1/go.mod h1:Albq15b/jXGrQ659oyB8X1wX8quqpU+LxXFw7YmEuTg=
 github.com/BurntSushi/toml v1.3.2 h1:o7IhLm0Msx3BaB+n3Ag7L8EVlByGnpq14C4YWiu/gL8=
 github.com/BurntSushi/toml v1.3.2/go.mod h1:CxXYINrC8qIiEnFrOxCa7Jy5BFHlXnUU2pbicEuybxQ=
 github.com/adrg/xdg v0.4.0 h1:RzRqFcjH4nE5C6oTAxhBtoE2IRyjBSa62SCbyPidvls=
