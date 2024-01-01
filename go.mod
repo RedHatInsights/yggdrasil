@@ -12,7 +12,7 @@ require (
 	github.com/google/uuid v1.5.0
 	github.com/pelletier/go-toml v1.9.5
 	github.com/rjeczalik/notify v0.9.3
-	github.com/urfave/cli/v2 v2.26.0
+	github.com/urfave/cli/v2 v2.27.1
 )
 
 require (
