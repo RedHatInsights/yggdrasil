@@ -210,6 +210,7 @@ func (c *Client) MessageJournal(
 	until string,
 	persistent bool,
 	truncateFields []string,
+	truncateAllFields int,
 ) ([]map[string]string, *dbus.Error) {
 	if c.dispatcher.MessageJournal == nil {
 		return nil, dbus.MakeFailedError(fmt.Errorf("message journal is not enabled"))
@@ -243,12 +244,13 @@ func (c *Client) MessageJournal(
 	}
 
 	filter := messagejournal.Filter{
-		Persistent:     persistent,
-		MessageID:      messageID,
-		Worker:         worker,
-		Since:          since,
-		Until:          until,
-		TruncateFields: truncateFieldsMap,
+		Persistent:        persistent,
+		MessageID:         messageID,
+		Worker:            worker,
+		Since:             since,
+		Until:             until,
+		TruncateFields:    truncateFieldsMap,
+		TruncateAllFields: truncateAllFields,
 	}
 
 	journal, err := c.dispatcher.MessageJournal.GetEntries(filter)

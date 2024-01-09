@@ -35,12 +35,13 @@ type MessageJournal struct {
 // Filter is a data structure representing the filtering options
 // that are used when message journal entries are retrieved by yggctl.
 type Filter struct {
-	Persistent     bool
-	MessageID      string
-	Worker         string
-	Since          string
-	Until          string
-	TruncateFields map[string]int
+	Persistent        bool
+	MessageID         string
+	Worker            string
+	Since             string
+	Until             string
+	TruncateFields    map[string]int
+	TruncateAllFields int
 }
 
 type errorJournal struct {
@@ -196,9 +197,8 @@ func (j *MessageJournal) GetEntries(filter Filter) ([]map[string]string, error) 
 			return nil, fmt.Errorf("cannot scan journal entry columns: %w", err)
 		}
 
-		// Truncate data fields
-		if len(filter.TruncateFields) > 0 {
-			err := truncateEventDataFields(&workerEventData, filter.TruncateFields)
+		if len(filter.TruncateFields) > 0 || filter.TruncateAllFields >= 0 {
+			err := truncateEventDataFields(&workerEventData, filter)
 			if err != nil {
 				return nil, fmt.Errorf("cannot truncate data field: %w", err)
 			}
@@ -237,21 +237,34 @@ func (j *MessageJournal) GetEntries(filter Filter) ([]map[string]string, error) 
 // This process requires unmarshalling the worker event data,
 // extracting the specified field (if any), and truncating the
 // content of the field to the maximum length.
-func truncateEventDataFields(workerEventData *string, truncateOpts map[string]int) error {
+func truncateEventDataFields(workerEventData *string, filter Filter) error {
 	var eventData map[string]string
 	err := json.Unmarshal([]byte(*workerEventData), &eventData)
 	if err != nil {
 		return fmt.Errorf("cannot unmarshal worker event data: %w", err)
 	}
 
-	for field, length := range truncateOpts {
-		fieldContent, ok := eventData[field]
-		if !ok {
-			log.Debugf("cannot find specified field to truncate: %v", field)
-			continue
+	// If truncating all fields is enabled (i.e. >= 0),
+	// then it should ignore filters for truncating individual fields.
+	if filter.TruncateAllFields >= 0 {
+		for field, fieldContent := range eventData {
+			if len(fieldContent) >= int(filter.TruncateAllFields) {
+				eventData[field] = fmt.Sprintf(
+					"%+v...",
+					eventData[field][:filter.TruncateAllFields],
+				)
+			}
 		}
-		if len(fieldContent) >= length && length >= 0 {
-			eventData[field] = fmt.Sprintf("%+v...", eventData[field][:length])
+	} else {
+		for field, length := range filter.TruncateFields {
+			fieldContent, ok := eventData[field]
+			if !ok {
+				log.Debugf("cannot find specified field to truncate: %v", field)
+				continue
+			}
+			if len(fieldContent) >= length && length >= 0 {
+				eventData[field] = fmt.Sprintf("%+v...", eventData[field][:length])
+			}
 		}
 	}
 
