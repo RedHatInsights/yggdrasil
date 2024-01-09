@@ -112,6 +112,7 @@ func messageJournalAction(ctx *cli.Context) error {
 		ctx.String("since"),
 		ctx.String("until"),
 		ctx.Bool("persistent"),
+		ctx.StringSlice("truncate-field"),
 	}
 	obj := conn.Object("com.redhat.Yggdrasil1", "/com/redhat/Yggdrasil1")
 	if err := obj.Call("com.redhat.Yggdrasil1.MessageJournal", dbus.Flags(0), args...).Store(&journalEntries); err != nil {

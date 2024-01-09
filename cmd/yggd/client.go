@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"sync/atomic"
 	"time"
 
@@ -208,18 +209,48 @@ func (c *Client) MessageJournal(
 	since string,
 	until string,
 	persistent bool,
+	truncateFields []string,
 ) ([]map[string]string, *dbus.Error) {
-	filter := messagejournal.Filter{
-		Persistent: persistent,
-		MessageID:  messageID,
-		Worker:     worker,
-		Since:      since,
-		Until:      until,
-	}
-
 	if c.dispatcher.MessageJournal == nil {
 		return nil, dbus.MakeFailedError(fmt.Errorf("message journal is not enabled"))
 	}
+
+	// Parse the truncateFields string slice into a map
+	// to make selecting and truncating fields a simpler process.
+	// Valid format: fieldName=maxLength
+	// where 'fieldName' is a string and 'maxLength' is a number.
+	truncateFieldsMap := map[string]int{}
+	for _, elem := range truncateFields {
+		truncateInfo := strings.Split(elem, "=")
+		if len(truncateInfo) != 2 {
+			return nil, dbus.MakeFailedError(
+				fmt.Errorf("invalid field truncate format: expected format: [field=length]"),
+			)
+		}
+		fieldName := truncateInfo[0]
+		fieldMaxLength, err := strconv.Atoi(truncateInfo[1])
+		if err != nil {
+			return nil, dbus.MakeFailedError(
+				fmt.Errorf(
+					"invalid field truncate format: the field max length is not a number: [%v=%v]",
+					fieldName,
+					fieldMaxLength,
+				),
+			)
+		}
+
+		truncateFieldsMap[fieldName] = fieldMaxLength
+	}
+
+	filter := messagejournal.Filter{
+		Persistent:     persistent,
+		MessageID:      messageID,
+		Worker:         worker,
+		Since:          since,
+		Until:          until,
+		TruncateFields: truncateFieldsMap,
+	}
+
 	journal, err := c.dispatcher.MessageJournal.GetEntries(filter)
 	if err != nil {
 		return nil, dbus.MakeFailedError(err)
