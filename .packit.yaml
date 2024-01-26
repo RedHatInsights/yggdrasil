@@ -15,8 +15,7 @@ srpm_build_deps:
 actions:
   post-upstream-clone:
     - mkdir out
-    - meson setup builddir -Dbuild_srpm=True -Dvendor=True -Dexamples=True
-    - meson compile srpm -C builddir
+    - make -f .copr/Makefile srpm outdir=out/
     - bash -c 'mv builddir/dist/srpm/* out/'
   get-current-version:
     - awk '/^Version:/ {print $2;}' out/yggdrasil.spec
