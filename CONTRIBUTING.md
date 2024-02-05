@@ -79,7 +79,7 @@ You should see the message logged to the output of `sub` in [Terminal
 Now publish a data message containing the string "hello" to the `echo` worker.
 
 ```
-echo "hello" | \
+echo '"hello"' | \
 go run ./cmd/yggctl generate data-message --directive echo - | \
 pub -broker tcp://localhost:1883 -topic yggdrasil/$(hostname)/data/in
 ```
@@ -253,7 +253,7 @@ Similarly, a data message can be published to a client using `yggctl generate`
 and `pub`.
 
 ```
-echo "hello" | \
+echo '"hello"' | \
 yggctl generate data-message --directive echo - | \
 pub -broker tcp://localhost:1883 -topic yggdrasil/$(hostname)/data/in
 ```
@@ -264,7 +264,7 @@ It is also possible to send data directly to a worker. This method does not publ
 a message to the MQTT broker. Instead, it calls a D-Bus method:
 
 ```bash
-echo -n "hello" | yggctl dispatch -w "echo" -
+echo -n '"hello"' | yggctl dispatch -w "echo" -
 ```
 
 # Code Guidelines
