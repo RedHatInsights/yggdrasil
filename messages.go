@@ -118,7 +118,7 @@ type Data struct {
 	Sent       time.Time         `json:"sent"`
 	Directive  string            `json:"directive"`
 	Metadata   map[string]string `json:"metadata"`
-	Content    []byte            `json:"content"`
+	Content    json.RawMessage   `json:"content"`
 }
 
 // A WorkerMessage represents the structure of a journal entry in the
