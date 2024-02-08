@@ -53,9 +53,9 @@ const (
 	WorkerEventNameStopped WorkerEventName = 5
 )
 
-const WorkerEventNameMap := make(map[WorkerEventName]string) {
-	WorkerEventNameBegin: "BEGIN",
-	WorkerEventNameEnd: "END",
+var WorkerEventNameMap = map[WorkerEventName]string{
+	WorkerEventNameBegin:   "BEGIN",
+	WorkerEventNameEnd:     "END",
 	WorkerEventNameWorking: "WORKING",
 	WorkerEventNameStarted: "STARTED",
 	WorkerEventNameStopped: "STOPPED",
