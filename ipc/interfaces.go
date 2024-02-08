@@ -53,20 +53,21 @@ const (
 	WorkerEventNameStopped WorkerEventName = 5
 )
 
+const WorkerEventNameMap := make(map[WorkerEventName]string) {
+	WorkerEventNameBegin: "BEGIN",
+	WorkerEventNameEnd: "END",
+	WorkerEventNameWorking: "WORKING",
+	WorkerEventNameStarted: "STARTED",
+	WorkerEventNameStopped: "STOPPED",
+}
+
 func (e WorkerEventName) String() string {
-	switch e {
-	case WorkerEventNameBegin:
-		return "BEGIN"
-	case WorkerEventNameEnd:
-		return "END"
-	case WorkerEventNameWorking:
-		return "WORKING"
-	case WorkerEventNameStarted:
-		return "STARTED"
-	case WorkerEventNameStopped:
-		return "STOPPED"
+	val, found := WorkerEventNameMap[e]
+	if found {
+		return val
+	} else {
+		return fmt.Sprintf("UNKNOWN (value: %d)", e)
 	}
-	return fmt.Sprintf("UNKNOWN (value: %d)", e)
 }
 
 type WorkerEvent struct {
