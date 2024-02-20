@@ -1,6 +1,7 @@
 package work
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/url"
@@ -205,9 +206,18 @@ func (d *Dispatcher) Dispatch(data yggdrasil.Data) error {
 	}
 
 	if r.Value().(bool) {
-		URL, err := url.Parse(string(data.Content))
+		// Because the data.Content field is typed as json.RawMessage, it must first be
+		// unmarshalled into a Go string before parsing as a URL.
+		var urlStr string
+		err = json.Unmarshal(data.Content, &urlStr)
 		if err != nil {
-			return fmt.Errorf("cannot parse content as URL: %v", err)
+			return fmt.Errorf("unable to unmarshal JSON string fragment: %v", err)
+		}
+
+		// When string fragment was unmarshalled, then we can try to parse string as URL
+		URL, err := url.Parse(urlStr)
+		if err != nil {
+			return fmt.Errorf("cannot parse content %v as URL: %v", urlStr, err)
 		}
 		if config.DefaultConfig.DataHost != "" {
 			URL.Host = config.DefaultConfig.DataHost
