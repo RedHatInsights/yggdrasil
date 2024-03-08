@@ -168,7 +168,6 @@ dist:
 
 .PHONY: clean
 clean:
-	go mod tidy
 	rm $(BINS)
 	rm $(DATA)
 
