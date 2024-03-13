@@ -8,7 +8,6 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
-	"strings"
 	"sync/atomic"
 	"syscall"
 	"time"
@@ -25,8 +24,11 @@ import (
 	"google.golang.org/grpc"
 )
 
-var ClientID string = ""
-var ExcludeWorkers map[string]bool = map[string]bool{}
+var (
+	ClientID       string = ""
+	SocketAddr     string
+	ExcludeWorkers map[string]bool = map[string]bool{}
+)
 
 func main() {
 	app := cli.NewApp()
@@ -195,14 +197,16 @@ func main() {
 		log.Infof("starting %v version %v", app.Name, app.Version)
 
 		log.Trace("attempting to kill any orphaned workers")
-		if err := killWorkers(); err != nil {
-			return cli.Exit(fmt.Errorf("cannot kill workers: %w", err), 1)
+		if err := stopWorkers(); err != nil {
+			return cli.Exit(fmt.Errorf("cannot stop workers: %w", err), 1)
 		}
 
 		ClientID, err = parseCertCN(c.String("cert-file"))
 		if err != nil {
 			return cli.Exit(fmt.Errorf("cannot parse certificate: %w", err), 1)
 		}
+
+		SocketAddr = c.String("socket-addr")
 
 		// Read certificates, create a TLS config, and initialize HTTP client
 		certData, err := os.ReadFile(c.String("cert-file"))
@@ -236,12 +240,12 @@ func main() {
 		s := grpc.NewServer()
 		pb.RegisterDispatcherServer(s, d)
 
-		l, err := net.Listen("unix", c.String("socket-addr"))
+		l, err := net.Listen("unix", SocketAddr)
 		if err != nil {
 			return cli.Exit(fmt.Errorf("cannot listen to socket: %w", err), 1)
 		}
 		go func() {
-			log.Infof("listening on socket: %v", c.String("socket-addr"))
+			log.Infof("listening on socket: %v", SocketAddr)
 			if err := s.Serve(l); err != nil {
 				log.Errorf("cannot start server: %v", err)
 			}
@@ -399,37 +403,15 @@ func main() {
 		go publishReceivedData(mqttClient, d.recvQ, c.Duration("mqtt-publish-timeout"))
 
 		// Locate and start worker child processes.
-		workerPath := filepath.Join(yggdrasil.LibexecDir, yggdrasil.LongName)
-		if err := os.MkdirAll(workerPath, 0755); err != nil {
-			return cli.Exit(fmt.Errorf("cannot create directory: %w", err), 1)
+		if err := startWorkers(nil, func(pid int) {
+			d.deadWorkers <- pid
+		}); err != nil {
+			return cli.Exit(fmt.Errorf("cannot start workers: %w", err), 1)
 		}
 
-		fileInfos, err := os.ReadDir(workerPath)
-		if err != nil {
-			return cli.Exit(fmt.Errorf("cannot read contents of directory: %w", err), 1)
-		}
-
-		env := []string{
-			"YGG_SOCKET_ADDR=unix:" + c.String("socket-addr"),
-			"PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
-			"http_proxy=" + os.Getenv("http_proxy"),
-			"https_proxy=" + os.Getenv("https_proxy"),
-			"HTTPS_PROXY=" + os.Getenv("HTTPS_PROXY"),
-			"no_proxy=" + os.Getenv("no_proxy"),
-			"NO_PROXY=" + os.Getenv("NO_PROXY"),
-		}
-		for _, info := range fileInfos {
-			if strings.HasSuffix(info.Name(), "worker") {
-				if ExcludeWorkers[info.Name()] {
-					continue
-				}
-				log.Debugf("starting worker: %v", info.Name())
-				go startProcess(filepath.Join(workerPath, info.Name()), env, 0, d.deadWorkers)
-			}
-		}
 		// Start a goroutine that watches the worker directory for added or
 		// deleted files. Any "worker" files it detects are started up.
-		go watchWorkerDir(workerPath, env, d.deadWorkers)
+		go watchWorkerDir(d.deadWorkers)
 
 		// Start a goroutine that receives handler values on a channel and
 		// removes the worker registration entry.
@@ -463,8 +445,8 @@ func main() {
 
 		<-quit
 
-		if err := killWorkers(); err != nil {
-			return cli.Exit(fmt.Errorf("cannot kill workers: %w", err), 1)
+		if err := stopWorkers(); err != nil {
+			return cli.Exit(fmt.Errorf("cannot stop workers: %w", err), 1)
 		}
 
 		return nil

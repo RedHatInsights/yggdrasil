@@ -5,135 +5,84 @@ import (
 	"io"
 	"os"
 	"os/exec"
-	"path/filepath"
-	"strings"
-	"time"
 
 	"git.sr.ht/~spc/go-log"
-	"github.com/redhatinsights/yggdrasil"
 )
 
-func startProcess(file string, env []string, delay time.Duration, died chan int) {
+type processStartedFunc func(pid int, stdout, stderr io.ReadCloser)
+type processStoppedFunc func(pid int, state *os.ProcessState)
+
+// startProcess executes file, setting up the environment using the provided env
+// values. If the function parameter started is not nil, it is invoked on a
+// goroutine after the process has been started.
+func startProcess(
+	file string,
+	args []string,
+	env []string,
+	started processStartedFunc,
+) error {
 	if _, err := os.Stat(file); os.IsNotExist(err) {
-		log.Warnf("cannot start worker: %v", err)
-		return
+		return fmt.Errorf("cannot find file: %v", err)
 	}
 
-	cmd := exec.Command(file)
+	cmd := exec.Command(file, args...)
 	cmd.Env = env
-
-	if delay < 0 {
-		log.Errorf("failed to start worker '%v' too many times", file)
-		return
-	}
-
-	if delay > 0 {
-		log.Tracef("delaying worker start for %v...", delay)
-		time.Sleep(delay)
-	}
 
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
-		log.Errorf("cannot connect to stdout: %v", err)
-		return
+		return fmt.Errorf("cannot connect to stdout: %v", err)
 	}
 
 	stderr, err := cmd.StderrPipe()
 	if err != nil {
-		log.Errorf("cannot connect to stderr: %v", err)
-		return
+		return fmt.Errorf("cannot connect to stderr: %v", err)
 	}
 
 	if err := cmd.Start(); err != nil {
-		log.Errorf("cannot start worker: %v: %v", file, err)
-		return
+		return fmt.Errorf("cannot start worker: %v: %v", file, err)
+
 	}
 	log.Debugf("started process: %v", cmd.Process.Pid)
 
-	go func() {
-		for {
-			buf := make([]byte, 4096)
-			n, err := stdout.Read(buf)
-			if n > 0 {
-				log.Tracef("[%v] %v", file, strings.TrimRight(string(buf), "\n\x00"))
-			}
-			if err != nil {
-				switch err {
-				case io.EOF:
-					log.Debugf("%v stdout reached EOF: %v", file, err)
-					return
-				default:
-					log.Errorf("cannot read from stdout: %v", err)
-					continue
-				}
-			}
-		}
-	}()
-
-	go func() {
-		for {
-			buf := make([]byte, 4096)
-			n, err := stderr.Read(buf)
-			if n > 0 {
-				log.Errorf("[%v] %v", file, strings.TrimRight(string(buf), "\n\x00"))
-			}
-			if err != nil {
-				switch err {
-				case io.EOF:
-					log.Debugf("%v stderr reached EOF: %v", file, err)
-					return
-				default:
-					log.Errorf("cannot read from stderr: %v", err)
-					continue
-				}
-			}
-		}
-	}()
-
-	pidDirPath := filepath.Join(yggdrasil.LocalstateDir, "run", yggdrasil.LongName, "workers")
-
-	if err := os.MkdirAll(pidDirPath, 0755); err != nil {
-		log.Errorf("cannot create directory: %v", err)
-		return
+	if started != nil {
+		go started(cmd.Process.Pid, stdout, stderr)
 	}
 
-	if err := os.WriteFile(filepath.Join(pidDirPath, filepath.Base(file)+".pid"), []byte(fmt.Sprintf("%v", cmd.Process.Pid)), 0644); err != nil {
-		log.Errorf("cannot write to file: %v", err)
-		return
-	}
-
-	go watchProcess(cmd, delay, died)
+	return nil
 }
 
-func watchProcess(cmd *exec.Cmd, delay time.Duration, died chan int) {
-	log.Debugf("watching process: %v", cmd.Process.Pid)
-
-	state, err := cmd.Process.Wait()
+// waitProcess finds a process with the given pid and waits for it to exit.
+// If the function parameter stopped is not nil, it is invoked on a goroutine
+// when the process exits.
+func waitProcess(pid int, stopped processStoppedFunc) error {
+	process, err := os.FindProcess(pid)
 	if err != nil {
-		log.Errorf("process %v exited with error: %v", cmd.Process.Pid, err)
+		return fmt.Errorf("cannot find process with pid: %v", err)
 	}
 
-	died <- state.Pid()
-
-	if state.SystemTime() < time.Duration(1*time.Second) {
-		delay += 5 * time.Second
-	}
-	if delay >= time.Duration(30*time.Second) {
-		delay = -1
+	log.Debugf("waiting for process: %v", process.Pid)
+	state, err := process.Wait()
+	if err != nil {
+		return fmt.Errorf("process %v exited with error: %v", process.Pid, err)
 	}
 
-	go startProcess(cmd.Path, cmd.Env, delay, died)
+	if stopped != nil {
+		go stopped(process.Pid, state)
+	}
+
+	return nil
 }
 
-func killProcess(pid int) error {
-	process, err := os.FindProcess(int(pid))
+// stopProcess finds a process with the given pid and kills it.
+func stopProcess(pid int) error {
+	process, err := os.FindProcess(pid)
 	if err != nil {
-		return fmt.Errorf("cannot find process with pid: %w", err)
+		return fmt.Errorf("cannot find process with pid: %v", err)
 	}
+
 	if err := process.Kill(); err != nil {
-		log.Errorf("cannot kill process: %v", err)
-	} else {
-		log.Infof("killed process %v", process.Pid)
+		return fmt.Errorf("cannot stop process %v", err)
 	}
+
 	return nil
 }
