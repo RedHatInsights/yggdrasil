@@ -73,7 +73,7 @@ pkg-config --variable workerexecdir yggdrasil
 /usr/local/libexec/yggdrasil
 ```
 
-A worker program must implement the `Worker` service.  `yggd` will execute
+A worker program must implement the `Worker` service. `yggd` will execute
 worker programs at start up. It will set the `YGG_SOCKET_ADDR` variable in the
 worker's environment. This address is the socket on which the worker must dial
 the dispatcher and call the "Register" RPC method. Upon successful registration,
@@ -81,3 +81,19 @@ the worker will receive back a socket address. The worker must bind to and
 listen on this address for RPC methods. See `worker/echo` for an example worker
 process that does nothing more than return the content data it received from the
 dispatcher.
+
+Additionally, `HTTP_PROXY`, `HTTPS_PROXY` and `NO_PROXY` (and their lowercase
+equivalents) are automatically read from `yggd`'s environment and added to the
+worker's environment. Any additional environment variables required may be set
+in a configuration file (see below).
+
+## Worker Configuration
+
+A TOML configuration file may optionaly be instaleld into
+`$SYSCONFDIR/yggdrasil/workers`. The file may be used to configure the worker
+startup procedure. The following table includes valid fields for a
+worker configuration file:
+
+| **Field**  | **Value** | **Description** |
+| ---------- | --------- | --------------- |
+| `env`      | `array`   | Any additional values that a worker needs inserted into its runtime enviroment before starting up. `PATH` and all variables beginning with `YGG_` are forbidden and may not be overridden. |

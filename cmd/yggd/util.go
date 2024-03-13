@@ -53,3 +53,8 @@ func parseCertCN(filename string) (string, error) {
 	}
 	return cert.Subject.CommonName, nil
 }
+
+func fileExists(f string) bool {
+	_, err := os.Stat(f)
+	return !os.IsNotExist(err)
+}
