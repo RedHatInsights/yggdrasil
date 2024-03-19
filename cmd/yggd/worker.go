@@ -274,36 +274,37 @@ func watchWorkerDir(died chan int) {
 
 	for e := range c {
 		log.Debugf("received inotify event %v", e.Event())
+		name := filepath.Base(e.Path())
+		if !validWorker(name) {
+			log.Warnf("invalid worker detected: %v", name)
+			continue
+		}
 		switch e.Event() {
 		case notify.InCloseWrite, notify.InMovedTo:
-			name := filepath.Base(e.Path())
-			if validWorker(name) {
-				var config *workerConfig
+			var config *workerConfig
 
-				configFile := filepath.Join(workerConfigDir, name+".toml")
-				if fileExists(configFile) {
-					var err error
+			configFile := filepath.Join(workerConfigDir, name+".toml")
+			if fileExists(configFile) {
+				var err error
 
-					config, err = loadWorkerConfig(configFile)
-					if err != nil {
-						log.Errorf("cannot read worker config file: %v", err)
-						continue
-					}
-				} else {
-					config = &workerConfig{}
-				}
-				config.program = filepath.Join(workerExecDir, name)
-
-				if err := startWorker(*config, nil, func(pid int) {
-					died <- pid
-				}); err != nil {
-					log.Errorf("cannot start worker %v: %v", config.program, err)
+				config, err = loadWorkerConfig(configFile)
+				if err != nil {
+					log.Errorf("cannot read worker config file: %v", err)
 					continue
 				}
+			} else {
+				config = &workerConfig{}
+			}
+			config.program = filepath.Join(workerExecDir, name)
+
+			if err := startWorker(*config, nil, func(pid int) {
+				died <- pid
+			}); err != nil {
+				log.Errorf("cannot start worker %v: %v", config.program, err)
+				continue
 			}
 		case notify.InDelete, notify.InMovedFrom:
-			workerName := filepath.Base(e.Path())
-			if err := stopWorker(workerName); err != nil {
+			if err := stopWorker(name); err != nil {
 				log.Errorf("cannot stop worker: %v", err)
 				continue
 			}
