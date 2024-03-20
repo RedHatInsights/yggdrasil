@@ -357,6 +357,12 @@ func (c *Client) ReceiveControlMessage(msg *yggdrasil.Control) error {
 			if !exists {
 				return fmt.Errorf("cancel command does not contain 'messageID' argument")
 			}
+
+			directive, err := work.ScrubName(directive)
+			if err != nil {
+				log.Debug(err)
+			}
+
 			// Dispatch to appropriate worker.
 			if err := c.dispatcher.CancelMessage(directive, msg.MessageID, cancelID); err != nil {
 				return fmt.Errorf("cannot dispatch cancel message: %w", err)
