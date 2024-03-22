@@ -1,12 +1,13 @@
 upstream_package_name: yggdrasil
 downstream_package_name: yggdrasil
-specfile_path: out/yggdrasil.spec
+specfile_path: builddir/dist/srpm/yggdrasil.spec
 
 srpm_build_deps:
   - bash-completion
   - gawk
   - git-core
   - golang
+  - go-rpm-macros
   - meson
   - 'pkgconfig(dbus-1)'
   - 'pkgconfig(systemd)'
@@ -14,16 +15,14 @@ srpm_build_deps:
 
 actions:
   post-upstream-clone:
-    - mkdir out
-    - meson setup builddir -Dbuild_srpm=True -Dvendor=True -Dexamples=True
-    - meson compile srpm -C builddir
-    - bash -c 'mv builddir/dist/srpm/* out/'
+    - meson setup builddir -Dbuild_srpm=True -Dvendor=True -Dexamples=True --wipe
+    - meson compile tarball -C builddir
   get-current-version:
-    - awk '/^Version:/ {print $2;}' out/yggdrasil.spec
+    - awk '/^Version:/ {print $2;}' builddir/dist/srpm/yggdrasil.spec
   create-archive:
-    - bash -c 'echo out/yggdrasil-*.tar.*'
+    - bash -c 'echo builddir/dist/srpm/yggdrasil-*.tar.*'
   fix-spec-file:
-    - echo 'nothing to fix'
+    - bash -c 'echo "No action needed"'
 
 jobs:
   - job: copr_build
@@ -36,3 +35,9 @@ jobs:
       - fedora-all
       - rhel-8
       - rhel-9
+
+  - job: copr_build
+    trigger: commit
+    branch: main
+    owner: "@yggdrasil"
+    project: latest
