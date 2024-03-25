@@ -17,10 +17,9 @@ Source: %{name}-%{version}-%{release}.tar.gz
 
 ExclusiveArch: %{go_arches}
 
-BuildRequires: git
+BuildRequires: git-core
 BuildRequires: golang
-BuildRequires: dbus-devel
-BuildRequires: systemd-devel
+BuildRequires: pkgconfig(systemd)
 
 
 %description
