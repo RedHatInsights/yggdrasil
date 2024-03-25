@@ -41,3 +41,9 @@ jobs:
     branch: main
     owner: "@yggdrasil"
     project: latest
+    targets:
+      - centos-stream-8
+      - centos-stream-9
+      - fedora-all
+      - rhel-8
+      - rhel-9
