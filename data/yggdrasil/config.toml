@@ -3,3 +3,8 @@
 protocol = "mqtt"
 server = ["tcp://test.mosquitto.org:1883"]
 log-level = "error"
+
+# If system user is changed to some other user, then
+# it is necessary to change policy file accordingly.
+# It is typically /usr/share/dbus-1/system.d/yggd.conf
+user = "yggd"

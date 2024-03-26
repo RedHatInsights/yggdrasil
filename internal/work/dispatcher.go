@@ -89,7 +89,7 @@ func (d *Dispatcher) Connect() error {
 
 	reply, err := d.conn.RequestName("com.redhat.Yggdrasil1.Dispatcher1", dbus.NameFlagDoNotQueue)
 	if err != nil {
-		return fmt.Errorf("cannot request name on bus: %v", err)
+		return fmt.Errorf("cannot request name com.redhat.Yggdrasil1.Dispatcher1 on bus: %v", err)
 	}
 
 	if reply != dbus.RequestNameReplyPrimaryOwner {
@@ -101,11 +101,17 @@ func (d *Dispatcher) Connect() error {
 	// Add a match signal on the
 	// org.freedesktop.DBus.Properties.PropertiesChanged signal.
 	if err := d.conn.AddMatchSignal(dbus.WithMatchPathNamespace("/com/redhat/Yggdrasil1/Worker1"), dbus.WithMatchInterface("org.freedesktop.DBus.Properties"), dbus.WithMatchMember("PropertiesChanged")); err != nil {
-		return fmt.Errorf("cannot add signal match: %v", err)
+		return fmt.Errorf(
+			"cannot add signal match on the org.freedesktop.DBus.Properties.PropertiesChanged: %v",
+			err,
+		)
 	}
 
 	if err := d.conn.AddMatchSignal(dbus.WithMatchPathNamespace("/com/redhat/Yggdrasil1/Worker1"), dbus.WithMatchInterface("com.redhat.Yggdrasil1.Worker1"), dbus.WithMatchMember("Event")); err != nil {
-		return fmt.Errorf("cannot add signal match: %v", err)
+		return fmt.Errorf(
+			"cannot add signal match on the com.redhat.Yggdrasil1.Worker1.Event: %v",
+			err,
+		)
 	}
 
 	// start goroutine that receives values on the signals channel and handles
@@ -197,11 +203,12 @@ func (d *Dispatcher) Dispatch(data yggdrasil.Data) error {
 		"com.redhat.Yggdrasil1.Worker1."+data.Directive,
 		dbus.ObjectPath(filepath.Join("/com/redhat/Yggdrasil1/Worker1/", data.Directive)),
 	)
-	r, err := obj.GetProperty("com.redhat.Yggdrasil1.Worker1.RemoteContent")
+	propertyName := "com.redhat.Yggdrasil1.Worker1.RemoteContent"
+	r, err := obj.GetProperty(propertyName)
 	if err != nil {
 		return fmt.Errorf(
-			"cannot get property 'com.redhat.Yggdrasil1.Worker1.RemoteContent': %v",
-			err,
+			"cannot get property '%s' of object: %s: using destination interface: %s: %v",
+			propertyName, obj.Path(), obj.Destination(), err,
 		)
 	}
 
@@ -247,7 +254,13 @@ func (d *Dispatcher) Dispatch(data yggdrasil.Data) error {
 		data.Content,
 	)
 	if err := call.Store(); err != nil {
-		return fmt.Errorf("cannot call Dispatch method on worker: %v", err)
+		return fmt.Errorf(
+			"cannot call 'Dispatch' method on worker: %s of object: %s: using destination interface: %s: %v",
+			data.Directive,
+			obj.Path(),
+			obj.Destination(),
+			err,
+		)
 	}
 	log.Debugf("send message %v to worker %v", data.MessageID, data.Directive)
 

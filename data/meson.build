@@ -1,4 +1,5 @@
 subdir('completion')
 subdir('dbus')
+subdir('service_user')
 subdir('systemd')
 subdir('yggdrasil')

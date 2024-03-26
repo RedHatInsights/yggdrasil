@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"os/user"
 	"path/filepath"
+	"strconv"
 	"syscall"
 	"time"
 
@@ -70,6 +72,7 @@ func setupDefaultConfig(c *cli.Context) {
 		MQTTConnectTimeout:       c.Duration(config.FlagNameMQTTConnectTimeout),
 		MQTTPublishTimeout:       c.Duration(config.FlagNameMQTTPublishTimeout),
 		MessageJournal:           c.String(config.FlagNameMessageJournal),
+		ServiceUser:              c.String(config.FlagNameServiceUser),
 	}
 }
 
@@ -87,18 +90,77 @@ func setupLogging(c *cli.Context) error {
 	return nil
 }
 
+// setupServiceUser tries to sets up yggd service user
+func setupServiceUser(c *cli.Context) (*user.User, error) {
+	if config.DefaultConfig.ServiceUser == "" {
+		log.Debug("no service user specified, using current user")
+		return nil, nil
+	}
+	serviceUser, err := user.Lookup(config.DefaultConfig.ServiceUser)
+	if err != nil {
+		return nil, err
+	}
+	currentUser, err := user.Current()
+	if err != nil {
+		log.Info("unable to get information about current user")
+	} else {
+		if currentUser.Uid == serviceUser.Uid && currentUser.Gid == serviceUser.Gid {
+			log.Debugf("current user (%s) is the same as service user, skipping setting service user",
+				currentUser.Username)
+			return nil, nil
+		}
+	}
+	log.Infof("using service user: %s uid: %s, gid: %s",
+		serviceUser.Username, serviceUser.Uid, serviceUser.Gid)
+	return serviceUser, nil
+}
+
+// setUserGroup tries to set UID and GID according service user
+func setUserGroup(serviceUser *user.User) error {
+	var uid int
+	var gid int
+	var err error
+
+	if serviceUser == nil {
+		return nil
+	}
+
+	uid, err = strconv.Atoi(serviceUser.Uid)
+	if err != nil {
+		return fmt.Errorf("unable to convert uid: %s to int: %s", serviceUser.Uid, err)
+	}
+	gid, err = strconv.Atoi(serviceUser.Gid)
+	if err != nil {
+		return fmt.Errorf("unable to convert gid: %s to int: %s", serviceUser.Gid, err)
+	}
+
+	// First set GID (it is not possible to do it after setting UID)
+	err = syscall.Setgid(gid)
+	if err != nil {
+		return fmt.Errorf("unable to set GID: %d: %s", gid, err)
+	}
+
+	// Always set UID after setting GID
+	err = syscall.Setuid(uid)
+	if err != nil {
+		return fmt.Errorf("unable to set UID: %d: %s", uid, err)
+	}
+
+	return nil
+}
+
 // setupClientID tries to create client ID for yggd. It tries to load
 // client ID from certificate CN, if certificate is provided. If not, it
 // tries to load client ID from file. If client ID is not found in file,
 // it generates new client ID and saves it to file.
-func setupClientID() error {
+func setupClientID(serviceUser *user.User) error {
 	clientIDFile := filepath.Join(constants.StateDir, "client-id")
 	if config.DefaultConfig.CertFile != "" {
 		CN, err := parseCertCN(config.DefaultConfig.CertFile)
 		if err != nil {
 			return cli.Exit(fmt.Errorf("cannot parse certificate: %w", err), 1)
 		}
-		if err := setClientID([]byte(CN), clientIDFile); err != nil {
+		if err := setClientID([]byte(CN), clientIDFile, serviceUser); err != nil {
 			return cli.Exit(fmt.Errorf("cannot set client-id to CN: %w", err), 1)
 		}
 	}
@@ -109,7 +171,7 @@ func setupClientID() error {
 			return cli.Exit(fmt.Errorf("cannot get client-id: %w", err), 1)
 		}
 		if len(clientID) == 0 {
-			data, err := createClientID(clientIDFile)
+			data, err := createClientID(clientIDFile, serviceUser)
 			if err != nil {
 				return cli.Exit(fmt.Errorf("cannot create client-id: %w", err), 1)
 			}
@@ -352,11 +414,27 @@ func mainAction(c *cli.Context) error {
 	}
 	log.Infof("starting %v version %v", c.App.Name, c.App.Version)
 
-	// Tries to create file containing client ID
-	err = setupClientID()
+	// Setup service
+	serviceUser, err := setupServiceUser(c)
 	if err != nil {
 		return err
 	}
+
+	// Tries to create file containing client ID
+	err = setupClientID(serviceUser)
+	if err != nil {
+		return err
+	}
+
+	// Set UID and GID to service user and service group
+	err = setUserGroup(serviceUser)
+	if err != nil {
+		return cli.Exit(fmt.Errorf("cannot set UID and GID: %s", err), 1)
+	}
+
+	log.Infof("using configuration directory: %s", constants.ConfigDir)
+	log.Infof("using state directory: %s", constants.StateDir)
+	log.Infof("using cache directory: %s", constants.CacheDir)
 
 	// Create HTTP client and TLS configuration. HTTP client is used for
 	// getting data, when MQTT could not transport too big messages.
@@ -566,6 +644,12 @@ func main() {
 		altsrc.NewStringFlag(&cli.StringFlag{
 			Name:  config.FlagNameMessageJournal,
 			Usage: "Record worker events and messages in the database `FILE`",
+		}),
+		altsrc.NewStringFlag(&cli.StringFlag{
+			Name:   config.FlagNameServiceUser,
+			Usage:  "Use given user for running yggd",
+			Value:  "",
+			Hidden: true,
 		}),
 	}
 
