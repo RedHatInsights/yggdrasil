@@ -11,6 +11,11 @@ NotifyAccess=main
 WatchdogSec=300
 ExecStart=@bindir@/yggd
 PrivateTmp=true
+ExecStartPre=/bin/mkdir -p -m 740 /var/lib/yggdrasil
+ExecStartPre=/bin/chown -R yggd:yggd /var/lib/yggdrasil
+User=yggd
+Group=yggd
+DynamicUser=true
 
 [Install]
 WantedBy=multi-user.target

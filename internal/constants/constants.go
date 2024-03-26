@@ -44,7 +44,10 @@ var (
 )
 
 func init() {
-	if os.Getuid() > 0 {
+	// User with UID == 0 is root. Users with UID in range 1..999
+	// are system users. More information about UIDs and GIDs
+	// could be found e.g. here: https://systemd.io/UIDS-GIDS/
+	if os.Getuid() >= 1000 {
 		ConfigDir = filepath.Join(xdg.ConfigHome, "yggdrasil")
 		StateDir = filepath.Join(xdg.StateHome, "yggdrasil")
 		CacheDir = filepath.Join(xdg.CacheHome, "yggdrasil")
