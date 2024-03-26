@@ -193,6 +193,12 @@ func (d *Dispatcher) Connect() error {
 }
 
 func (d *Dispatcher) Dispatch(data yggdrasil.Data) error {
+	var err error
+	data.Directive, err = ScrubName(data.Directive)
+	if err != nil {
+		log.Debug(err)
+	}
+
 	obj := d.conn.Object(
 		"com.redhat.Yggdrasil1.Worker1."+data.Directive,
 		dbus.ObjectPath(filepath.Join("/com/redhat/Yggdrasil1/Worker1/", data.Directive)),
