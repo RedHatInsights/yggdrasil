@@ -60,7 +60,7 @@ func setupDefaultConfig(c *cli.Context) {
 		PathPrefix:               c.String(config.FlagNamePathPrefix),
 		Protocol:                 c.String(config.FlagNameProtocol),
 		DataHost:                 c.String(config.FlagNameDataHost),
-		CanonicalFacts:           c.String(config.FlagNameCanonicalFacts),
+		FactsFile:                c.String(config.FlagNameFactsFile),
 		HTTPRetries:              c.Int(config.FlagNameHTTPRetries),
 		HTTPTimeout:              c.Duration(config.FlagNameHTTPTimeout),
 		MQTTConnectRetry:         c.Bool(config.FlagNameMQTTConnectRetry),
@@ -221,14 +221,14 @@ func publishConnectionStatus(client *Client) {
 	}
 }
 
-// monitorCanonicalFacts tries to monitor canonical facts file for changes
-func monitorCanonicalFacts(client *Client) {
-	if config.DefaultConfig.CanonicalFacts == "" {
+// monitorFactsFile tries to monitor facts file for changes
+func monitorFactsFile(client *Client) {
+	if config.DefaultConfig.FactsFile == "" {
 		return
 	}
 	c := make(chan notify.EventInfo, 1)
-	if err := notify.Watch(config.DefaultConfig.CanonicalFacts, c, notify.InCloseWrite); err != nil {
-		log.Infof("cannot start watching '%v': %v", config.DefaultConfig.CanonicalFacts, err)
+	if err := notify.Watch(config.DefaultConfig.FactsFile, c, notify.InCloseWrite); err != nil {
+		log.Infof("cannot start watching '%v': %v", config.DefaultConfig.FactsFile, err)
 		return
 	}
 	defer notify.Stop(c)
@@ -400,9 +400,9 @@ func mainAction(c *cli.Context) error {
 	// Publish connection-status in a goroutine
 	go publishConnectionStatus(client)
 
-	// Start a goroutine watching for changes to the CanonicalFacts file and
-	// publish a new connection-status message if the file changes.
-	go monitorCanonicalFacts(client)
+	// Start a goroutine watching for changes to the facts file and publish a
+	// new connection-status message if the file changes.
+	go monitorFactsFile(client)
 
 	// Start a goroutine that watches the tags file for write events and
 	// publishes connection status messages when the file changes.
@@ -513,8 +513,8 @@ func main() {
 			Usage: "Use `VALUE` as the client ID when connecting",
 		}),
 		altsrc.NewPathFlag(&cli.PathFlag{
-			Name:      config.FlagNameCanonicalFacts,
-			Usage:     "Read canonical facts from `FILE`",
+			Name:      config.FlagNameFactsFile,
+			Usage:     "Read facts from `FILE`",
 			TakesFile: true,
 		}),
 		altsrc.NewIntFlag(&cli.IntFlag{
