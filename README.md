@@ -89,7 +89,7 @@ in a configuration file (see below).
 
 ## Worker Configuration
 
-A TOML configuration file may optionaly be instaleld into
+A TOML configuration file may optionally be installed into
 `$SYSCONFDIR/yggdrasil/workers`. The file may be used to configure the worker
 startup procedure. The file name must match the worker's program name as defined
 in the previous section. For example, if the worker's program name is
