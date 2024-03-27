@@ -21,7 +21,7 @@ const (
 	FlagNamePathPrefix               = "path-prefix"
 	FlagNameProtocol                 = "protocol"
 	FlagNameDataHost                 = "data-host"
-	FlagNameCanonicalFacts           = "canonical-facts"
+	FlagNameFactsFile                = "facts-file"
 	FlagNameHTTPRetries              = "http-retries"
 	FlagNameHTTPTimeout              = "http-timeout"
 	FlagNameMQTTConnectRetry         = "mqtt-connect-retry"
@@ -72,9 +72,9 @@ type Config struct {
 	// handling data retrieval for "detachedContent" workers.
 	DataHost string
 
-	// CanonicalFacts is a path to a JSON file containing "canonical facts",
-	// a set of facts about the system used to uniquely identify it.
-	CanonicalFacts string
+	// FactsFile is a path to a file containing a JSON object consisting of
+	// key/value pairs that can be used for system identification.
+	FactsFile string
 
 	// HTTPRetries is the number of times the client will attempt to resend
 	// failed HTTP requests before giving up.
