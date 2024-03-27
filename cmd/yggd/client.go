@@ -376,13 +376,13 @@ func (c *Client) ReceiveControlMessage(msg *yggdrasil.Control) error {
 func (c *Client) ConnectionStatus() (*yggdrasil.ConnectionStatus, error) {
 	var facts map[string]interface{}
 
-	if config.DefaultConfig.CanonicalFacts != "" {
-		data, err := os.ReadFile(config.DefaultConfig.CanonicalFacts)
+	if config.DefaultConfig.FactsFile != "" {
+		data, err := os.ReadFile(config.DefaultConfig.FactsFile)
 		if err != nil {
-			log.Errorf("cannot read canonical facts file: %v", err)
+			log.Errorf("cannot read facts file: %v", err)
 		}
 		if err := json.Unmarshal(data, &facts); err != nil {
-			log.Errorf("cannot unmarshal canonical facts: %v", err)
+			log.Errorf("cannot unmarshal facts: %v", err)
 		}
 	}
 
