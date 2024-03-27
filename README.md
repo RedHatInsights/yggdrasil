@@ -91,8 +91,12 @@ in a configuration file (see below).
 
 A TOML configuration file may optionaly be instaleld into
 `$SYSCONFDIR/yggdrasil/workers`. The file may be used to configure the worker
-startup procedure. The following table includes valid fields for a
-worker configuration file:
+startup procedure. The file name must match the worker's program name as defined
+in the previous section. For example, if the worker's program name is
+`$LIBEXECDIR/yggdrasil/echo-worker`, its configuration file is
+`$SYSCONFDIR/yggdrasil/workers/echo-worker.toml`.
+
+The following table includes valid fields for a worker configuration file:
 
 | **Field**  | **Value** | **Description** |
 | ---------- | --------- | --------------- |
