@@ -127,7 +127,6 @@ data: $(DATA)
 
 .PHONY: install
 install: $(BINS) $(DATA)
-	pkg-config --modversion dbus-1 || exit 1
 	pkg-config --modversion systemd || exit 1
 	install -D -m755 ./yggd $(DESTDIR)$(SBINDIR)/$(SHORTNAME)d
 	install -D -m755 ./ygg $(DESTDIR)$(BINDIR)/$(SHORTNAME)
@@ -161,7 +160,7 @@ dist:
 		--exclude=.vscode \
 		--exclude=.github \
 		--exclude=.gitignore \
-		--exclude=.copr \
+		--exclude=.packit.yaml \
 		--transform s/^\./$(PKGNAME)-$(VERSION)/ \
 		. && mv /tmp/$(PKGNAME)-$(VERSION).tar.gz .
 	rm -rf ./vendor
