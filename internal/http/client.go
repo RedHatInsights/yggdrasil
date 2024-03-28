@@ -43,7 +43,6 @@ func (c *Client) Get(url string) (*http.Response, error) {
 	if err != nil {
 		return nil, fmt.Errorf("cannot create HTTP request: %w", err)
 	}
-	req.Header.Add("User-Agent", c.userAgent)
 
 	log.Debugf("sending HTTP request: %v %v", req.Method, req.URL)
 	log.Tracef("request: %v", req)
@@ -60,7 +59,6 @@ func (c *Client) Post(url string, headers map[string]string, body []byte) (*http
 	for k, v := range headers {
 		req.Header.Add(k, strings.TrimSpace(v))
 	}
-	req.Header.Add("User-Agent", c.userAgent)
 
 	log.Debugf("sending HTTP request: %v %v", req.Method, req.URL)
 	log.Tracef("request: %v", req)
@@ -72,6 +70,8 @@ func (c *Client) Do(req *http.Request) (*http.Response, error) {
 	var resp *http.Response
 	var err error
 	var attempt int
+
+	req.Header.Add("User-Agent", c.userAgent)
 
 	for {
 		if attempt > c.Retries {
