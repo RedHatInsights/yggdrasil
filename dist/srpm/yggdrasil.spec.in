@@ -66,6 +66,14 @@ BuildRequires:  golang >= 1.18
 
 %description %{common_description}
 
+%package devel
+Summary:        %{name} development files
+
+%description devel
+%{common_description}
+
+Contains files needed for yggdrasil worker development.
+
 %if %{has_go_rpm_macros}
 %gopkg
 %endif
@@ -113,6 +121,7 @@ export %gomodulesmode
 %config(noreplace) %{_sysconfdir}/%{name}
 %{_unitdir}/*
 %{_userunitdir}/*
+%{_sysusersdir}/*
 %{_datadir}/bash-completion/completions/*
 %{_datadir}/dbus-1/{interfaces,system-services,system.d}/*
 %{_datadir}/doc/%{name}/*
@@ -121,3 +130,6 @@ export %gomodulesmode
 %if %{has_go_rpm_macros}
 %gopkgfiles
 %endif
+
+%files devel
+%{_libdir}/pkgconfig/*.pc

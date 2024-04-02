@@ -6,6 +6,7 @@ Requires=network-online.target yggdrasil-bus@%i.service
 
 [Service]
 Type=notify
+User=@user@
 NotifyAccess=main
 WatchdogSec=300
 Environment=DBUS_SESSION_BUS_ADDRESS=unix:abstract=yggd_%i

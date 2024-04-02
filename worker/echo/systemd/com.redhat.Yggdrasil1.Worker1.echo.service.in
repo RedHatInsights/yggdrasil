@@ -1,0 +1,13 @@
+[Unit]
+Description=yggdrasil echo worker service
+Documentation=https://github.com/RedHatInsights/yggdrasil
+
+[Service]
+Type=dbus
+User=@worker_user@
+Group=@worker_user@
+ExecStart=@libexecdir@/yggdrasil/echo
+BusName=com.redhat.Yggdrasil1.Worker1.echo
+
+[Install]
+WantedBy=multi-user.target

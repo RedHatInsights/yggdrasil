@@ -29,7 +29,11 @@ config_data = configuration_data({
   'bindir': join_paths(get_option('prefix'), get_option('bindir')),
   'sbindir': join_paths(get_option('prefix'), get_option('sbindir')),
   'configdir': join_paths(get_option('sysconfdir'), meson.project_name()),
-  'libexecdir': join_paths(get_option('prefix'), get_option('libexecdir'))
+  'libexecdir': join_paths(get_option('prefix'), get_option('libexecdir')),
+  'localstatedir': join_paths(get_option('prefix'), get_option('localstatedir')),
+  'sharedstatedir': join_paths(get_option('prefix'), get_option('sharedstatedir')),
+  'user': get_option('user'),
+  'worker_user': get_option('worker_user'),
 })
 
 subdir('cmd/yggctl')
@@ -49,7 +53,9 @@ summary(
     'default_data_host': get_option('default_data_host'),
     'default_path_prefix': get_option('default_path_prefix'),
     'vendor': get_option('vendor'),
-    'examples': get_option('examples')
+    'examples': get_option('examples'),
+    'user': get_option('user'),
+    'worker_user': get_option('worker_user'),
   },
   section: 'Options'
 )

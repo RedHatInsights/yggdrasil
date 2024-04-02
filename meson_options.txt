@@ -5,3 +5,5 @@ option('examples', type: 'boolean', value: false, description: 'Build and instal
 option('gobuildflags', type: 'array', value: ['-buildmode', 'pie'], description: 'Additional build flags to be passed to the Go compiler')
 option('goldflags', type: 'string', value: '', description: 'Additional linker flags to be passed to the Go compiler')
 option('build_srpm', type: 'boolean', value: false, description: 'Enable SRPM builds')
+option('user', type: 'string', value: 'yggdrasil', description: 'yggd system user name')
+option('worker_user', type: 'string', value: 'yggdrasil-worker', description: 'worker user name')

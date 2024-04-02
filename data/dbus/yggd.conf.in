@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE busconfig PUBLIC "-//freedesktop//DTD D-BUS Bus Configuration 1.0//EN" "https://dbus.freedesktop.org/doc/busconfig.dtd">
+<busconfig>
+  <policy user="@user@">
+    <!-- Only @user@ can own the Yggdrasil1 destination name. -->
+    <allow own="com.redhat.Yggdrasil1" />
+
+    <!-- Only @user@ can own the Dispatcher1 destination name. -->
+    <allow own="com.redhat.Yggdrasil1.Dispatcher1" />
+  </policy>
+
+  <policy group="@worker_user@">
+    <!-- Only members of the @worker_user@ group can send messages to
+    Dispatcher1 destination. -->
+    <allow send_destination="com.redhat.Yggdrasil1.Dispatcher1" />
+  </policy>
+
+  <policy context="default">
+    <!-- Anyone can send messages to the Yggdrasil1 destination. -->
+    <allow send_destination="com.redhat.Yggdrasil1" />
+  </policy>
+</busconfig>
