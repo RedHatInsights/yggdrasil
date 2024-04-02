@@ -1,0 +1,14 @@
+[Unit]
+Description=yggdrasil user service
+Documentation=https://github.com/RedHatInsights/yggdrasil
+
+[Service]
+Type=dbus
+BusName=com.redhat.Yggdrasil1
+NotifyAccess=main
+WatchdogSec=300
+ExecStart=@bindir@/yggd
+PrivateTmp=true
+
+[Install]
+WantedBy=default.target
