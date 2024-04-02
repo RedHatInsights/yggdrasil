@@ -113,6 +113,18 @@ export %gomodulesmode
 %endif
 %endif
 
+%post
+%systemd_post %{name}.service
+%systemd_user_post %{name}.service
+
+%preun
+%systemd_preun %{name}.service
+%systemd_user_preun %{name}.service
+
+%postun
+%systemd_postun_with_restart %{name}.service
+%systemd_user_postun_with_restart %{name}.service
+
 %files
 %license LICENSE
 %doc CONTRIBUTING.md README.md
