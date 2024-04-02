@@ -23,30 +23,40 @@ var (
 // Installation directory prefix and paths. Values have hard-coded defaults but
 // can be changed at compile time by overriding the variable with an ldflag.
 var (
-	PrefixDir     string
-	SysconfDir    string
-	LocalstateDir string
+	PrefixDir     string = filepath.Join("/", "usr", "local")
+	SysconfDir    string = filepath.Join(PrefixDir, "etc")
+	LocalstateDir string = filepath.Join(PrefixDir, "var")
 
 	// ConfigDir is a path to a location where configuration data is assumed to
-	// be stored. For non-root users, this is set to $XDG_CONFIG_HOME. Otherwise,
-	// it gets set to /etc/yggdrasil.
+	// be stored. For non-root users, this is set to $CONFIGURATION_DIRECTORY or
+	// $XDG_CONFIG_HOME/yggdrasil. Otherwise, it gets set to /etc/yggdrasil.
 	ConfigDir string = filepath.Join(SysconfDir, "yggdrasil")
 
 	// StateDir is a path to a location where local state information can be
-	// stored. For non-root users, this is set to $XDG_STATE_HOME. Otherwise, it
-	// gets set to /var/lib/yggdrasil.
+	// stored. For non-root users, this is set to $STATE_DIRECTORY or
+	// $XDG_STATE_HOME/yggdrasil. Otherwise, it gets set to /var/lib/yggdrasil.
 	StateDir string = filepath.Join(LocalstateDir, "lib", "yggdrasil")
 
 	// CacheDir is a path to a location where cache data can be stored. For
-	// non-root users, this is set to $XDG_CACHE_HOME. Otherwise, it gets set to
+	// non-root users, this is set to $CACHE_DIRECTORY or
+	// $XDG_CACHE_HOME/yggdrasil. Otherwise, it gets set to
 	// /var/cache/yggdrasil.
 	CacheDir string = filepath.Join(LocalstateDir, "cache", "yggdrasil")
 )
 
 func init() {
 	if os.Getuid() > 0 {
-		ConfigDir = filepath.Join(xdg.ConfigHome, "yggdrasil")
-		StateDir = filepath.Join(xdg.StateHome, "yggdrasil")
-		CacheDir = filepath.Join(xdg.CacheHome, "yggdrasil")
+		ConfigDir = lookupEnv("CONFIGURATION_DIRECTORY", filepath.Join(xdg.ConfigHome, "yggdrasil"))
+		StateDir = lookupEnv("STATE_DIRECTORY", filepath.Join(xdg.StateHome, "yggdrasil"))
+		CacheDir = lookupEnv("CACHE_DIRECTORY", filepath.Join(xdg.CacheHome, "yggdrasil"))
 	}
+}
+
+// lookupEnv looks up key in the environment. If a value is present, it is
+// returned. Otherwise, defaultValue is returned.
+func lookupEnv(key string, defaultValue string) string {
+	if value, ok := os.LookupEnv(key); ok {
+		return value
+	}
+	return defaultValue
 }

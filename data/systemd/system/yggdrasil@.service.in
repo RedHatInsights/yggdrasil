@@ -11,6 +11,9 @@ WatchdogSec=300
 Environment=DBUS_SESSION_BUS_ADDRESS=unix:abstract=yggd_%i
 ExecStart=@bindir@/yggd --config @configdir@/yggdrasil-%i.toml
 PrivateTmp=true
+StateDirectory=yggdrasil-%i
+ConfigurationDirectory=yggdrasil-%i
+CacheDirectory=yggdrasil-%
 
 [Install]
 WantedBy=multi-user.target

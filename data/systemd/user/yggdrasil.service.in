@@ -9,6 +9,9 @@ NotifyAccess=main
 WatchdogSec=300
 ExecStart=@bindir@/yggd
 PrivateTmp=true
+StateDirectory=yggdrasil
+ConfigurationDirectory=yggdrasil
+CacheDirectory=yggdrasil
 
 [Install]
 WantedBy=default.target
