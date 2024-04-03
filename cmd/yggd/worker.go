@@ -47,6 +47,7 @@ func loadWorkerConfig(file string) (*workerConfig, error) {
 	if err := toml.Unmarshal(data, &config); err != nil {
 		return nil, fmt.Errorf("cannot load config: %w", err)
 	}
+	log.Debugf("loaded worker config: %v", config)
 
 	return &config, nil
 }
@@ -98,6 +99,7 @@ func startWorker(config workerConfig, started workerStartedFunc, stopped workerS
 		time.Sleep(config.delay)
 	}
 
+	log.Debugf("starting worker %v with environment: %v", config.program, env)
 	err := startProcess(config.program, nil, env, func(pid int, stdout, stderr io.ReadCloser) {
 		log.Infof("started worker: %v", config.program)
 
