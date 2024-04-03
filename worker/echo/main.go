@@ -16,6 +16,16 @@ import (
 var yggdDispatchSocketAddr string
 
 func main() {
+	// Set log level inherited from the environment
+	if logLevel, ok := os.LookupEnv("YGG_LOG_LEVEL"); ok {
+		level, err := log.ParseLevel(logLevel)
+		if err != nil {
+			log.Fatalf("cannot parse log level: %v", err)
+		}
+		log.SetLevel(level)
+	}
+	log.Debugf("current environment: %v", os.Environ())
+
 	// Get initialization values from the environment.
 	var ok bool
 	yggdDispatchSocketAddr, ok = os.LookupEnv("YGG_SOCKET_ADDR")
