@@ -44,7 +44,7 @@ installed manually:
 
 ```
 go build ./worker/echo
-sudo install -D -m 755 echo /usr/libexec/yggdrasil/echo-worker
+sudo install -D -m 755 echo /usr/local/libexec/yggdrasil/echo-worker
 ```
 
 A running instance of `yggd` should detect the worker and execute it.
@@ -55,13 +55,15 @@ appropriate MQTT topic.
 Send `yggd` a "ping" command:
 
 ```
-export CONSUMER_ID=$(openssl x509 -in cert.pem -subject -nocert | cut -f3 -d" ")
+export CONSUMER_ID=$(sudo openssl x509 -in /etc/pki/consumer/cert.pem -subject -nocert \
+    | cut -f3 -d" " | cut -c-36)
 mosquitto_pub --host 127.0.0.1 --port 1883 --topic "yggdrasil/${CONSUMER_ID}/control/in" --message "{\"type\":\"command\",\"message_id\":\"$(uuidgen | tr -d '\n')\",\"version\":1,\"sent\":\"$(date --iso-8601=seconds --utc | tr -d '\n')\",\"content\":{\"command\":\"ping\"}}"
 ```
 
 Send a data message to `echo worker`
 ```
-mosquitto_pub --host 127.0.0.1 --port 1883 --topic yggdrasil/${CONSUMER_ID}/data/in --message "{\"type\":\"data\",\"message_id\":\"$(uuidgen | tr -d '\n')\", \"response_to\":\" \",\"version\":1,\"sent\":\"$(date --iso-8601=seconds --utc | tr -d '\n')\",\"directive\":\"echo\",\"metadata\":\"{}\",\"content\":{\"hello world\"}}"
+mosquitto_pub --host 127.0.0.1 --port 1883 --topic yggdrasil/${CONSUMER_ID}/data/in \
+    --message "{\"type\":\"data\",\"message_id\":\"$(uuidgen | tr -d '\n')\", \"response_to\":\" \",\"version\":1,\"sent\":\"$(date --iso-8601=seconds --utc | tr -d '\n')\",\"directive\":\"echo\",\"content\":\"hello world\"}"
 ```
 
 
