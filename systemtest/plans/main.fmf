@@ -1,0 +1,16 @@
+summary: In-tree yggdrasil test suite
+description: |
+  This test plan runs yggdrasil programs directly from within the
+  source tree.
+discover:
+    how: fmf
+
+prepare:
+    - name: Install packages
+      how: install
+      package:
+        - golang
+        - meson
+
+execute:
+    how: tmt
