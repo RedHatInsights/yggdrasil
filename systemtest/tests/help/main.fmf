@@ -1,0 +1,3 @@
+summary: Run yggd --help
+test: ./test.sh
+duration: 30m

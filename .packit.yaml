@@ -9,8 +9,8 @@ srpm_build_deps:
   - golang
   - go-rpm-macros
   - meson
-  - 'pkgconfig(dbus-1)'
-  - 'pkgconfig(systemd)'
+  - "pkgconfig(dbus-1)"
+  - "pkgconfig(systemd)"
   - rpm-build
 
 actions:
@@ -47,3 +47,34 @@ jobs:
       - fedora-all
       - rhel-8
       - rhel-9
+
+  - job: tests
+    trigger: pull_request
+    identifier: "unit/centos-stream"
+    targets:
+      - centos-stream-8
+      - centos-stream-9
+    labels:
+      - unit
+
+  - job: tests
+    trigger: pull_request
+    identifier: "unit/fedora"
+    targets:
+      - fedora-all
+    labels:
+      - unit
+
+  - job: tests
+    trigger: pull_request
+    identifier: "unit/rhel"
+    targets:
+      rhel-8-x86_64:
+        distros:
+          - RHEL-8-Nightly
+      rhel-9-x86_64:
+        distros:
+          - RHEL-9-Nightly
+    labels:
+      - unit
+    use_internal_tf: true
