@@ -1,53 +1,34 @@
 name: Lint
 
-on: pull_request
+on:
+  pull_request:
+  workflow_dispatch:
 
 jobs:
   lint-commits:
-    name: Lint commits
     runs-on: ubuntu-latest
     steps:
-      - name: Check out code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          ref: ${{ github.event.pull_request.head.sha }}
-      - uses: actions/cache@v4
-        with:
-          path: ~/go/pkg/mod
-          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
-          restore-keys: |
-            ${{ runner.os }}-go-
-      - run: go mod download
-      - name: Run commitsar
-        uses: aevea/commitsar@v0.20.2
+      - uses: aevea/commitsar@v0.20.2
   lint-code:
-    name: Lint code
     runs-on: ubuntu-latest
     steps:
-      - name: Set up go
-        uses: actions/setup-go@v5
+      - uses: actions/setup-go@v5
         with:
-          go-version: "1.19"
-      - name: Check out code
-        uses: actions/checkout@v4
-      - name: Run golangci-lint
-        uses: golangci/golangci-lint-action@v6.0.1
+          go-version: "stable"
+      - uses: actions/checkout@v4
+      - uses: golangci/golangci-lint-action@v6.0.1
         with:
           version: latest
           args: --verbose --timeout=3m
-      - name: Set up golines
-        run: go install github.com/segmentio/golines@latest
-      - name: Run golines
-        run: if [ "$(golines . --dry-run | wc -l)" -gt 0 ]; then exit 1; fi
-
+      - run: go install github.com/segmentio/golines@latest
+      - run: if [ "$(golines . --dry-run | wc -l)" -gt 0 ]; then exit 1; fi
   lint-language:
-    name: Lint language
     runs-on: ubuntu-latest
     steps:
-      - name: Check out code
-        uses: actions/checkout@v4
-      - name: Run woke
-        uses: get-woke/woke-action@v0
+      - uses: actions/checkout@v4
+      - uses: get-woke/woke-action@v0
         with:
           fail-on-error: true
