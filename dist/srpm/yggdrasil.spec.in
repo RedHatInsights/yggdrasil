@@ -8,7 +8,7 @@
 
 %bcond_without check
 
-%global has_go_rpm_macros (0%{?fedora} || 0%{?rhel} >= 9)
+%global has_go_rpm_macros (0%{?fedora})
 
 # must be before %%gometa
 Version:        @VERSION@
