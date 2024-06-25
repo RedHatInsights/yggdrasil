@@ -77,6 +77,7 @@ func (w *Worker) Connect(quit <-chan os.Signal) error {
 		log.Debugf("connecting to session bus: %v", os.Getenv("DBUS_SESSION_BUS_ADDRESS"))
 		w.conn, err = dbus.ConnectSessionBus()
 	} else {
+		log.Debugf("connecting to system bus")
 		w.conn, err = dbus.ConnectSystemBus()
 	}
 	if err != nil {
@@ -119,10 +120,10 @@ func (w *Worker) Connect(quit <-chan os.Signal) error {
 	// Request ownership of the well-known bus address.
 	reply, err := w.conn.RequestName(w.busName, dbus.NameFlagDoNotQueue)
 	if err != nil {
-		return fmt.Errorf("cannot request name on bus: %w", err)
+		return fmt.Errorf("cannot request name %s on bus: %w", w.busName, err)
 	}
 	if reply != dbus.RequestNameReplyPrimaryOwner {
-		return fmt.Errorf("request name failed")
+		return fmt.Errorf("name: %s already taken", w.busName)
 	}
 
 	// Emit a started event
