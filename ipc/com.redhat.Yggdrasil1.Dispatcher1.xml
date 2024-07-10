@@ -20,7 +20,8 @@
             @response_metadata: Key-value pairs included in the response.
             @response_data: Data included in the response.
 
-            Sends data to the dispatcher.
+            Sends data through the dispatcher to be transmitted out through the
+            configured message protocol transport.
         -->
         <method name="Transmit">
             <arg type="s" name="addr" direction="in" />
@@ -32,6 +33,30 @@
             <arg type="i" name="response_code" direction="out" />
             <arg type="a{ss}" name="response_metadata" direction="out" />
             <arg type="ay" name="response_data" direction="out" />
+        </method>
+
+        <!-- 
+            Request:
+            @method: HTTP method to use in the request.
+            @addr: HTTP URL to which the request is destined.
+            @headers: HTTP headers to be included in the HTTP request.
+            @body (nullable): HTTP request body.
+            @response_code: HTTP response status code.
+            @response_headers: HTTP response headers.
+            @response_body: HTTP response body.
+
+            Sends data through the dispatcher to the desired URL as an HTTP
+            request.
+        -->
+        <method name="Request">
+            <arg type="s" name="method" direction="in" />
+            <arg type="s" name="addr" direction="in" />
+            <arg type="a{ss}" name="headers" direction="in" />
+            <arg type="ay" name="body" direction="in" />
+
+            <arg type="i" name="response_code" direction="out" />
+            <arg type="a{ss}" name="response_headers" direction="out" />
+            <arg type="ay" name="response_body" direction="out" />
         </method>
 
         <!-- 

@@ -1,9 +1,10 @@
 package work
 
 import (
-	"encoding/json"
+	"bytes"
 	"fmt"
 	"io"
+	"net/http"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -203,45 +204,6 @@ func (d *Dispatcher) Dispatch(data yggdrasil.Data) error {
 		"com.redhat.Yggdrasil1.Worker1."+data.Directive,
 		dbus.ObjectPath(filepath.Join("/com/redhat/Yggdrasil1/Worker1/", data.Directive)),
 	)
-	r, err := obj.GetProperty("com.redhat.Yggdrasil1.Worker1.RemoteContent")
-	if err != nil {
-		return fmt.Errorf(
-			"cannot get property 'com.redhat.Yggdrasil1.Worker1.RemoteContent': %v",
-			err,
-		)
-	}
-
-	if r.Value().(bool) {
-		// Because the data.Content field is typed as json.RawMessage, it must first be
-		// unmarshalled into a Go string before parsing as a URL.
-		var urlStr string
-		err = json.Unmarshal(data.Content, &urlStr)
-		if err != nil {
-			return fmt.Errorf("unable to unmarshal JSON string fragment: %v", err)
-		}
-
-		// When string fragment was unmarshalled, then we can try to parse string as URL
-		URL, err := url.Parse(urlStr)
-		if err != nil {
-			return fmt.Errorf("cannot parse content %v as URL: %v", urlStr, err)
-		}
-		if config.DefaultConfig.DataHost != "" {
-			URL.Host = config.DefaultConfig.DataHost
-		}
-
-		resp, err := d.HTTPClient.Get(URL.String())
-		if err != nil {
-			return fmt.Errorf("cannot get detached message content: %v", err)
-		}
-		content, err := io.ReadAll(resp.Body)
-		if err != nil {
-			return fmt.Errorf("cannot read response body: %v", err)
-		}
-		if err := resp.Body.Close(); err != nil {
-			return fmt.Errorf("cannot close response body: %v", err)
-		}
-		data.Content = content
-	}
 
 	call := obj.Call(
 		"com.redhat.Yggdrasil1.Worker1.Dispatch",
@@ -303,99 +265,96 @@ func (d *Dispatcher) Transmit(
 	metadata map[string]string,
 	data []byte,
 ) (responseCode int, responseMetadata map[string]string, responseData []byte, responseError *dbus.Error) {
-	name, err := d.senderName(sender)
+	ch := make(chan yggdrasil.Response)
+	d.Outbound <- struct {
+		Data yggdrasil.Data
+		Resp chan yggdrasil.Response
+	}{
+		Data: yggdrasil.Data{
+			Type:       yggdrasil.MessageTypeData,
+			MessageID:  messageID,
+			ResponseTo: responseTo,
+			Version:    1,
+			Sent:       time.Now(),
+			Directive:  addr,
+			Metadata:   metadata,
+			Content:    data,
+		},
+		Resp: ch,
+	}
+
+	select {
+	case resp := <-ch:
+		responseCode = resp.Code
+		responseMetadata = resp.Metadata
+		responseData = resp.Data
+	case <-time.After(1 * time.Second):
+		return TransmitResponseErr, nil, nil, NewDBusError(
+			"com.redhat.Yggdrasil1.Dispatcher1.Transmit",
+			"timeout reached waiting for response",
+		)
+	}
+
+	return
+}
+
+func (d *Dispatcher) Request(
+	sender dbus.Sender,
+	method string,
+	addr string,
+	headers map[string]string,
+	body []byte,
+) (responseCode int, responseHeaders map[string]string, responseBody []byte, responseError *dbus.Error) {
+	URL, err := url.Parse(addr)
 	if err != nil {
 		return TransmitResponseErr, nil, nil, NewDBusError(
-			"Transmit",
-			fmt.Sprintf("cannot get name for sender: %v", err),
+			"Request",
+			fmt.Sprintf("cannot parse addr as URL: %v", err),
 		)
 	}
-
-	directive := strings.TrimPrefix(name, "com.redhat.Yggdrasil1.Worker1.")
-
-	obj := d.conn.Object(
-		"com.redhat.Yggdrasil1.Worker1."+directive,
-		dbus.ObjectPath(filepath.Join("/com/redhat/Yggdrasil1/Worker1/", directive)),
-	)
-	r, err := obj.GetProperty("com.redhat.Yggdrasil1.Worker1.RemoteContent")
+	if config.DefaultConfig.DataHost != "" {
+		URL.Host = config.DefaultConfig.DataHost
+	}
+	req, err := http.NewRequest(method, URL.String(), bytes.NewReader(body))
 	if err != nil {
-		return -1, nil, nil, NewDBusError(
-			"Transmit",
-			"cannot get property 'com.redhat.Yggdrasil1.Worker1.RemoteContent'",
+		return TransmitResponseErr, nil, nil, NewDBusError(
+			"Request",
+			fmt.Sprintf("cannot create HTTP request: %v", err),
+		)
+	}
+	for k, v := range headers {
+		req.Header.Add(k, strings.TrimSpace(v))
+	}
+	resp, err := d.HTTPClient.Do(req)
+	if err != nil {
+		return TransmitResponseErr, nil, nil, NewDBusError(
+			"Request",
+			fmt.Sprintf("cannot send HTTP request: %v", err),
 		)
 	}
 
-	if r.Value().(bool) {
-		URL, err := url.Parse(addr)
-		if err != nil {
-			return TransmitResponseErr, nil, nil, NewDBusError(
-				"Transmit",
-				fmt.Sprintf("cannot parse addr as URL: %v", err),
-			)
-		}
-		if URL.Scheme != "" {
-			if config.DefaultConfig.DataHost != "" {
-				URL.Host = config.DefaultConfig.DataHost
-			}
-			resp, err := d.HTTPClient.Post(URL.String(), metadata, data)
-			if err != nil {
-				return TransmitResponseErr, nil, nil, NewDBusError(
-					"Transmit",
-					fmt.Sprintf("cannot perform HTTP request: %v", err),
-				)
-			}
-			data, err = io.ReadAll(resp.Body)
-			if err != nil {
-				return TransmitResponseErr, nil, nil, NewDBusError(
-					"Transmit",
-					fmt.Sprintf("cannot read HTTP response body: %v", err),
-				)
-			}
-
-			err = resp.Body.Close()
-			if err != nil {
-				return TransmitResponseErr, nil, nil, NewDBusError(
-					"Transmit",
-					fmt.Sprintf("cannot close HTTP response body: %v", err),
-				)
-			}
-			responseCode = resp.StatusCode
-			responseMetadata = make(map[string]string)
-			for header := range resp.Header {
-				responseMetadata[header] = resp.Header.Get(header)
-			}
-			responseData = data
-		} else {
-			return TransmitResponseErr, nil, nil, NewDBusError("Transmit", fmt.Sprintf("URL: '%v' has no scheme", addr))
-		}
-	} else {
-		ch := make(chan yggdrasil.Response)
-		d.Outbound <- struct {
-			Data yggdrasil.Data
-			Resp chan yggdrasil.Response
-		}{
-			Data: yggdrasil.Data{
-				Type:       yggdrasil.MessageTypeData,
-				MessageID:  messageID,
-				ResponseTo: responseTo,
-				Version:    1,
-				Sent:       time.Now(),
-				Directive:  addr,
-				Metadata:   metadata,
-				Content:    data,
-			},
-			Resp: ch,
-		}
-
-		select {
-		case resp := <-ch:
-			responseCode = resp.Code
-			responseMetadata = resp.Metadata
-			responseData = resp.Data
-		case <-time.After(1 * time.Second):
-			return TransmitResponseErr, nil, nil, NewDBusError("com.redhat.Yggdrasil1.Dispatcher1.Transmit", "timeout reached waiting for response")
-		}
+	data, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return TransmitResponseErr, nil, nil, NewDBusError(
+			"Request",
+			fmt.Sprintf("cannot read HTTP response body: %v", err),
+		)
 	}
+	err = resp.Body.Close()
+	if err != nil {
+		return TransmitResponseErr, nil, nil, NewDBusError(
+			"Request",
+			fmt.Sprintf("cannot close HTTP response body: %v", err),
+		)
+	}
+
+	responseCode = resp.StatusCode
+	responseHeaders = make(map[string]string)
+	for header := range resp.Header {
+		responseHeaders[header] = resp.Header.Get(header)
+	}
+	responseBody = data
+
 	return
 }
 

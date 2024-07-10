@@ -26,21 +26,19 @@ type EventHandlerFunc func(e ipc.DispatcherEvent)
 
 // Worker implements the com.redhat.Yggdrasil1.Worker1 interface.
 type Worker struct {
-	directive     string
-	features      map[string]string
-	remoteContent bool
-	rx            RxFunc
-	cancelRx      CancelRxFunc
-	conn          *dbus.Conn
-	objectPath    dbus.ObjectPath
-	busName       string
-	eventHandler  EventHandlerFunc
+	directive    string
+	features     map[string]string
+	rx           RxFunc
+	cancelRx     CancelRxFunc
+	conn         *dbus.Conn
+	objectPath   dbus.ObjectPath
+	busName      string
+	eventHandler EventHandlerFunc
 }
 
 // NewWorker creates a new worker.
 func NewWorker(
 	directive string,
-	remoteContent bool,
 	features map[string]string,
 	cancel CancelRxFunc,
 	rx RxFunc,
@@ -52,14 +50,13 @@ func NewWorker(
 	}
 
 	w := Worker{
-		directive:     directive,
-		features:      features,
-		remoteContent: remoteContent,
-		cancelRx:      cancel,
-		rx:            rx,
-		objectPath:    dbus.ObjectPath(path.Join("/com/redhat/Yggdrasil1/Worker1", directive)),
-		busName:       fmt.Sprintf("com.redhat.Yggdrasil1.Worker1.%v", directive),
-		eventHandler:  events,
+		directive:    directive,
+		features:     features,
+		cancelRx:     cancel,
+		rx:           rx,
+		objectPath:   dbus.ObjectPath(path.Join("/com/redhat/Yggdrasil1/Worker1", directive)),
+		busName:      fmt.Sprintf("com.redhat.Yggdrasil1.Worker1.%v", directive),
+		eventHandler: events,
 	}
 
 	return &w, nil
@@ -89,11 +86,6 @@ func (w *Worker) Connect(quit <-chan os.Signal) error {
 		"com.redhat.Yggdrasil1.Worker1": {
 			"Features": {
 				Value:    w.features,
-				Writable: false,
-				Emit:     prop.EmitTrue,
-			},
-			"RemoteContent": {
-				Value:    w.remoteContent,
 				Writable: false,
 				Emit:     prop.EmitTrue,
 			},
@@ -201,6 +193,23 @@ func (w *Worker) Transmit(
 	if err != nil {
 		responseCode = -1
 		return
+	}
+	return
+}
+
+// Request wraps a com.redhat.Yggdrasil1.Dispatcher1.Request method call for
+// ease of use from the worker.
+func (w *Worker) Request(
+	method string,
+	addr string,
+	headers map[string]string,
+	body []byte,
+) (responseCode int, responseHeaders map[string]string, responseBody []byte, err error) {
+	obj := w.conn.Object("com.redhat.Yggdrasil1.Dispatcher1", "/com/redhat/Yggdrasil1/Dispatcher1")
+	err = obj.Call("com.redhat.Yggdrasil1.Dispatcher1.Request", 0, method, addr, headers, body).
+		Store(&responseCode, &responseHeaders, &responseBody)
+	if err != nil {
+		responseCode = -1
 	}
 	return
 }
