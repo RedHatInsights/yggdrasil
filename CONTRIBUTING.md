@@ -196,6 +196,13 @@ the same bus by specifying the `DBUS_SESSION_BUS_ADDRESS` environment variable:
 sudo DBUS_SESSION_BUS_ADDRESS=unix:abstract=yggd_demo go run ./worker/echo
 ```
 
+## `worker/http`
+
+`http` is a worker that demonstrates the explicit use of the HTTP request
+functionality. Like `echo`, it must be started on the same bus as the `yggd`
+instance you want to communicate with. See the `worker/http` README for more
+information on how to send messages to this worker.
+
 ## `mqttcli`
 
 [`mqttcli`](https://git.sr.ht/~spc/mqttcli) is a separate program that is useful

@@ -143,12 +143,10 @@ func events(event ipc.DispatcherEvent) {
 
 func main() {
 	var (
-		logLevel      string
-		remoteContent bool
+		logLevel string
 	)
 
 	flag.StringVar(&logLevel, "log-level", "error", "set log level")
-	flag.BoolVar(&remoteContent, "remote-content", false, "connect as a remote content worker")
 	flag.DurationVar(&sleepTime, "sleep", 0, "sleep time in seconds before echoing the response")
 	flag.IntVar(&loopIt, "loop", 1, "number of loop echoes before finish echoing.")
 	flag.Parse()
@@ -161,7 +159,6 @@ func main() {
 
 	w, err := worker.NewWorker(
 		"echo",
-		remoteContent,
 		map[string]string{"DispatchedAt": "", "Version": "1"},
 		cancelEcho,
 		echo,

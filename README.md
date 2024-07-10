@@ -126,11 +126,17 @@ the bus:
   `com.redhat.Yggdrasil1.Worker1` and includes its directive as the final segment
   in reverse-domain-name notation (i.e. `com.redhat.Yggdrasil1.Worker1.echo`).
 
-A worker can transmit data back to a destination by calling the
-`com.redhat.Yggdrasil1.Dispatcher1.Transmit` method.
+A worker can transmit data back to a destination by calling either the
+`com.redhat.Yggdrasil1.Dispatcher1.Transmit` or the
+`com.redhat.Yggdrasil1.Dispatcher1.Request` method. "Transmit" sends data back
+across the configured network transport (typically MQTT), while "Request"
+creates an HTTP request and sends it to the requested URL. Which method to use
+is left to worker discretion, though it is recommended that messages larger than
+a few megabytes be sent using HTTP.
 
 Package `worker` implements the above requirements implicitly, enabling workers
 to be written without needing to worry about much of the D-Bus requirements
 outlined above.
 
-See `worker/echo` for a reference implementation of a worker program.
+See `worker/echo` for a reference implementation of a worker program that uses
+"Transmit". See `worker/http` for a demonstrative worker that uses "Request".

@@ -45,13 +45,6 @@
         -->
         <property name="Features" type="a{ss}" access="read" />
 
-        <!-- RemoteContent:
-        
-             A value indicating whether or not the worker requires content
-             fetched from a remote location before dispatch.
-        -->
-        <property name="RemoteContent" type="b" access="read" />
-
         <!-- 
             Event:
             @name: Name of the event.
