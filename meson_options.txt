@@ -7,3 +7,5 @@ option('goldflags', type: 'string', value: '', description: 'Additional linker f
 option('build_srpm', type: 'boolean', value: false, description: 'Enable SRPM builds')
 option('user', type: 'string', value: 'yggdrasil', description: 'yggd system user name')
 option('worker_user', type: 'string', value: 'yggdrasil-worker', description: 'worker user name')
+option('selinux_module', type: 'boolean', value: false, description: 'build custom selinux module')
+option('selinux_policy', type: 'string', value: 'targeted', description: 'default SELinux policy type')

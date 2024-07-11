@@ -1,0 +1,40 @@
+
+## <summary>policy for yggd</summary>
+
+########################################
+## <summary>
+##	Execute yggd_exec_t in the yggd domain.
+## </summary>
+## <param name="domain">
+## <summary>
+##	Domain allowed to transition.
+## </summary>
+## </param>
+#
+interface(`yggd_domtrans',`
+	gen_require(`
+		type yggd_t, yggd_exec_t;
+	')
+
+	corecmd_search_bin($1)
+	domtrans_pattern($1, yggd_exec_t, yggd_t)
+')
+
+######################################
+## <summary>
+##	Execute yggd in the caller domain.
+## </summary>
+## <param name="domain">
+##	<summary>
+##	Domain allowed access.
+##	</summary>
+## </param>
+#
+interface(`yggd_exec',`
+	gen_require(`
+		type yggd_exec_t;
+	')
+
+	corecmd_search_bin($1)
+	can_exec($1, yggd_exec_t)
+')
