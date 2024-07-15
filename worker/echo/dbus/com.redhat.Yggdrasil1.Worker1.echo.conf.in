@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE busconfig PUBLIC "-//freedesktop//DTD D-BUS Bus Configuration 1.0//EN" "https://dbus.freedesktop.org/doc/busconfig.dtd">
 <busconfig>
-    <policy user="@worker_user@">
+    <policy group="@worker_user@">
         <!-- Only @worker_user@ can own the Worker1.echo name. -->
         <allow own="com.redhat.Yggdrasil1.Worker1.echo" />
 
