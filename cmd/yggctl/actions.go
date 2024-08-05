@@ -7,12 +7,14 @@ import (
 	"io"
 	"log"
 	"os"
+	"path/filepath"
 	"text/tabwriter"
 	"text/template"
 
 	"github.com/godbus/dbus/v5"
 	"github.com/google/uuid"
 	"github.com/redhatinsights/yggdrasil"
+	"github.com/redhatinsights/yggdrasil/internal/constants"
 	"github.com/redhatinsights/yggdrasil/ipc"
 	"github.com/urfave/cli/v2"
 )
@@ -303,6 +305,99 @@ func listenAction(ctx *cli.Context) error {
 			)
 		}
 	}
+	return nil
+}
+
+// generateWorkerDataAction is the cli action function for the "generate
+// worker-data" subcommand. It formats and outputs files needed by workers to
+// communicate with the yggdrasil service over D-Bus.
+func generateWorkerDataAction(ctx *cli.Context) error {
+	config := struct {
+		User    string
+		Group   string
+		Name    string
+		Program string
+	}{
+		User:    ctx.String("user"),
+		Group:   ctx.String("group"),
+		Name:    ctx.String("name"),
+		Program: ctx.String("program"),
+	}
+
+	// If "Group" is unspecified, assume it matches the user.
+	if config.Group == "" {
+		config.Group = config.User
+	}
+
+	if err := os.MkdirAll(ctx.Path("output"), 0755); err != nil {
+		return cli.Exit(
+			fmt.Errorf("error: cannot create output directory %v: %v", ctx.Path("output"), err),
+			1,
+		)
+	}
+
+	joinpath := func(outputDir, installDir string, name string, install bool) string {
+		if install {
+			return filepath.Join(installDir, name)
+		} else {
+			return filepath.Join(outputDir, name)
+		}
+	}
+
+	data := []struct {
+		FileName string
+		FilePath string
+		Template *template.Template
+	}{
+		{
+			FileName: fmt.Sprintf("com.redhat.Yggdrasil1.Worker1.%v.service", config.Name),
+			FilePath: joinpath(
+				filepath.Join(ctx.Path("output"), "dbus-1", "system-services"),
+				constants.DBusSystemServicesDir,
+				fmt.Sprintf("com.redhat.Yggdrasil1.Worker1.%v.service", config.Name),
+				ctx.Bool("install"),
+			),
+			Template: template.Must(template.New("").Parse(DBusServiceTemplate)),
+		},
+		{
+			FileName: fmt.Sprintf("com.redhat.Yggdrasil1.Worker1.%v.conf", config.Name),
+			FilePath: joinpath(
+				filepath.Join(ctx.Path("output"), "dbus-1", "system.d"),
+				constants.DBusPolicyConfigDir,
+				fmt.Sprintf("com.redhat.Yggdrasil1.Worker1.%v.conf", config.Name),
+				ctx.Bool("install"),
+			),
+			Template: template.Must(template.New("").Parse(DBusPolicyConfigTemplate)),
+		},
+		{
+			FileName: fmt.Sprintf("com.redhat.Yggdrasil1.Worker1.%v.service", config.Name),
+			FilePath: joinpath(
+				filepath.Join(ctx.Path("output"), "systemd", "system"),
+				constants.SystemdSystemServicesDir,
+				fmt.Sprintf("com.redhat.Yggdrasil1.Worker1.%v.service", config.Name),
+				ctx.Bool("install"),
+			),
+			Template: template.Must(template.New("").Parse(SystemdServiceTemplate)),
+		},
+	}
+
+	for _, d := range data {
+		if err := os.MkdirAll(filepath.Dir(d.FilePath), 0755); err != nil {
+			return cli.Exit(
+				fmt.Errorf("cannot create directory %v: %v", filepath.Dir(d.FilePath), err),
+				1,
+			)
+		}
+		f, err := os.Create(d.FilePath)
+		if err != nil {
+			return cli.Exit(fmt.Errorf("cannt create file %v: %v", d.FilePath, err), 1)
+		}
+		defer f.Close()
+		if err := d.Template.Execute(f, config); err != nil {
+			return cli.Exit(fmt.Errorf("cannot write file %v: %v", d.FilePath, err), 1)
+		}
+	}
+
 	return nil
 }
 
