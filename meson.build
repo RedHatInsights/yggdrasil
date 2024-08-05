@@ -18,6 +18,12 @@ goldflags += ' -X "github.com/redhatinsights/yggdrasil/internal/constants.Defaul
 goldflags += ' -X "github.com/redhatinsights/yggdrasil/internal/constants.PrefixDir=' + get_option('prefix') + '"'
 goldflags += ' -X "github.com/redhatinsights/yggdrasil/internal/constants.SysconfDir=' + get_option('sysconfdir') + '"'
 goldflags += ' -X "github.com/redhatinsights/yggdrasil/internal/constants.LocalstateDir=' + get_option('localstatedir') + '"'
+goldflags += ' -X "github.com/redhatinsights/yggdrasil/internal/constants.DataDir=' + get_option('datadir') + '"'
+goldflags += ' -X "github.com/redhatinsights/yggdrasil/internal/constants.LibDir=' + get_option('libdir') + '"'
+goldflags += ' -X "github.com/redhatinsights/yggdrasil/internal/constants.DBusSystemServicesDir=' + dbus.get_variable(pkgconfig: 'system_bus_services_dir') + '"'
+goldflags += ' -X "github.com/redhatinsights/yggdrasil/internal/constants.DBusPolicyConfigDir=' + join_paths(dbus.get_variable(pkgconfig: 'datadir'), 'dbus-1', 'system.d') + '"'
+goldflags += ' -X "github.com/redhatinsights/yggdrasil/internal/constants.SystemdSystemServicesDir=' + systemd.get_variable(pkgconfig: 'systemdsystemunitdir') + '"'
+
 
 if get_option('default_data_host') != ''
   goldflags += ' -X "github.com/redhatinsights/yggdrasil/internal/constants.DefaultDataHost=' + get_option('default_data_host') + '"'

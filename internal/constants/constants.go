@@ -26,6 +26,8 @@ var (
 	PrefixDir     string = filepath.Join("/", "usr", "local")
 	SysconfDir    string = filepath.Join(PrefixDir, "etc")
 	LocalstateDir string = filepath.Join(PrefixDir, "var")
+	DataDir       string = filepath.Join(PrefixDir, "share")
+	LibDir        string = filepath.Join(PrefixDir, "lib")
 
 	// ConfigDir is a path to a location where configuration data is assumed to
 	// be stored. For non-root users, this is set to $CONFIGURATION_DIRECTORY or
@@ -42,6 +44,18 @@ var (
 	// $XDG_CACHE_HOME/yggdrasil. Otherwise, it gets set to
 	// /var/cache/yggdrasil.
 	CacheDir string = filepath.Join(LocalstateDir, "cache", "yggdrasil")
+
+	// DBusSystemServicesDir is a path to a location where D-Bus bus-activable
+	// system service definition files are stored.
+	DBusSystemServicesDir string = filepath.Join(DataDir, "dbus-1", "system-services")
+
+	// DBusPolicyConfigDir is a path to a location where D-Bus policy
+	// configuration definition files are stored.
+	DBusPolicyConfigDir string = filepath.Join(DataDir, "dbus-1", "system.d")
+
+	// SystemdSystemServicesDir is a path to a location where systemd system
+	// service unit files are stored.
+	SystemdSystemServicesDir string = filepath.Join(LibDir, "systemd", "system")
 )
 
 func init() {
