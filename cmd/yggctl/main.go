@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	"git.sr.ht/~spc/go-log"
 
@@ -96,6 +97,58 @@ from stdin.`,
 						},
 					},
 					Action: generateControlMessageAction,
+				},
+				{
+					Name:      "worker-data",
+					Usage:     "Generate data files needed for workers to interact with yggd",
+					UsageText: "yggctl generate worker-data [command options]",
+					Description: `The generate worker-data command creates data files necessary for workers to
+communicate properly with yggd.`,
+					Flags: []cli.Flag{
+						&cli.BoolFlag{
+							Name:    "install",
+							Aliases: []string{"i"},
+							Usage:   "install data files into system-appropriate directories",
+						},
+						&cli.PathFlag{
+							Name:    "output",
+							Aliases: []string{"o"},
+							Usage:   "output files to `DIRECTORY`",
+						},
+						&cli.StringFlag{
+							Name:     "name",
+							Aliases:  []string{"n"},
+							Usage:    "generate files using `NAME`",
+							Required: true,
+						},
+						&cli.StringFlag{
+							Name:     "program",
+							Aliases:  []string{"p"},
+							Usage:    "set the worker program to `PATH`",
+							Required: true,
+						},
+						&cli.StringFlag{
+							Name:     "user",
+							Aliases:  []string{"u"},
+							Usage:    "set the worker user to `USER`",
+							Required: true,
+						},
+					},
+					Before: func(ctx *cli.Context) error {
+						if ctx.String("output") == "" && !ctx.Bool("install") {
+							return cli.Exit(
+								"error: you must specify either --install or --output",
+								1,
+							)
+						}
+
+						if strings.Contains(ctx.String("name"), " -") {
+							return cli.Exit("'name' cannot contain spaces or dashes", 1)
+						}
+
+						return nil
+					},
+					Action: generateWorkerDataAction,
 				},
 			},
 		},
