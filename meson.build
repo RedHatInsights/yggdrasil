@@ -34,6 +34,7 @@ config_data = configuration_data({
   'sharedstatedir': join_paths(get_option('prefix'), get_option('sharedstatedir')),
   'user': get_option('user'),
   'worker_user': get_option('worker_user'),
+  'systemdsystemunitdir': systemd.get_variable(pkgconfig: 'systemdsystemunitdir'),
 })
 
 subdir('cmd/yggctl')
@@ -43,6 +44,10 @@ subdir('dbus')
 subdir('doc')
 subdir('dist')
 subdir('ipc')
+
+if get_option('selinux_module')
+  subdir('selinux')
+endif
 
 if get_option('examples')
   subdir('worker/echo')
@@ -56,6 +61,7 @@ summary(
     'examples': get_option('examples'),
     'user': get_option('user'),
     'worker_user': get_option('worker_user'),
+    'selinux_policy': get_option('selinux_policy'),
   },
   section: 'Options'
 )
