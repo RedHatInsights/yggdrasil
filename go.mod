@@ -14,7 +14,7 @@ require (
 	github.com/mattn/go-sqlite3 v1.14.22
 	github.com/pelletier/go-toml v1.9.5
 	github.com/rjeczalik/notify v0.9.3
-	github.com/urfave/cli/v2 v2.27.3
+	github.com/urfave/cli/v2 v2.27.4
 )
 
 require (
