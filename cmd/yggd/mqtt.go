@@ -11,7 +11,7 @@ import (
 	"git.sr.ht/~spc/go-log"
 	mqtt "github.com/eclipse/paho.mqtt.golang"
 	"github.com/google/uuid"
-	"github.com/redhatinsights/yggdrasil"
+	"github.com/redhatinsights/yggdrasil/v1"
 )
 
 func handleDataMessage(client mqtt.Client, msg mqtt.Message, sendQ chan<- yggdrasil.Data) {

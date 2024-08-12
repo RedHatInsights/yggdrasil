@@ -14,8 +14,8 @@ import (
 
 	"github.com/briandowns/spinner"
 	systemd "github.com/coreos/go-systemd/v22/dbus"
-	"github.com/redhatinsights/yggdrasil"
-	internal "github.com/redhatinsights/yggdrasil/internal"
+	"github.com/redhatinsights/yggdrasil/v1"
+	internal "github.com/redhatinsights/yggdrasil/v1/internal"
 	"github.com/urfave/cli/v2"
 	"golang.org/x/term"
 )

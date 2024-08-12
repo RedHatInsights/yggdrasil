@@ -79,11 +79,11 @@ github.com/ofabry/go-callvis`) and run:
 # Call graph of the main function of yggd, up to calls into the yggdrasil package
 go-callvis -nostd -format png -file yggdrasil.main ./cmd/yggd
 # Call graph of the yggdrasil package, as invoked by yggd
-go-callvis -nostd -format png -file yggdrasil.yggdrasil -focus github.com/redhatinsights/yggdrasil ./cmd/yggd
+go-callvis -nostd -format png -file yggdrasil.yggdrasil -focus github.com/redhatinsights/yggdrasil/v1 ./cmd/yggd
 # Call graph of the main function of ygg, up to calls into the yggdrasil package
 go-callvis -nostd -format png -file ygg.main ./cmd/ygg
 # Call graph of the yggdrasil package, as invoked by ygg
-go-callvis -nostd -format png -file ygg.yggdrasil -focus github.com/redhatinsights/yggdrasil ./cmd/ygg
+go-callvis -nostd -format png -file ygg.yggdrasil -focus github.com/redhatinsights/yggdrasil/v1./cmd/ygg
 ```
 
 For more detailed, interactive call graphs, install `callgraph` and `digraph`.
@@ -98,7 +98,7 @@ standard library calls and pipe the result into `digraph`. See the `-help`
 output of `digraph` for how to interact with the graph.
 
 ```bash
-callgraph -algo pta -format digraph ./cmd/ygg | grep github.com/redhatinsights/yggdrasil | sort | uniq | digraph
+callgraph -algo pta -format digraph ./cmd/ygg | grep github.com/redhatinsights/yggdrasil/v1 | sort | uniq | digraph
 ```
 
 # Code Guidelines
