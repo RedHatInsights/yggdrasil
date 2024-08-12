@@ -12,7 +12,7 @@ import (
 
 	"git.sr.ht/~spc/go-log"
 	"github.com/pelletier/go-toml"
-	"github.com/redhatinsights/yggdrasil"
+	"github.com/redhatinsights/yggdrasil/v1"
 	"github.com/rjeczalik/notify"
 	"golang.org/x/net/http/httpproxy"
 )
