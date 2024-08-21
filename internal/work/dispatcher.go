@@ -130,9 +130,8 @@ func (d *Dispatcher) Connect() error {
 			case "org.freedesktop.DBus.Properties.PropertiesChanged":
 				changedProperties, ok := s.Body[1].(map[string]dbus.Variant)
 				if !ok {
-					log.Errorf(
-						"cannot convert body element 1 (changed_properties) to map[string]dbus.Variant: %v",
-						err,
+					log.Error(
+						"cannot convert body element 1 (changed_properties) to map[string]dbus.Variant",
 					)
 					continue
 				}
