@@ -194,11 +194,13 @@ func workersAction(c *cli.Context) error {
 		fmt.Println(string(data))
 	case "table":
 		writer := tabwriter.NewWriter(os.Stdout, 4, 4, 2, ' ', 0)
-		fmt.Fprintf(writer, "WORKER\tFIELD\tVALUE\n")
+		fmt.Fprintf(writer, "WORKER\tFEATURES\n")
 		for worker, features := range workers {
-			for field, value := range features {
-				fmt.Fprintf(writer, "%v\t%v\t%v\n", worker, field, value)
+			featureSummary, err := json.Marshal(features)
+			if err != nil {
+				return cli.Exit(fmt.Errorf("cannot marshal features: %v", err), 1)
 			}
+			fmt.Fprintf(writer, "%v\t%v\n", worker, string(featureSummary))
 			_ = writer.Flush()
 		}
 	default:
