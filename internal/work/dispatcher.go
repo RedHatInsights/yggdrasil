@@ -113,6 +113,19 @@ func (d *Dispatcher) Connect() error {
 		)
 	}
 
+	err = d.conn.AddMatchSignal(
+		dbus.WithMatchObjectPath("/org/freedesktop/DBus"),
+		dbus.WithMatchInterface("org.freedesktop.DBus"),
+		dbus.WithMatchMember("NameOwnerChanged"),
+		dbus.WithMatchArg0Namespace("com.redhat.Yggdrasil1.Worker1"),
+	)
+	if err != nil {
+		return fmt.Errorf(
+			"cannot add signal match on org.freedesktop.DBus.NameOwnerChanged: %v",
+			err,
+		)
+	}
+
 	// start goroutine that receives values on the signals channel and handles
 	// them appropriately.
 	signals := make(chan *dbus.Signal)
@@ -121,11 +134,6 @@ func (d *Dispatcher) Connect() error {
 		for s := range signals {
 			log.Tracef("received signal: %#v", s)
 
-			dest, err := d.senderName(dbus.Sender(s.Sender))
-			if err != nil {
-				log.Errorf("cannot find sender: %v", err)
-				continue
-			}
 			switch s.Name {
 			case "org.freedesktop.DBus.Properties.PropertiesChanged":
 				changedProperties, ok := s.Body[1].(map[string]dbus.Variant)
@@ -136,7 +144,7 @@ func (d *Dispatcher) Connect() error {
 					continue
 				}
 				log.Debugf("%+v", changedProperties)
-				directive := strings.TrimPrefix(dest, "com.redhat.Yggdrasil1.Worker1.")
+				directive := filepath.Base(string(s.Path))
 
 				if _, has := changedProperties["Features"]; has {
 					d.features.Set(
@@ -151,7 +159,7 @@ func (d *Dispatcher) Connect() error {
 					log.Errorf("cannot unpack signal: %v", err)
 					continue
 				}
-				event.Worker = strings.TrimPrefix(dest, "com.redhat.Yggdrasil1.Worker1.")
+				event.Worker = filepath.Base(string(s.Path))
 
 				d.WorkerEvents <- *event
 
@@ -178,8 +186,89 @@ func (d *Dispatcher) Connect() error {
 						log.Errorf("cannot add journal entry: %v", err)
 					}
 				}()
+			case "org.freedesktop.DBus.NameOwnerChanged":
+				name, ok := s.Body[0].(string)
+				if !ok {
+					log.Error("cannot convert body element 0 (name) to string")
+					continue
+				}
+				oldOwner, ok := s.Body[1].(string)
+				if !ok {
+					log.Error("cannot convert body element 1 (old_owner) to string")
+					continue
+				}
+				newOwner, ok := s.Body[2].(string)
+				if !ok {
+					log.Error("cannot convert body element 2 (new_owner) to string")
+					continue
+				}
+
+				workerName := strings.TrimPrefix(name, "com.redhat.Yggdrasil1.Worker1.")
+
+				// If there was an old owner, this signal means the old
+				// owner no longer owns the name; clean up the feature map.
+				if oldOwner != "" {
+					d.features.Del(workerName)
+				}
+
+				// If there is a new owner, this signal means a new process
+				// owns the name; add a record to the feature map.
+				if newOwner != "" {
+					obj := d.conn.Object(
+						name,
+						dbus.ObjectPath(
+							filepath.Join("/com/redhat/Yggdrasil1/Worker1/", workerName),
+						),
+					)
+					v, err := obj.GetProperty("com.redhat.Yggdrasil1.Worker1.Features")
+					if err != nil {
+						log.Errorf(
+							"cannot get property 'com.redhat.Yggdrasil1.Worker1.Features': %v",
+							err,
+						)
+						continue
+					}
+					features, ok := v.Value().(map[string]string)
+					if !ok {
+						log.Errorf("cannot convert %T to map[string]string", v.Value())
+						continue
+					}
+					d.features.Set(workerName, features)
+				}
+				d.Dispatchers <- d.FlattenDispatchers()
 			}
 		}
+	}()
+
+	// start goroutine that finds workers already active on the bus connection
+	// and get their features.
+	go func() {
+		workers, err := d.findWorkers()
+		if err != nil {
+			log.Errorf("cannot find workers: %v", err)
+			return
+		}
+
+		for _, worker := range workers {
+			directive := strings.TrimPrefix(worker, "com.redhat.Yggdrasil1.Worker1.")
+			obj := d.conn.Object(
+				worker,
+				dbus.ObjectPath(filepath.Join("/com/redhat/Yggdrasil1/Worker1/", directive)),
+			)
+
+			result, err := obj.GetProperty("com.redhat.Yggdrasil1.Worker1.Features")
+			if err != nil {
+				log.Errorf("cannot get property 'com.redhat.Yggdrasil1.Worker1.Features: %v", err)
+				continue
+			}
+			features, ok := result.Value().(map[string]string)
+			if !ok {
+				log.Errorf("cannot convert %T to map[string]string", result.Value())
+				continue
+			}
+			d.features.Set(directive, features)
+		}
+		d.Dispatchers <- d.FlattenDispatchers()
 	}()
 
 	// start goroutine receiving values from the inbound channel and send them
@@ -413,23 +502,40 @@ func (d *Dispatcher) Transmit(
 // senderName retrieves a list of names from the bus object, iterating over each
 // name, looking for a name owned by sender, returning the name if one is found.
 func (d *Dispatcher) senderName(sender dbus.Sender) (string, error) {
-	var names []string
-	if err := d.conn.BusObject().Call("org.freedesktop.DBus.ListNames", 0).Store(&names); err != nil {
-		return "", fmt.Errorf("cannot call org.freedesktop.DBus.ListNames: %v", err)
+	workers, err := d.findWorkers()
+	if err != nil {
+		return "", fmt.Errorf("cannot get list of workers: %v", err)
 	}
-	for _, name := range names {
-		if strings.HasPrefix(name, "com.redhat.Yggdrasil1.Worker1.") {
-			var owner string
-			if err := d.conn.BusObject().Call("org.freedesktop.DBus.GetNameOwner", 0, name).Store(&owner); err != nil {
-				return "", fmt.Errorf("cannot call org.freedesktop.DBus.GetNameOwner: %v", err)
-			}
-			if owner == string(sender) {
-				return name, nil
-			}
+
+	for _, worker := range workers {
+		var owner string
+		if err := d.conn.BusObject().Call("org.freedesktop.DBus.GetNameOwner", 0, worker).Store(&owner); err != nil {
+			return "", fmt.Errorf("cannot call org.freedesktop.DBus.GetNameOwner: %v", err)
+		}
+		if owner == string(sender) {
+			return worker, nil
 		}
 	}
 
 	return "", fmt.Errorf("cannot get name for sender: %v", sender)
+}
+
+// findWorkers scans the list of names returned by the bus object and collects
+// all names that begin with the com.redhat.Yggdrasil1.Worker1 prefix.
+func (d *Dispatcher) findWorkers() ([]string, error) {
+	var names []string
+	if err := d.conn.BusObject().Call("org.freedesktop.DBus.ListNames", 0).Store(&names); err != nil {
+		return nil, fmt.Errorf("cannot call org.freedesktop.DBus.ListNames: %v", err)
+	}
+
+	var workers []string
+	for _, name := range names {
+		if strings.HasPrefix(name, "com.redhat.Yggdrasil1.Worker1") {
+			workers = append(workers, name)
+		}
+	}
+
+	return workers, nil
 }
 
 // workerEventFromSignal creates an ipc.WorkerEvent from a DBus signal.
