@@ -179,8 +179,8 @@ communicate properly with yggd.`,
 					Flags: []cli.Flag{
 						&cli.StringFlag{
 							Name:  "format",
-							Usage: "Print output in `FORMAT` (json, table or text)",
-							Value: "text",
+							Usage: "Print output in `FORMAT` (json or table)",
+							Value: "table",
 						},
 					},
 					Action: workersAction,

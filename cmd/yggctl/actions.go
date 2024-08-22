@@ -201,12 +201,6 @@ func workersAction(c *cli.Context) error {
 			}
 			_ = writer.Flush()
 		}
-	case "text":
-		for worker, features := range workers {
-			for field, value := range features {
-				fmt.Printf("%v - %v: %v\n", worker, field, value)
-			}
-		}
 	default:
 		return cli.Exit(fmt.Errorf("unknown format type: %v", c.String("format")), 1)
 	}
