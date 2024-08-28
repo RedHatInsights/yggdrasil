@@ -1,6 +1,37 @@
 upstream_package_name: yggdrasil
 downstream_package_name: yggdrasil
 specfile_path: builddir/dist/srpm/yggdrasil.spec
+upstream_tag_template: v{version}
+
+packages:
+  yggdrasil-centos:
+    pkg_tool: centpkg
+    specfile_path: yggdrasil.spec
+    actions:
+      post-upstream-clone:
+        - wget https://gitlab.com/redhat/centos-stream/rpms/yggdrasil/-/raw/c10s/yggdrasil.spec
+        - meson setup builddir -Dbuild_srpm=True -Dvendor=True -Dexamples=True --wipe
+        - meson compile tarball -C builddir
+      get-current-version:
+        - awk '/^Version:/ {print $2;}' yggdrasil.spec
+      create-archive:
+        - bash -c 'echo builddir/dist/srpm/yggdrasil-*.tar.*'
+      fix-spec-file:
+        - bash -c 'echo "No action needed"'
+  yggdrasil-fedora:
+    pkg_tool: fedpkg
+    specfile_path: yggdrasil.spec
+    actions:
+      post-upstream-clone:
+        - wget https://src.fedoraproject.org/rpms/yggdrasil/raw/rawhide/f/yggdrasil.spec
+        - meson setup builddir -Dbuild_srpm=True -Dvendor=True -Dexamples=True --wipe
+        - meson compile tarball -C builddir
+      get-current-version:
+        - awk '/^Version:/ {print $2;}' yggdrasil.spec
+      create-archive:
+        - bash -c 'echo builddir/dist/srpm/yggdrasil-*.tar.*'
+      fix-spec-file:
+        - bash -c 'echo "No action needed"'
 
 srpm_build_deps:
   - bash-completion
@@ -12,21 +43,12 @@ srpm_build_deps:
   - "pkgconfig(dbus-1)"
   - "pkgconfig(systemd)"
   - rpm-build
-
-actions:
-  post-upstream-clone:
-    - meson setup builddir -Dbuild_srpm=True -Dvendor=True -Dexamples=True --wipe
-    - meson compile tarball -C builddir
-  get-current-version:
-    - awk '/^Version:/ {print $2;}' builddir/dist/srpm/yggdrasil.spec
-  create-archive:
-    - bash -c 'echo builddir/dist/srpm/yggdrasil-*.tar.*'
-  fix-spec-file:
-    - bash -c 'echo "No action needed"'
+  - wget
 
 jobs:
   - job: copr_build
     trigger: pull_request
+    packages: [yggdrasil-fedora]
     additional_repos:
       - "copr://@yggdrasil/latest"
     targets:
@@ -44,6 +66,7 @@ jobs:
 
   - job: copr_build
     trigger: commit
+    packages: [yggdrasil-fedora]
     branch: main
     owner: "@yggdrasil"
     project: latest
@@ -62,6 +85,7 @@ jobs:
 
   - job: tests
     trigger: pull_request
+    packages: [yggdrasil-centos]
     identifier: "unit/centos-stream"
     targets:
       - centos-stream-8
@@ -74,6 +98,7 @@ jobs:
 
   - job: tests
     trigger: pull_request
+    packages: [yggdrasil-fedora]
     identifier: "unit/fedora"
     targets:
       - fedora-all
@@ -82,6 +107,7 @@ jobs:
 
   - job: tests
     trigger: pull_request
+    packages: [yggdrasil-centos]
     identifier: "unit/rhel"
     targets:
       rhel-8-aarch64:
@@ -99,3 +125,15 @@ jobs:
     labels:
       - unit
     use_internal_tf: true
+
+  - job: propose_downstream
+    trigger: release
+    packages: [yggdrasil-centos]
+    dist_git_branches:
+      - c10s
+
+  - job: propose_downstream
+    trigger: release
+    packages: [yggdrasil-fedora]
+    dist_git_branches:
+      - fedora-branched
