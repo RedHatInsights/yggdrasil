@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-option go_package = "github.com/redhatinsights/yggdrasil/v1/protocol";
+option go_package = "github.com/redhatinsights/yggdrasil/protocol";
 
 package yggdrasil;
 

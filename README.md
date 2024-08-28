@@ -1,4 +1,4 @@
-[![godocs.io](https://godocs.io/github.com/RedHatInsights/yggdrasil/v1?status.svg)](https://godocs.io/github.com/RedHatInsights/yggdrasil/v1)
+[![godocs.io](https://godocs.io/github.com/RedHatInsights/yggdrasil?status.svg)](https://godocs.io/github.com/RedHatInsights/yggdrasil)
 
 # yggdrasil
 

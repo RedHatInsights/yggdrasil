@@ -9,7 +9,7 @@ import (
 	"strings"
 
 	"git.sr.ht/~spc/go-log"
-	"github.com/redhatinsights/yggdrasil/v1"
+	"github.com/redhatinsights/yggdrasil"
 )
 
 var (
