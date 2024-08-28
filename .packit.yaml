@@ -49,25 +49,44 @@ jobs:
   - job: copr_build
     trigger: pull_request
     packages: [yggdrasil-fedora]
+    identifier: "build/pr/fedora"
+    additional_repos:
+      - "copr://@yggdrasil/latest"
+    targets:
+      - fedora-all
+
+  - job: copr_build
+    trigger: pull_request
+    packages: [yggdrasil-centos]
+    identifier: "build/pr/centos-stream"
     additional_repos:
       - "copr://@yggdrasil/latest"
     targets:
       - centos-stream-9
       - centos-stream-10
-      - fedora-all
       - rhel-8
       - rhel-9
 
   - job: copr_build
     trigger: commit
     packages: [yggdrasil-fedora]
+    identifier: "build/latest/fedora"
+    branch: main
+    owner: "@yggdrasil"
+    project: latest
+    targets:
+      - fedora-all
+
+  - job: copr_build
+    trigger: commit
+    packages: [yggdrasil-centos]
+    identifier: "build/latest/centos-stream"
     branch: main
     owner: "@yggdrasil"
     project: latest
     targets:
       - centos-stream-9
       - centos-stream-10
-      - fedora-all
       - rhel-8
       - rhel-9
 
