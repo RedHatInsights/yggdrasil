@@ -53,16 +53,11 @@ jobs:
       - "copr://@yggdrasil/latest"
     targets:
       - centos-stream-8
-      - centos-stream-9-aarch64
-      - centos-stream-9-x86_64
-      - centos-stream-10-aarch64
-      - centos-stream-10-x86_64
-      - fedora-all-aarch64
-      - fedora-all-x86_64
-      - rhel-8-aarch64
-      - rhel-8-x86_64
-      - rhel-9-aarch64
-      - rhel-9-x86_64
+      - centos-stream-9
+      - centos-stream-10
+      - fedora-all
+      - rhel-8
+      - rhel-9
 
   - job: copr_build
     trigger: commit
@@ -72,16 +67,11 @@ jobs:
     project: latest
     targets:
       - centos-stream-8
-      - centos-stream-9-aarch64
-      - centos-stream-9-x86_64
-      - centos-stream-10-aarch64
-      - centos-stream-10-x86_64
-      - fedora-all-aarch64
-      - fedora-all-x86_64
-      - rhel-8-aarch64
-      - rhel-8-x86_64
-      - rhel-9-aarch64
-      - rhel-9-x86_64
+      - centos-stream-9
+      - centos-stream-10
+      - fedora-all
+      - rhel-8
+      - rhel-9
 
   - job: tests
     trigger: pull_request
@@ -89,10 +79,8 @@ jobs:
     identifier: "unit/centos-stream"
     targets:
       - centos-stream-8
-      - centos-stream-9-aarch64
-      - centos-stream-9-x86_64
-      - centos-stream-10-aarch64
-      - centos-stream-10-x86_64
+      - centos-stream-9
+      - centos-stream-10
     labels:
       - unit
 
@@ -110,15 +98,9 @@ jobs:
     packages: [yggdrasil-centos]
     identifier: "unit/rhel"
     targets:
-      rhel-8-aarch64:
-        distros:
-          - RHEL-8-Nightly
       rhel-8-x86_64:
         distros:
           - RHEL-8-Nightly
-      rhel-9-aarch64:
-        distros:
-          - RHEL-9-Nightly
       rhel-9-x86_64:
         distros:
           - RHEL-9-Nightly
