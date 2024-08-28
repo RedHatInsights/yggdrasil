@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	systemd "github.com/coreos/go-systemd/v22/dbus"
-	"github.com/redhatinsights/yggdrasil/v1"
+	"github.com/redhatinsights/yggdrasil"
 )
 
 func activate() error {
