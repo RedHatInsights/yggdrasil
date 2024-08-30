@@ -64,6 +64,8 @@ BuildRequires:  pkgconfig(systemd)
 BuildRequires:  pkgconfig(bash-completion)
 BuildRequires:  golang >= 1.18
 
+Requires(post): systemd
+
 %description %{common_description}
 
 %package devel
@@ -116,6 +118,7 @@ export %gomodulesmode
 %post
 %systemd_post %{name}.service
 %systemd_user_post %{name}.service
+/usr/bin/busctl --system call org.freedesktop.DBus / org.freedesktop.DBus ReloadConfig
 
 %preun
 %systemd_preun %{name}.service
