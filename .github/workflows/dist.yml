@@ -17,4 +17,4 @@ jobs:
       - run: meson setup -Dvendor=True _build && meson dist -C _build
       - uses: softprops/action-gh-release@v2
         with:
-          files: _build/meson-dist/yggdrasil-*.tar.xz
+          files: _build/meson-dist/yggdrasil-*.tar.xz*
