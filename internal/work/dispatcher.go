@@ -381,6 +381,11 @@ func (d *Dispatcher) FlattenDispatchers() map[string]map[string]string {
 	dispatchers := make(map[string]map[string]string)
 	d.features.Visit(func(k string, v map[string]string) {
 		dispatchers[k] = v
+		// Include a second entry in the dispatchers map replacing any
+		// underscores with hyphens to support the "legacy" names of workers.
+		// This cannot cause any conflict with existing/local workers since
+		// hyphens in worker names is disallowed by the D-Bus name policy.
+		dispatchers[strings.ReplaceAll(k, "_", "-")] = v
 	})
 
 	return dispatchers
