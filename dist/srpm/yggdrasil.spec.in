@@ -56,6 +56,7 @@ Summary:        Remote data transmission and processing client
 License:        GPL-3.0-only
 URL:            %{gourl}
 Source:         %{gosource}
+Source1:        yggdrasil.sysuser
 
 BuildRequires:  systemd-rpm-macros
 BuildRequires:  meson
@@ -63,6 +64,7 @@ BuildRequires:  pkgconfig(dbus-1)
 BuildRequires:  pkgconfig(systemd)
 BuildRequires:  pkgconfig(bash-completion)
 BuildRequires:  golang >= 1.18
+%{?sysusers_requires_compat}
 
 %description %{common_description}
 
@@ -100,6 +102,7 @@ export %gomodulesmode
 %global gosupfiles ./ipc/com.redhat.Yggdrasil1.Dispatcher1.xml ./ipc/com.redhat.Yggdrasil1.Worker1.xml
 %install
 %meson_install
+install -p -D -m 0644 %{SOURCE1} %{buildroot}%{_sysusersdir}/%{name}.conf
 %if %{has_go_rpm_macros}
 %gopkginstall
 %endif
@@ -112,6 +115,9 @@ export %gomodulesmode
 %meson_test
 %endif
 %endif
+
+%pre
+%sysusers_create_compat %{SOURCE1}
 
 %post
 %systemd_post %{name}.service

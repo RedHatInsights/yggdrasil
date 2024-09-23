@@ -5,6 +5,15 @@ bash = find_program('bash')
 
 commit = run_command(git, 'rev-parse', 'HEAD', capture: true, check: true).stdout().strip()
 
+systemd_sysusers_dir = systemd.get_variable(pkgconfig: 'sysusersdir')
+
+configure_file(
+  configuration: config_data,
+  input: 'yggdrasil.sysuser.in',
+  output: '@BASENAME@',
+  install: false,
+)
+
 if get_option('vendor')
 run_command([bash, files(meson.project_source_root() / 'build-aux' / 'vendor.sh')], check: true)
 endif
