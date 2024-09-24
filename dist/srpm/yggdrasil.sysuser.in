@@ -2,3 +2,4 @@
 u     @user@          -    "yggdrasil system user" @sharedstatedir@/yggdrasil -
 u     @worker_user@   -    "yggdrasil worker user" -                          -
 m     @user@          @worker_user@
+m     @user@          rhsm
