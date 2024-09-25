@@ -107,6 +107,8 @@ func (c *Client) Do(req *http.Request) (*http.Response, error) {
 			}
 		}
 
+		log.Debugf("received HTTP response: %v", resp)
+
 		return resp, nil
 	}
 }
