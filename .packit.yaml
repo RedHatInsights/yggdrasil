@@ -30,15 +30,12 @@ jobs:
     additional_repos:
       - "copr://@yggdrasil/latest"
     targets:
-      - centos-stream-8
       - centos-stream-9-aarch64
       - centos-stream-9-x86_64
       - centos-stream-10-aarch64
       - centos-stream-10-x86_64
       - fedora-all-aarch64
       - fedora-all-x86_64
-      - rhel-8-aarch64
-      - rhel-8-x86_64
       - rhel-9-aarch64
       - rhel-9-x86_64
 
@@ -48,15 +45,12 @@ jobs:
     owner: "@yggdrasil"
     project: latest
     targets:
-      - centos-stream-8
       - centos-stream-9-aarch64
       - centos-stream-9-x86_64
       - centos-stream-10-aarch64
       - centos-stream-10-x86_64
       - fedora-all-aarch64
       - fedora-all-x86_64
-      - rhel-8-aarch64
-      - rhel-8-x86_64
       - rhel-9-aarch64
       - rhel-9-x86_64
 
@@ -64,7 +58,6 @@ jobs:
     trigger: pull_request
     identifier: "unit/centos-stream"
     targets:
-      - centos-stream-8
       - centos-stream-9-aarch64
       - centos-stream-9-x86_64
       - centos-stream-10-aarch64
@@ -84,12 +77,6 @@ jobs:
     trigger: pull_request
     identifier: "unit/rhel"
     targets:
-      rhel-8-aarch64:
-        distros:
-          - RHEL-8-Nightly
-      rhel-8-x86_64:
-        distros:
-          - RHEL-8-Nightly
       rhel-9-aarch64:
         distros:
           - RHEL-9-Nightly
