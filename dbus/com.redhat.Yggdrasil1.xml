@@ -8,6 +8,16 @@
         programmatic interaction with the yggdrasil system service.
     -->
     <interface name="com.redhat.Yggdrasil1">
+        <!--
+            GetClientID:
+            @id: The current client id on the interface.
+
+            Returns the current client id on the interface.
+        -->
+        <method name="GetClientID">
+            <arg type="s" name="id" direction="out" />
+        </method>
+
         <!-- 
             Dispatch:
             @directive: worker identifier for which the data is destined.
