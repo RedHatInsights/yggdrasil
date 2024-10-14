@@ -14,12 +14,12 @@ require (
 	github.com/mattn/go-sqlite3 v1.14.24
 	github.com/pelletier/go-toml v1.9.5
 	github.com/rjeczalik/notify v0.9.3
-	github.com/urfave/cli/v2 v2.27.4
+	github.com/urfave/cli/v2 v2.27.5
 )
 
 require (
-	github.com/BurntSushi/toml v1.3.2 // indirect
-	github.com/cpuguy83/go-md2man/v2 v2.0.4 // indirect
+	github.com/BurntSushi/toml v1.4.0 // indirect
+	github.com/cpuguy83/go-md2man/v2 v2.0.5 // indirect
 	github.com/gorilla/websocket v1.5.3 // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect
 	github.com/hashicorp/go-multierror v1.1.1 // indirect
