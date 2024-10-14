@@ -173,6 +173,32 @@ func messageJournalAction(ctx *cli.Context) error {
 	return nil
 }
 
+// clientIDAction connects to the Yggdrasil1 dbus interface
+// and attempts to retrieve the active yggd client id
+// and display the client id to stdout.
+func clientIDAction(ctx *cli.Context) error {
+	conn, err := connectBus()
+	if err != nil {
+		return cli.Exit(fmt.Errorf("cannot connect to bus: %w", err), 1)
+	}
+
+	obj := conn.Object("com.redhat.Yggdrasil1", "/com/redhat/Yggdrasil1")
+	var clientID string
+	if err := obj.Call("com.redhat.Yggdrasil1.GetClientID", dbus.Flags(0)).Store(&clientID); err != nil {
+		return cli.Exit(
+			fmt.Errorf(
+				"cannot retrieve active client id from the Yggdrasil1 dbus interface: %v",
+				err,
+			),
+			1,
+		)
+	}
+
+	fmt.Println(clientID)
+
+	return nil
+}
+
 func workersAction(c *cli.Context) error {
 	conn, err := connectBus()
 	if err != nil {
