@@ -8,6 +8,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"strings"
 	"text/tabwriter"
 	"text/template"
 
@@ -183,6 +184,19 @@ func workersAction(c *cli.Context) error {
 	var workers map[string]map[string]string
 	if err := obj.Call("com.redhat.Yggdrasil1.ListWorkers", dbus.Flags(0)).Store(&workers); err != nil {
 		return cli.Exit(fmt.Errorf("cannot list workers: %v", err), 1)
+	}
+
+	// Remove worker names with hyphens.
+	// Why:
+	// Hyphenated worker names were introduced to satisfy a console-dot assumption that
+	// worker names were hyphenated, after which the "yggctl workers list" command was
+	// showing both the "legacy" and hyphenated  worker names. Since hyphens in worker
+	// names are disallowed by the D-Bus naming policy it is safe to remove any worker
+	// names with hyphens when listing them.
+	for key, _ := range workers {
+		if strings.ContainsRune(key, '-') {
+			delete(workers, key)
+		}
 	}
 
 	switch c.String("format") {
