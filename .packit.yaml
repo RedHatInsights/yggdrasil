@@ -3,12 +3,12 @@ downstream_package_name: yggdrasil
 specfile_path: builddir/dist/srpm/yggdrasil.spec
 
 srpm_build_deps:
-  - bash-completion
   - gawk
   - git-core
   - golang
   - go-rpm-macros
   - meson
+  - "pkgconfig(bash-completion)"
   - "pkgconfig(dbus-1)"
   - "pkgconfig(systemd)"
   - rpm-build
