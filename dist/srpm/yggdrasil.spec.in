@@ -50,7 +50,7 @@ exchanging data with its worker processes through a D-Bus message broker.}
 %global godocs          CONTRIBUTING.md README.md
 
 Name:           yggdrasil
-Release:        0%{?dist}
+Release:        %{?autorelease}%{!?autorelease:0%{?dist}}
 Summary:        Remote data transmission and processing client
 
 License:        GPL-3.0-only
