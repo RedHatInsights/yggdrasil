@@ -9,7 +9,7 @@ S ->> B: data/in {"type":"data","directive":"echo","message-id": "1-1","content"
 B ->> Y: data/in {ditto}
 Y ->> D: Dispatcher method
 D ->>+ W: data/in {ditto}
-Note right of W: echo proccess
+Note right of W: echo process
 W ->> D: Worker Event {Worker:echo Name:BEGIN}
 D ->> Y: Worker Event {Worker:echo Name:BEGIN}
 W ->> D: Worker Event {Worker:echo Name:WORKING}

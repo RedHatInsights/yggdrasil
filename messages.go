@@ -137,7 +137,7 @@ type WorkerMessage struct {
 }
 
 // Response messages are published by the server as a response to a data
-// message. This is most often used as a receipt to indicate the receiption of a
+// message. This is most often used as a receipt to indicate the reception of a
 // message by a synchronous request/response transport (such as the HTTP polling
 // transport).
 type Response struct {
