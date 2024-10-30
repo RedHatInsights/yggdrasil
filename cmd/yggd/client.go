@@ -347,7 +347,7 @@ func (c *Client) ReceiveControlMessage(msg *yggdrasil.Control) error {
 			}
 		case yggdrasil.CommandNameCancel:
 			log.Info("cancelling message...")
-			// Unmarshall comand arguments
+			// Unmarshall command arguments
 			// cmd contains the directive and the message id to be canceled.
 			directive, exists := cmd.Arguments["directive"]
 			if !exists {

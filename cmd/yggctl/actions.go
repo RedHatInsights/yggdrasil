@@ -386,7 +386,7 @@ func generateWorkerDataAction(ctx *cli.Context) error {
 		}
 		f, err := os.Create(d.FilePath)
 		if err != nil {
-			return cli.Exit(fmt.Errorf("cannt create file %v: %v", d.FilePath, err), 1)
+			return cli.Exit(fmt.Errorf("cannot create file %v: %v", d.FilePath, err), 1)
 		}
 		defer f.Close()
 		if err := d.Template.Execute(f, config); err != nil {
