@@ -17,6 +17,7 @@ Version:        @VERSION@
 %global goipath         github.com/redhatinsights/yggdrasil
 %global commit          @COMMIT@
 %global shortcommit     %(c=%{commit}; echo ${c:0:7})
+%global builddate       %(date "+%Y%m%d")
 %global archivename     yggdrasil-%{version}
 
 %if %{has_go_rpm_macros}
@@ -50,7 +51,7 @@ exchanging data with its worker processes through a D-Bus message broker.}
 %global godocs          CONTRIBUTING.md README.md
 
 Name:           yggdrasil
-Release:        %{?autorelease}%{!?autorelease:0%{?dist}}
+Release:        %{?autorelease}%{!?autorelease:1.%{builddate}git%{shortcommit}%{?dist}}
 Summary:        Remote data transmission and processing client
 
 License:        GPL-3.0-only
