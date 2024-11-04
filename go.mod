@@ -4,7 +4,7 @@ go 1.18
 
 require (
 	git.sr.ht/~spc/go-log v0.1.1
-	github.com/adrg/xdg v0.5.0
+	github.com/adrg/xdg v0.5.3
 	github.com/coreos/go-systemd/v22 v22.5.0
 	github.com/eclipse/paho.mqtt.golang v1.5.0
 	github.com/godbus/dbus/v5 v5.1.0
@@ -28,6 +28,6 @@ require (
 	go.uber.org/atomic v1.7.0 // indirect
 	golang.org/x/net v0.27.0 // indirect
 	golang.org/x/sync v0.7.0 // indirect
-	golang.org/x/sys v0.22.0 // indirect
+	golang.org/x/sys v0.26.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
