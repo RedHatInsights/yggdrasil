@@ -104,6 +104,7 @@ export %gomodulesmode
 %install
 %meson_install
 install -p -D -m 0644 %{SOURCE1} %{buildroot}%{_sysusersdir}/%{name}.conf
+install -d -m 0755 %{buildroot}%{_localstatedir}/lib/yggdrasil
 %if %{has_go_rpm_macros}
 %gopkginstall
 %endif
@@ -145,6 +146,7 @@ install -p -D -m 0644 %{SOURCE1} %{buildroot}%{_sysusersdir}/%{name}.conf
 %{_datadir}/dbus-1/{interfaces,system-services,system.d}/*
 %{_datadir}/doc/%{name}/*
 %{_mandir}/man1/*
+%attr(0755, yggdrasil, yggdrasil) %{_localstatedir}/lib/yggdrasil
 
 %if %{has_go_rpm_macros}
 %gopkgfiles
