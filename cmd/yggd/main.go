@@ -2,6 +2,7 @@ package main
 
 import (
 	"crypto/tls"
+	"encoding/json"
 	"fmt"
 	"os"
 	"os/signal"
@@ -117,6 +118,35 @@ func setupClientID() error {
 		}
 		config.DefaultConfig.ClientID = string(clientID)
 	}
+	return nil
+}
+
+// setupFactsFile creates a canonical facts file if it doesn’t exist
+func setupFactsFile() error {
+	if config.DefaultConfig.FactsFile == "" {
+		return nil
+	}
+
+	_, err := os.Stat(config.DefaultConfig.FactsFile)
+	if err == nil {
+		return nil
+	}
+	if !os.IsNotExist(err) {
+		return fmt.Errorf("cannot stat file '%v': %v", config.DefaultConfig.FactsFile, err)
+	}
+
+	dir := filepath.Dir(config.DefaultConfig.FactsFile)
+	if err := os.MkdirAll(dir, 0755); err != nil {
+		return fmt.Errorf("cannot create directory '%v': %v", dir, err)
+	}
+
+	facts := make(map[string]interface{})
+	data, _ := json.Marshal(facts)
+	if err := os.WriteFile(config.DefaultConfig.FactsFile, data, 0644); err != nil {
+		return fmt.Errorf("cannot create facts file '%v': %v", config.DefaultConfig.FactsFile, err)
+	}
+
+	log.Infof("facts file not found, created '%v'", config.DefaultConfig.FactsFile)
 	return nil
 }
 
@@ -356,6 +386,11 @@ func mainAction(c *cli.Context) error {
 	err = setupClientID()
 	if err != nil {
 		return err
+	}
+
+	err = setupFactsFile()
+	if err != nil {
+		return cli.Exit(fmt.Errorf("cannot setup facts file: %v", err), 1)
 	}
 
 	// Create HTTP client and TLS configuration. HTTP client is used for
