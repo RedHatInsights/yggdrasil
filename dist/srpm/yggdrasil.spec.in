@@ -17,7 +17,7 @@ Version:        @VERSION@
 %global goipath         github.com/redhatinsights/yggdrasil
 %global commit          @COMMIT@
 %global shortcommit     %(c=%{commit}; echo ${c:0:7})
-%global builddate       %(date "+%Y%m%d")
+%global date            %(date "+%Y%m%d")
 %global archivename     yggdrasil-%{version}
 
 %if %{has_go_rpm_macros}
@@ -27,13 +27,8 @@ Version:        @VERSION@
 %global gomodulesmode GO111MODULES=off
 %global gosource %{gourl}/releases/download/%{version}/yggdrasil-%{version}.tar.gz
 %global gocompilerflags "-buildmode pie -compiler gc"
-%endif
-
-# Manually redefine %%dist to work around an issue in COPR where the build root
-# that creates the srpm does not define a value for %%dist. This should *NOT* be
-# carried in downstream; this is strictly an upstream/COPR/CI workaround.
-%if "%{dist}" == ""
-%global dist %{distprefix}.fc%{fedora}
+%global scm git
+%forgemeta
 %endif
 
 %if 0%{?fedora}
@@ -51,7 +46,7 @@ exchanging data with its worker processes through a D-Bus message broker.}
 %global godocs          CONTRIBUTING.md README.md
 
 Name:           yggdrasil
-Release:        %{?autorelease}%{!?autorelease:1.%{builddate}git%{shortcommit}%{?dist}}
+Release:        99%{?dist}
 Summary:        Remote data transmission and processing client
 
 License:        GPL-3.0-only

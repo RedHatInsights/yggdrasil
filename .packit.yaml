@@ -11,7 +11,7 @@ srpm_build_deps:
   - "pkgconfig(bash-completion)"
   - "pkgconfig(dbus-1)"
   - "pkgconfig(systemd)"
-  - "rpm_macro(autorelease)"
+  - "rpm_macro(forgemeta)"
   - rpm-build
 
 actions:
