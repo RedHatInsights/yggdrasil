@@ -31,6 +31,13 @@ Version:        @VERSION@
 %forgemeta
 %endif
 
+# Manually redefine %%dist to work around an issue in COPR where the build root
+# that creates the srpm does not define a value for %%dist. This should *NOT* be
+# carried in downstream; this is strictly an upstream/COPR/CI workaround.
+%if "%{dist}" == ""
+%global dist %{distprefix}.fc%{fedora}
+%endif
+
 %if 0%{?fedora}
 %global setup_flags -Dvendor=False -Dexamples=True
 %else
