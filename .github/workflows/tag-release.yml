@@ -1,0 +1,30 @@
+name: Create git tag and GitHub Release
+
+on:
+  pull_request:
+    types:
+      - closed
+
+jobs:
+  tag-release:
+    if: github.event.pull_request.merged == true && contains(github.event.pull_request.labels.*.name, 'auto-release')
+    runs-on: ubuntu-latest
+    container:
+      image: registry.fedoraproject.org/fedora:latest
+    steps:
+      - run: dnf install --setopt install_weak_deps=False --assumeyes golang git-core meson 'pkgconfig(dbus-1)' 'pkgconfig(systemd)' 'rpm_macro(forgemeta)' jq gh
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.merge_commit_sha }}
+      - run: git config --global safe.directory "*"
+      - run: |
+          git config user.name github-actions[bot]
+          git config user.email github-actions[bot]@users.noreply.github.com
+      # See https://github.com/mesonbuild/meson/pull/13637
+      - run: meson setup -Dvendor=True builddir
+      - run: echo "version=$(meson introspect builddir --projectinfo | jq -r '.version')" >> $GITHUB_OUTPUT
+        id: version
+      - run: meson dist -C builddir
+      - run: gh release create v${{ steps.version.outputs.version }} --generate-notes builddir/meson-dist/yggdrasil-${{ steps.version.outputs.version }}.tar.xz*
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
