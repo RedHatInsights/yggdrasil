@@ -193,7 +193,7 @@ func workersAction(c *cli.Context) error {
 	// showing both the "legacy" and hyphenated  worker names. Since hyphens in worker
 	// names are disallowed by the D-Bus naming policy it is safe to remove any worker
 	// names with hyphens when listing them.
-	for key, _ := range workers {
+	for key := range workers {
 		if strings.ContainsRune(key, '-') {
 			delete(workers, key)
 		}
