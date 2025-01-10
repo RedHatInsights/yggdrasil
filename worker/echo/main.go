@@ -37,6 +37,10 @@ func echo(
 	metadata map[string]string,
 	data []byte,
 ) error {
+	// Emit a "WORKING" event, notifying listeners that a significant
+	// event in the worker has occurred. This is optional and may be emitted
+	// whenever appropriate. The data parameter may contain any number of
+	// key/value pairs that will be emitted along with the event.
 	if err := w.EmitEvent(
 		ipc.WorkerEventNameWorking,
 		rcvId,
