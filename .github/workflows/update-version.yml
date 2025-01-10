@@ -11,7 +11,7 @@ jobs:
     container:
       image: registry.fedoraproject.org/fedora:latest
     steps:
-      - run: dnf install --setopt install_weak_deps=False --assumeyes golang git-core meson 'pkgconfig(dbus-1)' 'pkgconfig(systemd)' 'rpm_macro(forgemeta)' jq gh
+      - run: dnf install --setopt install_weak_deps=False --assumeyes golang git-core meson 'pkgconfig(bash-completion)' 'pkgconfig(dbus-1)' 'pkgconfig(systemd)' 'rpm_macro(forgemeta)' jq gh
       - uses: actions/checkout@v4
       - run: git config --global safe.directory "*"
       - run: |
