@@ -243,7 +243,7 @@ func (d *Dispatcher) Connect() error {
 	// start goroutine that finds workers already active on the bus connection
 	// and get their features.
 	go func() {
-		workers, err := d.findWorkers()
+		workers, err := d.findActivatableWorkers()
 		if err != nil {
 			log.Errorf("cannot find workers: %v", err)
 			return
@@ -525,22 +525,52 @@ func (d *Dispatcher) senderName(sender dbus.Sender) (string, error) {
 	return "", fmt.Errorf("cannot get name for sender: %v", sender)
 }
 
-// findWorkers scans the list of names returned by the bus object and collects
-// all names that begin with the com.redhat.Yggdrasil1.Worker1 prefix.
+// findWorkers gets the list of names currently on the bus  and collects all
+// names that begin with the com.redhat.Yggdrasil1.Worker1 prefix.
 func (d *Dispatcher) findWorkers() ([]string, error) {
-	var names []string
-	if err := d.conn.BusObject().Call("org.freedesktop.DBus.ListNames", 0).Store(&names); err != nil {
-		return nil, fmt.Errorf("cannot call org.freedesktop.DBus.ListNames: %v", err)
+	names, err := callMethod[[]string](d.conn.BusObject(), "org.freedesktop.DBus.ListNames")
+	if err != nil {
+		return nil, err
 	}
 
-	var workers []string
+	return reduceNamesPrefix(*names, "com.redhat.Yggdrasil1.Worker1"), nil
+}
+
+// findActivatableWorkers gets the list of names that can be activated on the
+// bus and collects all names that begin with the com.redhat.Yggdrasil1.Worker1
+// prefix.
+func (d *Dispatcher) findActivatableWorkers() ([]string, error) {
+	names, err := callMethod[[]string](
+		d.conn.BusObject(),
+		"org.freedesktop.DBus.ListActivatableNames",
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	return reduceNamesPrefix(*names, "com.redhat.Yggdrasil1.Worker1"), nil
+}
+
+// callMethod calls the named method on the given bus object and returns
+// the result.
+func callMethod[T any](obj dbus.BusObject, method string, args ...interface{}) (*T, error) {
+	var result T
+	if err := obj.Call(method, 0, args...).Store(&result); err != nil {
+		return nil, fmt.Errorf("cannot call %v: %v", method, err)
+	}
+	return &result, nil
+}
+
+// reduceNamesPrefix reduces 'names' to include strings that have the given
+// prefix.
+func reduceNamesPrefix(names []string, prefix string) []string {
+	var reducedNames []string
 	for _, name := range names {
-		if strings.HasPrefix(name, "com.redhat.Yggdrasil1.Worker1") {
-			workers = append(workers, name)
+		if strings.HasPrefix(name, prefix) {
+			reducedNames = append(reducedNames, name)
 		}
 	}
-
-	return workers, nil
+	return reducedNames
 }
 
 // workerEventFromSignal creates an ipc.WorkerEvent from a DBus signal.
