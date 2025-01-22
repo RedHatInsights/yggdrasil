@@ -240,8 +240,8 @@ func (d *Dispatcher) Connect() error {
 		}
 	}()
 
-	// start goroutine that finds workers already active on the bus connection
-	// and get their features.
+	// start goroutine that finds workers activatable on the bus connection
+	// and get their features if the worker is already running.
 	go func() {
 		workers, err := d.findActivatableWorkers()
 		if err != nil {
@@ -251,22 +251,34 @@ func (d *Dispatcher) Connect() error {
 
 		for _, worker := range workers {
 			directive := strings.TrimPrefix(worker, "com.redhat.Yggdrasil1.Worker1.")
-			obj := d.conn.Object(
-				worker,
-				dbus.ObjectPath(filepath.Join("/com/redhat/Yggdrasil1/Worker1/", directive)),
-			)
-
-			result, err := obj.GetProperty("com.redhat.Yggdrasil1.Worker1.Features")
+			present, err := d.nameHasOwner(directive)
 			if err != nil {
-				log.Errorf("cannot get property 'com.redhat.Yggdrasil1.Worker1.Features: %v", err)
+				log.Errorf("cannot find owner for name: %v: %v", directive, err)
 				continue
 			}
-			features, ok := result.Value().(map[string]string)
-			if !ok {
-				log.Errorf("cannot convert %T to map[string]string", result.Value())
-				continue
+			if present {
+				obj := d.conn.Object(
+					worker,
+					dbus.ObjectPath(filepath.Join("/com/redhat/Yggdrasil1/Worker1/", directive)),
+				)
+
+				result, err := obj.GetProperty("com.redhat.Yggdrasil1.Worker1.Features")
+				if err != nil {
+					log.Errorf(
+						"cannot get property 'com.redhat.Yggdrasil1.Worker1.Features: %v",
+						err,
+					)
+					continue
+				}
+				features, ok := result.Value().(map[string]string)
+				if !ok {
+					log.Errorf("cannot convert %T to map[string]string", result.Value())
+					continue
+				}
+				d.features.Set(directive, features)
+			} else {
+				d.features.Set(directive, map[string]string{})
 			}
-			d.features.Set(directive, features)
 		}
 		d.Dispatchers <- d.FlattenDispatchers()
 	}()
@@ -549,6 +561,15 @@ func (d *Dispatcher) findActivatableWorkers() ([]string, error) {
 	}
 
 	return reduceNamesPrefix(*names, "com.redhat.Yggdrasil1.Worker1"), nil
+}
+
+// nameHasOwner checks if the given name currently has an owner.
+func (d *Dispatcher) nameHasOwner(name string) (bool, error) {
+	has, err := callMethod[bool](d.conn.BusObject(), "org.freedesktop.DBus.NameHasOwner", name)
+	if err != nil {
+		return false, err
+	}
+	return *has, err
 }
 
 // callMethod calls the named method on the given bus object and returns
