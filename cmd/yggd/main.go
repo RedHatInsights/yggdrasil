@@ -524,7 +524,7 @@ func main() {
 		altsrc.NewStringFlag(&cli.StringFlag{
 			Name:  config.FlagNameProtocol,
 			Usage: "Transmit data remotely using `PROTOCOL` ('mqtt', 'http' or 'none')",
-			Value: "mqtt",
+			Value: "none",
 		}),
 		altsrc.NewStringSliceFlag(&cli.StringSliceFlag{
 			Name:  config.FlagNameServer,

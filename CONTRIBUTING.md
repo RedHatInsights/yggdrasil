@@ -111,8 +111,14 @@ sudo go run ./cmd/yggd --server tcp://localhost:1883 --log-level trace --client-
 
 `yggd` can be compiled using meson, or can be run directly with the `go run`
 command. It can read configuration values from a file by running
-`yggd` with the `--config` option. A sample configuration file is included in
-the `data/yggdrasil` directory.
+`yggd` with the `--config` option. If this flag is not specified
+by default the file location, `/etc/yggdrasil/config.toml`, is used.
+A sample configuration file, with all of the lines commented out,
+is included in the the source tree under the `data/yggdrasil`
+directory. This file is installed in the default file location,
+`/etc/yggdrasil/config.toml`.
+To use this sample configuration file uncomment the desired lines and
+run it with the following command:
 
 ```
 sudo go run ./cmd/yggd --config ./data/yggdrasil/config.toml
@@ -144,7 +150,9 @@ port using firewalld, run:
 sudo firewall-cmd --zone public --add-port 2345/tcp --permanent
 ```
 
-Start `dlv` using the `debug` command:
+Start `dlv` using the `debug` command, with the desired lines in
+the sample configuration file commented out, then run it with
+the following command:
 
 ```
 sudo /root/go/bin/dlv debug --api-version 2 --headless --listen 0.0.0.0:2345 \
