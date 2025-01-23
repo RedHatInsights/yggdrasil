@@ -65,7 +65,7 @@ type Config struct {
 	PathPrefix string
 
 	// Protocol is the protocol used by yggd when connecting to Server. Can be
-	// either MQTT or HTTP.
+	// either MQTT, HTTP or none.
 	Protocol string
 
 	// DataHost is a hostname value to interject into all HTTP requests when
