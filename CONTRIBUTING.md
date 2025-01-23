@@ -111,11 +111,12 @@ sudo go run ./cmd/yggd --server tcp://localhost:1883 --log-level trace --client-
 
 `yggd` can be compiled using meson, or can be run directly with the `go run`
 command. It can read configuration values from a file by running
-`yggd` with the `--config` option. A sample configuration file is included in
-the `data/yggdrasil` directory.
+`yggd` with the `--config` option. If this flag is not specified
+by default the file location, /etc/yggdrasil/config.toml, is used.
+A sample configuration file is included in the `data/yggdrasil` directory.
 
 ```
-sudo go run ./cmd/yggd --config ./data/yggdrasil/config.toml
+sudo go run ./cmd/yggd --config ./doc/example_mqtt_config.toml
 ```
 
 Many default paths (such as Prefix, BinDir, LocalstateDir, etc), as well as some
@@ -148,7 +149,7 @@ Start `dlv` using the `debug` command:
 
 ```
 sudo /root/go/bin/dlv debug --api-version 2 --headless --listen 0.0.0.0:2345 \
-    ./cmd/yggd -- --config ./data/yggdrasil/config.toml
+    ./cmd/yggd -- --config ./doc/example_mqtt_config.toml
 ```
 
 Next, from your host, connect to the dlv server, using either `dlv attach` or by

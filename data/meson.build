@@ -1,7 +1,6 @@
 subdir('completion')
 subdir('dbus')
 subdir('systemd')
-subdir('yggdrasil')
 
 pkg = import('pkgconfig')
 pkg.generate(
