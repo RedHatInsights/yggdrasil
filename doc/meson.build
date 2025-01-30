@@ -2,6 +2,10 @@ install_data('tags.toml',
   install_dir: join_paths(get_option('prefix'), get_option('datadir'), 'doc', meson.project_name())
 )
 
+install_data('example_mqtt_config.toml',
+  install_dir: join_paths(get_option('prefix'), get_option('datadir'), 'doc', meson.project_name())
+)
+
 custom_target('yggd.1',
   output: 'yggd.1',
   capture: true,
