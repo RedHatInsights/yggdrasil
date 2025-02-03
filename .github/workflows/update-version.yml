@@ -19,16 +19,18 @@ jobs:
           git config user.email github-actions[bot]@users.noreply.github.com
       # See https://github.com/mesonbuild/meson/pull/13637
       - run: meson setup -Dvendor=True builddir
-      - run: echo "version=$(meson introspect builddir --projectinfo | jq -r '.version' | awk -F. '{$NF+=1; print $0}' OFS=.)" >> $GITHUB_OUTPUT
-        id: version
+      - run: echo "old_version=$(meson introspect builddir --projectinfo | jq -r '.version')" >> $GITHUB_OUTPUT
+        id: old_version
+      - run: echo "new_version=$(meson introspect builddir --projectinfo | jq -r '.version' | awk -F. '{$NF+=1; print $0}' OFS=.)" >> $GITHUB_OUTPUT
+        id: new_version
       - run: |
-          git checkout -b actions/set-version-${{ steps.version.outputs.version }}
-          meson rewrite kwargs set project / version ${{ steps.version.outputs.version }}
+          git checkout -b actions/set-version-${{ steps.new_version.outputs.new_version }}
+          meson rewrite kwargs set project / version ${{ steps.new_version.outputs.new_version }}
           git add meson.build
-          git commit -m "build: set version to ${{ steps.version.outputs.version }}"
-          git push -u origin actions/set-version-${{ steps.version.outputs.version }}
-      - run: gh pr create --fill --label auto-release
+          git commit -m "build: set version to ${{ steps.new_version.outputs.new_version }}"
+          git push -u origin actions/set-version-${{ steps.new_version.outputs.new_version }}
+      - run: gh pr create --title "Set version to ${{ steps.new_version.outputs.new_version }}" --label auto-release --body "Link to changes https://github.com/$GITHUB_REPOSITORY/compare/v${{ steps.old_version.outputs.old_version }}...main"
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - run: git push --delete origin actions/set-version-${{ steps.version.outputs.version }}
+      - run: git push --delete origin actions/set-version-${{ steps.new_version.outputs.new_version }}
         if: failure()
