@@ -81,7 +81,11 @@ func stopProcess(pid int) error {
 	}
 
 	if err := process.Kill(); err != nil {
-		return fmt.Errorf("cannot stop process %v", err)
+		if err != os.ErrProcessDone {
+			return fmt.Errorf("cannot stop process: %v", err)
+		} else {
+			log.Debugf("cannot stop process: process already stopped: %v", err)
+		}
 	}
 
 	return nil
