@@ -551,6 +551,7 @@ func main() {
 			Name:      config.FlagNameFactsFile,
 			Usage:     "Read facts from `FILE`",
 			TakesFile: true,
+			Value:     constants.DefaultFactsFile,
 		}),
 		altsrc.NewIntFlag(&cli.IntFlag{
 			Name:   config.FlagNameHTTPRetries,
