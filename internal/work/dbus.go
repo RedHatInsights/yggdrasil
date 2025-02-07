@@ -22,9 +22,8 @@ func NewDBusError(name string, body ...string) *dbus.Error {
 func ScrubName(name string) (string, error) {
 	r := regexp.MustCompile("-")
 	if r.Match([]byte(name)) {
-		return string(
-			r.ReplaceAll([]byte(name), []byte("_")),
-		), fmt.Errorf("invalid worker name: %v", name)
+		newName := string(r.ReplaceAll([]byte(name), []byte("_")))
+		return newName, fmt.Errorf("directive name '%v' transformed to '%v'", name, newName)
 	}
 	return name, nil
 }
