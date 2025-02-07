@@ -27,7 +27,6 @@ jobs:
     targets:
       - centos-stream-8
       - centos-stream-9
-      - fedora-all
       - rhel-8
       - rhel-9
 
@@ -39,6 +38,5 @@ jobs:
     targets:
       - centos-stream-8
       - centos-stream-9
-      - fedora-all
       - rhel-8
       - rhel-9
