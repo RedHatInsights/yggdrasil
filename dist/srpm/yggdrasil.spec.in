@@ -9,6 +9,7 @@
 %bcond_without check
 
 %global has_go_rpm_macros (0%{?fedora})
+%global selinuxtype targeted
 
 # must be before %%gometa
 Version:        @VERSION@
@@ -39,9 +40,9 @@ Version:        @VERSION@
 %endif
 
 %if 0%{?fedora}
-%global setup_flags -Dvendor=False -Dexamples=True
+%global setup_flags -Dvendor=False -Dexamples=True -Dselinux_module=True -Dselinux_policy=%{selinuxtype}
 %else
-%global setup_flags -Dvendor=True -Dexamples=True
+%global setup_flags -Dvendor=True -Dexamples=True -Dselinux_module=True -Dselinux_policy=%{selinuxtype}
 %endif
 
 %global common_description %{expand:
@@ -61,15 +62,27 @@ URL:            %{gourl}
 Source:         %{gosource}
 Source1:        yggdrasil.sysuser
 
+Requires:       (%{name}-selinux = %{version}-%{release} if selinux-policy-%{selinuxtype})
+
 BuildRequires:  systemd-rpm-macros
 BuildRequires:  meson
 BuildRequires:  pkgconfig(dbus-1)
 BuildRequires:  pkgconfig(systemd)
 BuildRequires:  pkgconfig(bash-completion)
 BuildRequires:  golang >= 1.18
+BuildRequires:  selinux-policy-devel
 %{?sysusers_requires_compat}
 
 %description %{common_description}
+
+%package selinux
+Summary:        %{name} SELinux files
+%{?selinux_requires}
+
+%description selinux
+%{common_description}
+
+SELinux policy files.
 
 %package devel
 Summary:        %{name} development files
@@ -123,9 +136,16 @@ install -d -m 0755 %{buildroot}%{_localstatedir}/lib/yggdrasil
 %pre
 %sysusers_create_compat %{SOURCE1}
 
+%pre selinux
+%selinux_relabel_pre -s %{selinuxtype}
+
 %post
 %systemd_post %{name}.service
 %systemd_user_post %{name}.service
+
+%post selinux
+%selinux_modules_install -s %{selinuxtype} %{_datadir}/selinux/packages/%{selinuxtype}/%{name}.pp
+%selinux_relabel_post -s %{selinuxtype}
 
 %preun
 %systemd_preun %{name}.service
@@ -134,6 +154,15 @@ install -d -m 0755 %{buildroot}%{_localstatedir}/lib/yggdrasil
 %postun
 %systemd_postun_with_restart %{name}.service
 %systemd_user_postun_with_restart %{name}.service
+
+%postun selinux
+if [ $1 -eq 0 ]; then
+%selinux_modules_uninstall -s %{selinuxtype} %{name}
+%selinux_relabel_post -s %{selinuxtype}
+fi
+
+%posttrans selinux
+%selinux_relabel_post -s %{selinuxtype}
 
 %files
 %license LICENSE
@@ -156,3 +185,7 @@ install -d -m 0755 %{buildroot}%{_localstatedir}/lib/yggdrasil
 
 %files devel
 %{_libdir}/pkgconfig/*.pc
+%{_datadir}/selinux/devel/include/contrib/%{name}.if
+
+%files selinux
+%{_datadir}/selinux/packages/%{selinuxtype}/%{name}.pp
