@@ -183,6 +183,18 @@ func stopWorker(name string) error {
 		name+".pid",
 	)
 
+	// Make sure the PID file exists before proceeding.
+	if _, err := os.Stat(pidFile); os.IsNotExist(err) {
+		return nil
+	}
+
+	// Always remove the PID file when the function returns.
+	defer func() {
+		if err := os.Remove(pidFile); err != nil {
+			log.Warnf("cannot remove file: %v", err)
+		}
+	}()
+
 	data, err := os.ReadFile(pidFile)
 	if err != nil {
 		return fmt.Errorf("cannot read file: %w", err)
@@ -192,12 +204,33 @@ func stopWorker(name string) error {
 		return fmt.Errorf("cannot parse data: %w", err)
 	}
 
+	// Check if the /proc PID directory exists. If it does not, the process is
+	// dead and it is safe to return early.
+	if _, err := os.Stat(fmt.Sprintf("/proc/%v", pid)); os.IsNotExist(err) {
+		log.Infof("process directory does not exist: /proc/%v", pid)
+		return nil
+	}
+
+	// Check the contents of the process cmdline. This is an additional check to
+	// make sure we aren't killing a process that happens to have the same PID
+	// as the worker had when it was started.
+	procCmdline, err := os.ReadFile(fmt.Sprintf("/proc/%v/cmdline", pid))
+	if err != nil {
+		return fmt.Errorf("cannot read file /proc/%v/cmdline: %v", pid, err)
+	}
+	if !strings.Contains(string(procCmdline), name) {
+		log.Errorf(
+			"cannot stop worker: process cmdline %v does not contain worker name %v",
+			string(procCmdline),
+			name,
+		)
+		return nil
+	}
+
 	if err := stopProcess(int(pid)); err != nil {
 		return fmt.Errorf("cannot stop worker: %w", err)
 	}
-	if err := os.Remove(pidFile); err != nil {
-		return fmt.Errorf("cannot remove file: %w", err)
-	}
+
 	return nil
 }
 
