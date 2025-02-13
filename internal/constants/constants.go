@@ -18,6 +18,9 @@ var (
 	// DefaultDataHost is the default value used to force sending all HTTP
 	// traffic to a specific host.
 	DefaultDataHost string
+
+	// DefaultFactsFile is the default value used to read facts about the host.
+	DefaultFactsFile string
 )
 
 // Installation directory prefix and paths. Values have hard-coded defaults but
