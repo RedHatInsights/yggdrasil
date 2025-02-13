@@ -192,6 +192,18 @@ func stopWorker(name string) error {
 		return fmt.Errorf("cannot parse data: %w", err)
 	}
 
+	procCmdline, err := os.ReadFile(fmt.Sprintf("/proc/%v/cmdline", pid))
+	if err != nil {
+		return fmt.Errorf("cannot read file /proc/%v/cmdline: %v", pid, err)
+	}
+	if filepath.Base(string(procCmdline)) != name {
+		return fmt.Errorf(
+			"cannot stop worker: process cmdline %v does not match worker name %v",
+			string(procCmdline),
+			name,
+		)
+	}
+
 	if err := stopProcess(int(pid)); err != nil {
 		return fmt.Errorf("cannot stop worker: %w", err)
 	}
