@@ -36,9 +36,11 @@ Configuration of `yggd` can be done by specifying values in a configuration file
 or via command line arguments. Command-line arguments take precedence over
 configuration file values. The configuration file is [TOML](https://toml.io).
 
-The system-wide configuration file is located at `/etc/yggdrasil/config.toml`
-(assuming `SYSCONFDIR=/etc`, as the example above). The location of the file may
-be overridden by passing the `--config` command-line argument to `yggd`.
+The default location searched for the system-wide configuration file is at
+`/etc/yggdrasil/config.toml` (assuming SYSCONFDIR=/etc, as the example above).
+
+The default location of the file may be overridden by passing the `--config`
+command-line argument to `yggd`.
 
 ### (Optional) Authentication
 
@@ -73,6 +75,8 @@ when connecting to the broker. To do this, create the file
 The contents of the file may be any number of TOML key/value pairs. However, a
 limited number of TOML values are accepted as tag values (strings, integers,
 booleans, floats, Local Date, Local Time, Offset Date-Time and Local Date-Time).
+An example the tags.toml file can be found at at
+/usr/share/doc/yggdrasil/tags.toml
 
 ## Running
 
