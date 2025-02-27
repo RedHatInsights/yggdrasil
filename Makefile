@@ -24,6 +24,8 @@ TOPICPREFIX := yggdrasil
 DATAHOST := 
 # Used to identify the agency providing the connection broker.
 PROVIDER :=
+# Release value used in spec file
+RELEASE = $(shell printf "0.%s.git.%s" $(shell git rev-list $(shell git describe --tags --abbrev=0 --always | tr -d '\n')..HEAD --count | tr -d '\n') $(shell git rev-parse --short HEAD | tr -d '\n'))
 
 # Installation directories
 PREFIX        ?= /usr/local
@@ -110,7 +112,8 @@ data: $(DATA)
 		-e 's,[@]LONGNAME[@],$(LONGNAME),g' \
 		-e 's,[@]BRANDNAME[@],$(BRANDNAME),g' \
 		-e 's,[@]VERSION[@],$(VERSION),g' \
-		-e 's,[@]PACKAGE[@],$(PACKAGE),g' \
+		-e 's,[@]RELEASE[@],$(RELEASE),g' \
+		-e 's,[@]PKGNAME[@],$(PKGNAME),g' \
 		-e 's,[@]TOPICPREFIX[@],$(TOPICPREFIX),g' \
 		-e 's,[@]DATAHOST[@],$(DATAHOST),g' \
 		-e 's,[@]PROVIDER[@],$(PROVIDER),g' \
