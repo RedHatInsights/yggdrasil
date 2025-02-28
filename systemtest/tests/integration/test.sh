@@ -37,12 +37,7 @@ EOF
 
 # Check for bootc/image-mode deployments which should not run dnf
 if ! command -v bootc >/dev/null || bootc status | grep -q 'type: null'; then
-  echo "warning: running in bootc/image-mode"
-  if [ -z "${ghprbPullId+x}" ] ; then
-    ./systemtest/copr-setup.sh
-  else
-    echo "The ./systemtest/copr-setup.sh is not used, because env. var. 'ghprbPullId' is not set"
-  fi
+  echo "info: running in bootc/image-mode"
 fi
 
 python3 -m venv venv
