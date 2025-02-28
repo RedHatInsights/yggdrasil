@@ -4,6 +4,10 @@ set -ux
 # get to project root
 cd ../../../
 
+source /etc/os-release
+
+VERSION_MAJOR=$(echo "${VERSION_ID}" | cut -d '.' -f 1)
+
 if [[ "$ID" == "centos" ]] || { [[ "$ID" == "rhel" ]] && [[ "$VERSION_MAJOR" == "10" ]]; }; then
   dnf config-manager --set-enabled crb || true
   dnf -y install https://dl.fedoraproject.org/pub/epel/epel-release-latest-10.noarch.rpm
