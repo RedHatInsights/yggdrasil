@@ -6,6 +6,7 @@ It indirectly tests that yggdrasil service dispatch MQTT message to
 import subprocess
 import logging
 import time
+from utils import loop_until
 
 logger = logging.getLogger(__name__)
 
@@ -35,6 +36,22 @@ def get_yggdrasil_client_id() -> [None | str]:
         logger.error(f"unable to read '{YGGDRASIL_CLIENT_ID_PATH}': {err}")
         client_id = None
     return client_id
+
+def is_echo_worker_running() -> bool:
+    """
+    Check if echo worker is running
+    :return: Return true, when echo worker is running
+    """
+    proc = subprocess.run(
+        ["systemctl", "is-active", ECHO_WORKER_SERVICE],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        universal_newlines=True,
+    )
+    if proc.returncode == 0 and proc.stdout.strip() == "active":
+        return True
+    else:
+        return False
 
 
 def test_echo_started_on_mqtt_message():
@@ -84,17 +101,17 @@ def test_echo_started_on_mqtt_message():
     logger.debug(f"return code: {proc.returncode}")
     logger.debug(f"stdout: {proc.stdout}")
     logger.debug(f"stderr: {proc.stderr}")
+    assert proc.returncode == 0
 
-    time.sleep(0.1)
+    time.sleep(1)
 
     # Check if the echo worker service was started
-    assert proc.returncode == 0
-    proc = subprocess.run(
-        ["systemctl", "is-active", ECHO_WORKER_SERVICE],
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        universal_newlines=True,
+    result = loop_until(
+        function=is_echo_worker_running,
+        assertation=lambda res: res == True,
+        poll_sec=0.2,
+        timeout_sec=2
     )
-    assert proc.returncode == 0
-    assert proc.stdout.strip() == "active"
+    assert result is True
+
     logger.info("The echo service was started")
