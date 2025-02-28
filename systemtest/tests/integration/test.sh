@@ -8,9 +8,18 @@ source /etc/os-release
 
 VERSION_MAJOR=$(echo "${VERSION_ID}" | cut -d '.' -f 1)
 
-if [[ "$ID" == "centos" ]] || { [[ "$ID" == "rhel" ]] && [[ "$VERSION_MAJOR" == "10" ]]; }; then
-  dnf config-manager --set-enabled crb || true
-  dnf -y install https://dl.fedoraproject.org/pub/epel/epel-release-latest-10.noarch.rpm
+if [[ "$ID" == "centos" ]] || [[ "$ID" == "rhel" ]] ; then
+  if [[ "$VERSION_MAJOR" == "10" ]] ; then
+    dnf config-manager --set-enabled crb || true
+    dnf -y install https://dl.fedoraproject.org/pub/epel/epel-release-latest-10.noarch.rpm
+  fi
+  if [[ "$VERSION_MAJOR" == "9" ]] ; then
+    rpm -qa | grep epel-release
+    if [[ ! $? ]] ; then
+      dnf config-manager --set-enabled crb || true
+      dnf -y install https://dl.fedoraproject.org/pub/epel/epel-release-latest-9.noarch.rpm
+    fi
+  fi
 fi
 
 dnf --setopt install_weak_deps=False install -y \
