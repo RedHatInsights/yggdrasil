@@ -12,6 +12,8 @@ VERSION_MAJOR=$(echo "${VERSION_ID}" | cut -d '.' -f 1)
 
 if [[ "$ID" == "centos" ]] || { [[ "$ID" == "rhel" ]] && [[ "$VERSION_MAJOR" == "10" ]]; }; then
   ID='centos-stream'
+  dnf config-manager --set-enabled crb || true
+  dnf install https://dl.fedoraproject.org/pub/epel/epel-release-latest-10.noarch.rpm
 fi
 
 COPR_REPO="${ID}-${VERSION_MAJOR}-$(uname -m)"

@@ -6,8 +6,10 @@ cd ../../../
 
 # Check for bootc/image-mode deployments which should not run dnf
 if ! command -v bootc >/dev/null || bootc status | grep -q 'type: null'; then
-  ./systemtest/copr-setup.sh
+  echo "warning: running in bootc/image-mode"
 fi
+
+./systemtest/copr-setup.sh
 
 python3 -m venv venv
 # shellcheck disable=SC1091
