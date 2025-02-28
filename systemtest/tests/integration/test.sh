@@ -42,6 +42,7 @@ if ! command -v bootc >/dev/null || bootc status | grep -q 'type: null'; then
     ./systemtest/copr-setup.sh
   else
     echo "The ./systemtest/copr-setup.sh is not used, because env. var. 'ghprbPullId' is not set"
+  fi
 fi
 
 python3 -m venv venv
