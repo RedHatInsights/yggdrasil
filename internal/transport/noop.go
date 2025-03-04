@@ -2,8 +2,9 @@ package transport
 
 import "crypto/tls"
 
-// Noop is a Transporter that does nothing. This Transport is used to enable a
-// "local only" dispatch mode.
+// Noop is a Transporter that does nothing. This Transport can be used to
+// configure a client to only receive data locally, effectively disconnecting it
+// from the network.
 type Noop struct{}
 
 func NewNoopTransport() (*Noop, error) {
