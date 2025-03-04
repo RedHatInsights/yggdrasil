@@ -25,6 +25,14 @@ import (
 	"github.com/redhatinsights/yggdrasil/ipc"
 )
 
+// Client is a high-level data structure that owns a dispatcher and a
+// transporter. It is responsible for routing data received from the transporter
+// to the dispatcher's inbound channel, which in turn routes the data to the
+// appropriate worker through the com.redhat.Yggdrasil1.Worker1 D-Bus interface.
+// Similarly, it receives data from the dispatcher's outbound channel and routes
+// it through the transporter's Tx method. The Client also implements the
+// com.redhat.Yggdrasil D-Bus interface, enabling clients to interact with yggd
+// locally through D-Bus.
 type Client struct {
 	conn                *dbus.Conn
 	transporter         transport.Transporter
@@ -148,6 +156,7 @@ func (c *Client) Connect() error {
 		}
 	})
 
+	// Set up and export the com.redhat.Yggdrasil1 D-Bus interface.
 	if os.Getenv("DBUS_SESSION_BUS_ADDRESS") != "" {
 		log.Debugf("connecting to session bus: %v", os.Getenv("DBUS_SESSION_BUS_ADDRESS"))
 		c.conn, err = dbus.ConnectSessionBus()
