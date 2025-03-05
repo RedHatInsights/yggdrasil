@@ -45,7 +45,7 @@ jobs:
     identifier: "build/el9"
     additional_repos:
       - "copr://@yggdrasil/el9"
-    branch: main
+    branch: "yggdrasil-0.2"
     owner: "@yggdrasil"
     project: el9
     targets:
@@ -59,7 +59,7 @@ jobs:
     identifier: "build/el8"
     additional_repos:
       - "copr://@yggdrasil/el8"
-    branch: main
+    branch: "yggdrasil-0.2"
     owner: "@yggdrasil"
     project: el8
     targets:
