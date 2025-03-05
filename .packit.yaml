@@ -22,23 +22,46 @@ actions:
 jobs:
   - job: copr_build
     trigger: pull_request
+    identifier: "pr_build/el9"
     additional_repos:
-      - "copr://@yggdrasil/latest"
+      - "copr://@yggdrasil/el9"
     targets:
-      - centos-stream-8
-      - centos-stream-9
-      - fedora-all
-      - rhel-8
-      - rhel-9
+      - centos-stream-9-aarch64
+      - centos-stream-9-x86_64
+      - rhel-9-aarch64
+      - rhel-9-x86_64
+
+  - job: copr_build
+    trigger: pull_request
+    identifier: "pr_build/el8"
+    additional_repos:
+      - "copr://@yggdrasil/el8"
+    targets:
+      - rhel-8-aarch64
+      - rhel-8-x86_64
 
   - job: copr_build
     trigger: commit
-    branch: yggdrasil-0.2
+    identifier: "build/el9"
+    additional_repos:
+      - "copr://@yggdrasil/el9"
+    branch: main
     owner: "@yggdrasil"
-    project: latest
+    project: el9
     targets:
-      - centos-stream-8
-      - centos-stream-9
-      - fedora-all
-      - rhel-8
-      - rhel-9
+      - centos-stream-9-aarch64
+      - centos-stream-9-x86_64
+      - rhel-9-aarch64
+      - rhel-9-x86_64
+
+  - job: copr_build
+    trigger: commit
+    identifier: "build/el8"
+    additional_repos:
+      - "copr://@yggdrasil/el8"
+    branch: main
+    owner: "@yggdrasil"
+    project: el8
+    targets:
+      - rhel-8-aarch64
+      - rhel-8-x86_64
