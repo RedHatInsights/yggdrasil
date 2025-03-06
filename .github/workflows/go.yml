@@ -2,31 +2,18 @@ name: Go
 
 on:
   push:
+    branches: [ "main" ]
   pull_request:
+  workflow_dispatch:
 
 jobs:
   build:
-    name: "Build"
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        go: ['1.19', '1.20']
     steps:
-      - name: Updating ...
-        run: sudo apt-get -qq update
-
-      - uses: actions/checkout@v2
-
-      - name: Setup go
-        uses: actions/setup-go@v2
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
         with:
-          go-version: ${{ matrix.go }}
-
-      - name: Go build (source)
-        run: make
-
-      - name: Go build (tests)
-        run: make tests
-
-      - name: Go vet
-        run: make vet
+          go-version: "stable"
+      - run: go build -v ./...
+      - run: go test -v ./...
+      - run: go vet -v ./...
