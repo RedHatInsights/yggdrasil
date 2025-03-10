@@ -125,6 +125,7 @@ install -d -m 0755 %{buildroot}%{_sysconfdir}/yggdrasil
 %sysusers_create_compat %{SOURCE1}
 
 %post
+ln -s %{_unitdir}/yggdrasil.service %{_unitdir}/rhcd.service
 %systemd_post %{name}.service
 %systemd_user_post %{name}.service
 
@@ -133,6 +134,7 @@ install -d -m 0755 %{buildroot}%{_sysconfdir}/yggdrasil
 %systemd_user_preun %{name}.service
 
 %postun
+rm -f %{_unitdir}/rhcd.service
 %systemd_postun_with_restart %{name}.service
 %systemd_user_postun_with_restart %{name}.service
 
