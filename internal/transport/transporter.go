@@ -1,3 +1,6 @@
+// Package 'transport' provides an interface for data transmission, as well as
+// two concrete implementations: MQTT and HTTP. It allows callers to send and
+// receive data without having to manage the connection details.
 package transport
 
 import "crypto/tls"
