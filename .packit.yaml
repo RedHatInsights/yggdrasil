@@ -13,7 +13,7 @@ srpm_build_deps:
 actions:
   post-upstream-clone:
     - curl -O https://raw.githubusercontent.com/RedHatInsights/rhc/refs/heads/release-0.2/rhc.spec.in
-    - bash -c "make LONGNAME=rhc BRANDNAME=rhc SHORTNAME=rhc PKGNAME=rhc rhc.spec"
+    - bash -c "make LONGNAME=rhc BRANDNAME=rhc SHORTNAME=rhc PKGNAME=rhc TOPICPREFIX=redhat/insights rhc.spec"
   get-current-version:
     - awk '/^VERSION/ {print $3;}' Makefile
   create-archive:
