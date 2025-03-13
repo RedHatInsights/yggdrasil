@@ -1,6 +1,8 @@
 module github.com/redhatinsights/yggdrasil
 
-go 1.22
+go 1.22.0
+
+toolchain go1.23.6
 
 require (
 	git.sr.ht/~spc/go-log v0.1.1
