@@ -23,7 +23,7 @@ mqtt_message = """
 "hello"
 """
 
-def get_yggdrasil_client_id() -> [None | str]:
+def get_yggdrasil_client_id():
     """
     Try to get yggdrasil client ID used in MQTT messages
     :return: client ID string
@@ -37,7 +37,7 @@ def get_yggdrasil_client_id() -> [None | str]:
         client_id = None
     return client_id
 
-def is_echo_worker_running() -> bool:
+def is_echo_worker_running():
     """
     Check if echo worker is running
     :return: Return true, when echo worker is running

@@ -1,3 +1,7 @@
+"""
+This module contains utilities for yggdrasil integration tests.
+"""
+
 import time
 
 def loop_until(function, assertation, poll_sec=1, timeout_sec=10):
