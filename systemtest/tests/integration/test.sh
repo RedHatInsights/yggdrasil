@@ -14,15 +14,20 @@ if [[ "$ID" == "centos" ]] || [[ "$ID" == "rhel" ]] ; then
     dnf -y install https://dl.fedoraproject.org/pub/epel/epel-release-latest-10.noarch.rpm
   fi
   if [[ "$VERSION_MAJOR" == "9" ]] ; then
-    rpm -qa | grep epel-release
-    if [[ ! $? ]] ; then
+    if ! rpm -qa | grep epel-release
+    then
+      echo "The epel-release not installed"
       if [[ "${ID}" == "centos" ]] ; then
-        dnf config-manager --set-enabled crb || true
+        echo "Enabled CRB"
+        dnf config-manager --set-enabled crb
       fi
       if [[ "${ID}" == "rhel" ]] ; then
+        echo "Enabled CodeReady repository"
         subscription-manager repos --enable "codeready-builder-for-rhel-9-$(arch)-rpms"
       fi
       dnf -y install https://dl.fedoraproject.org/pub/epel/epel-release-latest-9.noarch.rpm
+    else
+      echo "The epel-release already installed"
     fi
   fi
 fi
