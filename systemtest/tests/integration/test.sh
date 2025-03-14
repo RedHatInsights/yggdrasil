@@ -16,7 +16,12 @@ if [[ "$ID" == "centos" ]] || [[ "$ID" == "rhel" ]] ; then
   if [[ "$VERSION_MAJOR" == "9" ]] ; then
     rpm -qa | grep epel-release
     if [[ ! $? ]] ; then
-      dnf config-manager --set-enabled crb || true
+      if [[ "${ID}" == "centos" ]] ; then
+        dnf config-manager --set-enabled crb || true
+      fi
+      if [[ "${ID}" == "rhel" ]] ; then
+        subscription-manager repos --enable "codeready-builder-for-rhel-9-$(arch)-rpms"
+      fi
       dnf -y install https://dl.fedoraproject.org/pub/epel/epel-release-latest-9.noarch.rpm
     fi
   fi
