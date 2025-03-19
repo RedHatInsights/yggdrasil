@@ -28,6 +28,7 @@ actions:
 jobs:
   - job: copr_build
     trigger: pull_request
+    enable_net: True
     additional_repos:
       - "copr://@yggdrasil/latest"
     targets:
@@ -42,6 +43,7 @@ jobs:
 
   - job: copr_build
     trigger: commit
+    enable_net: True
     branch: main
     owner: "@yggdrasil"
     project: latest
