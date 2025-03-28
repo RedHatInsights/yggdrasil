@@ -1,0 +1,80 @@
+#!/bin/bash
+set -ux
+
+# get to project root
+cd ../../../
+
+source /etc/os-release
+
+VERSION_MAJOR=$(echo "${VERSION_ID}" | cut -d '.' -f 1)
+
+if [[ "$ID" == "centos" ]] || [[ "$ID" == "rhel" ]] ; then
+  if [[ "$VERSION_MAJOR" == "10" ]] ; then
+    dnf config-manager --set-enabled crb || true
+    dnf -y install https://dl.fedoraproject.org/pub/epel/epel-release-latest-10.noarch.rpm
+  fi
+  if [[ "$VERSION_MAJOR" == "9" ]] ; then
+    if ! rpm -qa | grep epel-release
+    then
+      echo "The epel-release not installed"
+      if [[ "${ID}" == "centos" ]] ; then
+        echo "Enabled CRB"
+        dnf config-manager --set-enabled crb
+      fi
+      if [[ "${ID}" == "rhel" ]] ; then
+        echo "Enabled CodeReady repository"
+        subscription-manager repos --enable "codeready-builder-for-rhel-9-$(arch)-rpms"
+      fi
+      dnf -y install https://dl.fedoraproject.org/pub/epel/epel-release-latest-9.noarch.rpm
+    else
+      echo "The epel-release already installed"
+    fi
+  fi
+fi
+
+dnf --setopt install_weak_deps=False install -y \
+  yggdrasil podman git-core python3-pip python3-pytest logrotate mosquitto
+
+# Start the mosquitto service
+systemctl start mosquitto.service
+
+# Print yggd version
+echo "yggd version"
+yggd --version
+
+# Print information about installed yggdrasil RPM package
+echo "yggdrasil RPM installed:"
+rpm -qi yggdrasil
+
+# Configure yggdrasil service to use local mosquitto MQTT broker
+cat <<'EOF' > /etc/yggdrasil/config.toml
+# yggdrasil global configuration settings
+protocol = "mqtt"
+server = ["tcp://localhost:1883"]
+log-level = "debug"
+EOF
+
+# Check for bootc/image-mode deployments which should not run dnf
+if ! command -v bootc >/dev/null || bootc status | grep -q 'type: null'; then
+  echo "info: running in bootc/image-mode"
+fi
+
+python3 -m venv venv
+# shellcheck disable=SC1091
+. venv/bin/activate
+
+pip install -r integration-tests/requirements.txt
+
+pytest --junit-xml=./junit.xml -v integration-tests
+retval=$?
+
+if [ -d "$TMT_PLAN_DATA" ]; then
+  cp ./junit.xml "$TMT_PLAN_DATA/junit.xml"
+  if [ -d ./artifacts ]; then
+    cp -r ./artifacts "$TMT_PLAN_DATA/"
+  else
+    echo "no ./artifacts directory exist"
+  fi
+fi
+
+exit $retval
