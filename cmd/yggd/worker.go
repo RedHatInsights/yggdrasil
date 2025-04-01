@@ -207,7 +207,7 @@ func stopWorker(name string) error {
 	// Check if the /proc PID directory exists. If it does not, the process is
 	// dead and it is safe to return early.
 	if _, err := os.Stat(fmt.Sprintf("/proc/%v", pid)); os.IsNotExist(err) {
-		log.Infof("process directory does not exist: /proc/%v", pid)
+		log.Debugf("process directory does not exist: /proc/%v", pid)
 		return nil
 	}
 
@@ -216,10 +216,11 @@ func stopWorker(name string) error {
 	// as the worker had when it was started.
 	procCmdline, err := os.ReadFile(fmt.Sprintf("/proc/%v/cmdline", pid))
 	if err != nil {
-		return fmt.Errorf("cannot read file /proc/%v/cmdline: %v", pid, err)
+		log.Debugf("cannot read file /proc/%v/cmdline: %v", pid, err)
+		return nil
 	}
 	if !strings.Contains(string(procCmdline), name) {
-		log.Errorf(
+		log.Debugf(
 			"cannot stop worker: process cmdline %v does not contain worker name %v",
 			string(procCmdline),
 			name,
