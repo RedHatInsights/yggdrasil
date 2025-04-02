@@ -147,12 +147,15 @@ func messageJournalAction(ctx *cli.Context) error {
 		fmt.Println(compiledTextTemplate.String())
 	case "table":
 		writer := tabwriter.NewWriter(os.Stdout, 4, 4, 2, ' ', 0)
-		fmt.Fprint(
+		_, err := fmt.Fprint(
 			writer,
 			"MESSAGE #\tMESSAGE ID\tSENT\tWORKER NAME\tRESPONSE TO\tWORKER EVENT\tWORKER DATA\n",
 		)
+		if err != nil {
+			return cli.Exit(fmt.Errorf("cannot write header of table with errors: %w", err), 1)
+		}
 		for idx, entry := range journalEntries {
-			fmt.Fprintf(
+			_, _ = fmt.Fprintf(
 				writer,
 				"%d\t%s\t%s\t%s\t%s\t%v\t%s\n",
 				idx,
@@ -164,7 +167,8 @@ func messageJournalAction(ctx *cli.Context) error {
 				entry["worker_data"],
 			)
 		}
-		if err := writer.Flush(); err != nil {
+		err = writer.Flush()
+		if err != nil {
 			return cli.Exit(fmt.Errorf("unable to flush tab writer: %v", err), 1)
 		}
 	default:
@@ -208,14 +212,23 @@ func workersAction(c *cli.Context) error {
 		fmt.Println(string(data))
 	case "table":
 		writer := tabwriter.NewWriter(os.Stdout, 4, 4, 2, ' ', 0)
-		fmt.Fprintf(writer, "WORKER\tFEATURES\n")
+		_, err = fmt.Fprint(writer, "WORKER\tFEATURES\n")
+		if err != nil {
+			return cli.Exit(fmt.Errorf("cannot write table with errors: %w", err), 1)
+		}
 		for worker, features := range workers {
 			featureSummary, err := json.Marshal(features)
 			if err != nil {
 				return cli.Exit(fmt.Errorf("cannot marshal features: %v", err), 1)
 			}
-			fmt.Fprintf(writer, "%v\t%v\n", worker, string(featureSummary))
-			_ = writer.Flush()
+			_, err = fmt.Fprintf(writer, "%v\t%v\n", worker, string(featureSummary))
+			if err != nil {
+				return cli.Exit(fmt.Errorf("cannot write features: %v", err), 1)
+			}
+			err = writer.Flush()
+			if err != nil {
+				return cli.Exit(fmt.Errorf("cannot flush features: %v", err), 1)
+			}
 		}
 	default:
 		return cli.Exit(fmt.Errorf("unknown format type: %v", c.String("format")), 1)
