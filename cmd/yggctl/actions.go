@@ -402,9 +402,13 @@ func generateWorkerDataAction(ctx *cli.Context) error {
 		if err != nil {
 			return cli.Exit(fmt.Errorf("cannot create file %v: %v", d.FilePath, err), 1)
 		}
-		defer f.Close()
 		if err := d.Template.Execute(f, config); err != nil {
+			_ = f.Close()
 			return cli.Exit(fmt.Errorf("cannot write file %v: %v", d.FilePath, err), 1)
+		}
+		err = f.Close()
+		if err != nil {
+			return cli.Exit(fmt.Errorf("cannot close file %v: %v", d.FilePath, err), 1)
 		}
 	}
 
