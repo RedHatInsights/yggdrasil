@@ -96,7 +96,10 @@ func (t *HTTP) Connect() error {
 					}
 					_ = t.dataHandler("control", metadata, data)
 				}
-				resp.Body.Close()
+				err = resp.Body.Close()
+				if err != nil {
+					log.Errorf("cannot close HTTP response body: %v", err)
+				}
 			}
 			time.Sleep(t.pollingInterval)
 		}
@@ -125,7 +128,10 @@ func (t *HTTP) Connect() error {
 					}
 					_ = t.dataHandler("data", metadata, data)
 				}
-				resp.Body.Close()
+				err = resp.Body.Close()
+				if err != nil {
+					log.Errorf("cannot close HTTP response body: %v", err)
+				}
 			}
 			time.Sleep(t.pollingInterval)
 		}
@@ -175,7 +181,12 @@ func (t *HTTP) Tx(
 	if err != nil {
 		return TxResponseErr, nil, nil, fmt.Errorf("cannot read HTTP response body: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() {
+		err = resp.Body.Close()
+		if err != nil {
+			log.Errorf("cannot close HTTP response body: %v", err)
+		}
+	}()
 
 	responseData = body
 
