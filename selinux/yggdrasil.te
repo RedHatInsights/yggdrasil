@@ -1,0 +1,41 @@
+policy_module(yggdrasil, 1.0.0)
+
+########################################
+#
+# Declarations
+#
+
+type yggd_t;
+type yggd_exec_t;
+init_daemon_domain(yggd_t, yggd_exec_t)
+
+permissive yggd_t;
+
+########################################
+#
+# yggd local policy
+#
+allow yggd_t self:capability { setgid setuid };
+allow yggd_t self:fifo_file rw_fifo_file_perms;
+allow yggd_t self:unix_stream_socket create_stream_socket_perms;
+allow yggd_t self:unix_dgram_socket { connect create getattr };
+
+domain_use_interactive_fds(yggd_t)
+
+files_read_etc_files(yggd_t)
+
+files_watch_etc_files(yggd_t)
+
+auth_use_nsswitch(yggd_t)
+
+miscfiles_read_localization(yggd_t)
+
+sysnet_dns_name_resolve(yggd_t)
+
+corenet_tcp_connect_unreserved_ports(yggd_t)
+
+dev_read_sysfs(yggd_t)
+
+files_read_var_lib_files(yggd_t)
+
+kernel_dgram_send(yggd_t)
