@@ -31,6 +31,16 @@ func main() {
 
 	app.Commands = []*cli.Command{
 		{
+
+			Name:        "client-id",
+			Usage:       "Retrieve the current client id",
+			UsageText:   "yggctl client-id",
+			Description: `The client-id command retrieves the current client id of the yggdrasil instance`,
+			Aliases:     []string{},
+			Flags:       []cli.Flag{},
+			Action:      clientIDAction,
+		},
+		{
 			Name:   "generate",
 			Usage:  `Generate messages for publishing to client "in" topics`,
 			Hidden: true,
