@@ -39,9 +39,9 @@ Version:        @VERSION@
 %endif
 
 %if 0%{?fedora}
-%global setup_flags -Dvendor=False -Dexamples=True
+%global setup_flags -Dvendor=False -Dexamples=True -Ddefault_facts_file=%{_localstatedir}/lib/yggdrasil/canonical-facts.json
 %else
-%global setup_flags -Dvendor=True -Dexamples=True
+%global setup_flags -Dvendor=True -Dexamples=True -Ddefault_facts_file=%{_localstatedir}/lib/yggdrasil/canonical-facts.json
 %endif
 
 %global common_description %{expand:
