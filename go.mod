@@ -13,7 +13,7 @@ require (
 	github.com/golang-migrate/migrate/v4 v4.18.2
 	github.com/google/go-cmp v0.7.0
 	github.com/google/uuid v1.6.0
-	github.com/mattn/go-sqlite3 v1.14.27
+	github.com/mattn/go-sqlite3 v1.14.28
 	github.com/pelletier/go-toml v1.9.5
 	github.com/rjeczalik/notify v0.9.3
 	github.com/urfave/cli/v2 v2.27.6
