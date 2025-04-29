@@ -5,7 +5,7 @@ go 1.22.0
 toolchain go1.23.6
 
 require (
-	git.sr.ht/~spc/go-log v0.1.1
+	github.com/subpop/go-log v0.1.2
 	github.com/adrg/xdg v0.5.3
 	github.com/coreos/go-systemd/v22 v22.5.0
 	github.com/eclipse/paho.mqtt.golang v1.5.0

@@ -10,7 +10,6 @@ import (
 	"sync/atomic"
 	"time"
 
-	"git.sr.ht/~spc/go-log"
 	"github.com/godbus/dbus/v5"
 	"github.com/godbus/dbus/v5/introspect"
 	"github.com/google/uuid"
@@ -23,6 +22,7 @@ import (
 	"github.com/redhatinsights/yggdrasil/internal/transport"
 	"github.com/redhatinsights/yggdrasil/internal/work"
 	"github.com/redhatinsights/yggdrasil/ipc"
+	"github.com/subpop/go-log"
 )
 
 // Client is a high-level data structure that owns a dispatcher and a

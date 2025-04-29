@@ -6,11 +6,11 @@ import (
 	"path"
 	"regexp"
 
-	"git.sr.ht/~spc/go-log"
 	"github.com/godbus/dbus/v5"
 	"github.com/godbus/dbus/v5/introspect"
 	"github.com/godbus/dbus/v5/prop"
 	"github.com/redhatinsights/yggdrasil/ipc"
+	"github.com/subpop/go-log"
 )
 
 // RxFunc is a function type that gets called each time the worker receives data.

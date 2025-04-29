@@ -18,9 +18,9 @@ import (
 	"github.com/redhatinsights/yggdrasil/internal/transport"
 	"github.com/redhatinsights/yggdrasil/internal/work"
 
-	"git.sr.ht/~spc/go-log"
 	"github.com/redhatinsights/yggdrasil"
 	"github.com/rjeczalik/notify"
+	"github.com/subpop/go-log"
 	"github.com/urfave/cli/v2"
 	"github.com/urfave/cli/v2/altsrc"
 )

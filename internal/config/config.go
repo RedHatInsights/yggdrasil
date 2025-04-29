@@ -6,9 +6,9 @@ import (
 	"os"
 	"time"
 
-	"git.sr.ht/~spc/go-log"
 	"github.com/redhatinsights/yggdrasil/internal/constants"
 	"github.com/rjeczalik/notify"
+	"github.com/subpop/go-log"
 )
 
 const (

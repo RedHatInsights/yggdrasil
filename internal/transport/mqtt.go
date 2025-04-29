@@ -7,12 +7,12 @@ import (
 	"os"
 	"time"
 
-	"git.sr.ht/~spc/go-log"
 	mqtt "github.com/eclipse/paho.mqtt.golang"
 	"github.com/google/uuid"
 	"github.com/redhatinsights/yggdrasil"
 	"github.com/redhatinsights/yggdrasil/internal/config"
 	"github.com/redhatinsights/yggdrasil/internal/constants"
+	"github.com/subpop/go-log"
 )
 
 // MQTT is a Transporter that sends and receives data and control

@@ -10,7 +10,7 @@ import (
 
 	"github.com/google/uuid"
 
-	"git.sr.ht/~spc/go-log"
+	"github.com/subpop/go-log"
 
 	"github.com/redhatinsights/yggdrasil/internal/sync"
 	"github.com/redhatinsights/yggdrasil/ipc"

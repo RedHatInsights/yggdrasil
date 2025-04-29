@@ -10,7 +10,6 @@ import (
 	"strings"
 	"time"
 
-	"git.sr.ht/~spc/go-log"
 	"github.com/godbus/dbus/v5"
 	"github.com/godbus/dbus/v5/introspect"
 	"github.com/redhatinsights/yggdrasil"
@@ -19,6 +18,7 @@ import (
 	"github.com/redhatinsights/yggdrasil/internal/messagejournal"
 	"github.com/redhatinsights/yggdrasil/internal/sync"
 	"github.com/redhatinsights/yggdrasil/ipc"
+	"github.com/subpop/go-log"
 )
 
 const (

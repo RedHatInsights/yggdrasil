@@ -10,13 +10,13 @@ import (
 	"text/template"
 	"time"
 
-	"git.sr.ht/~spc/go-log"
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/golang-migrate/migrate/v4/database/sqlite3"
 	"github.com/golang-migrate/migrate/v4/source/iofs"
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/redhatinsights/yggdrasil"
 	"github.com/redhatinsights/yggdrasil/ipc"
+	"github.com/subpop/go-log"
 )
 
 //go:embed migrations/*.sql
