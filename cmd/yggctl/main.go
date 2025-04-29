@@ -6,7 +6,7 @@ import (
 	"regexp"
 	"strings"
 
-	"git.sr.ht/~spc/go-log"
+	"github.com/subpop/go-log"
 
 	"github.com/redhatinsights/yggdrasil/internal/constants"
 	"github.com/urfave/cli/v2"

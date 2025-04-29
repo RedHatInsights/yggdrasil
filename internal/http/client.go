@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"git.sr.ht/~spc/go-log"
+	"github.com/subpop/go-log"
 )
 
 // Client is a specialized HTTP client, configured with mutual TLS certificate

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"io"
 
-	"git.sr.ht/~spc/go-log"
+	"github.com/subpop/go-log"
 	"github.com/urfave/cli/v2"
 )
 

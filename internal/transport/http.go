@@ -11,9 +11,9 @@ import (
 	"sync/atomic"
 	"time"
 
-	"git.sr.ht/~spc/go-log"
 	"github.com/redhatinsights/yggdrasil/internal/config"
 	internalhttp "github.com/redhatinsights/yggdrasil/internal/http"
+	"github.com/subpop/go-log"
 )
 
 // HTTPResponse is a data structure representing an HTTP response received from

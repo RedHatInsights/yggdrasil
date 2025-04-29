@@ -8,8 +8,8 @@ import (
 	"strconv"
 	"time"
 
-	"git.sr.ht/~spc/go-log"
 	"github.com/pelletier/go-toml"
+	"github.com/subpop/go-log"
 )
 
 type errorTag struct {
