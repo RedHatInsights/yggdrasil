@@ -4,9 +4,9 @@ import (
 	"context"
 	"time"
 
-	"git.sr.ht/~spc/go-log"
 	"github.com/google/uuid"
 	pb "github.com/redhatinsights/yggdrasil/protocol"
+	"github.com/subpop/go-log"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )

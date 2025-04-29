@@ -10,7 +10,7 @@ import (
 	"text/tabwriter"
 	"time"
 
-	"git.sr.ht/~spc/go-log"
+	"github.com/subpop/go-log"
 
 	"github.com/briandowns/spinner"
 	systemd "github.com/coreos/go-systemd/v22/dbus"

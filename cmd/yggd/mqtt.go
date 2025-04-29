@@ -8,10 +8,10 @@ import (
 	"strconv"
 	"time"
 
-	"git.sr.ht/~spc/go-log"
 	mqtt "github.com/eclipse/paho.mqtt.golang"
 	"github.com/google/uuid"
 	"github.com/redhatinsights/yggdrasil"
+	"github.com/subpop/go-log"
 )
 
 func handleDataMessage(client mqtt.Client, msg mqtt.Message, sendQ chan<- yggdrasil.Data) {

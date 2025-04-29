@@ -10,10 +10,10 @@ import (
 	"strings"
 	"time"
 
-	"git.sr.ht/~spc/go-log"
 	"github.com/pelletier/go-toml"
 	"github.com/redhatinsights/yggdrasil"
 	"github.com/rjeczalik/notify"
+	"github.com/subpop/go-log"
 	"golang.org/x/net/http/httpproxy"
 )
 

@@ -6,7 +6,7 @@ import (
 	"os"
 	"time"
 
-	"git.sr.ht/~spc/go-log"
+	"github.com/subpop/go-log"
 
 	pb "github.com/redhatinsights/yggdrasil/protocol"
 	"google.golang.org/grpc"

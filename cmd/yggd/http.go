@@ -8,8 +8,8 @@ import (
 	"net/http"
 	"strings"
 
-	"git.sr.ht/~spc/go-log"
 	"github.com/redhatinsights/yggdrasil"
+	"github.com/subpop/go-log"
 )
 
 var (
