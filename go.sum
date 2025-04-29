@@ -1,5 +1,3 @@
-git.sr.ht/~spc/go-log v0.0.0-20210409014304-ce6a6f3602dc h1:jrsDG/OBvZz/ToHTMIsWXTQ0L1N7A8XGx77aifPethE=
-git.sr.ht/~spc/go-log v0.0.0-20210409014304-ce6a6f3602dc/go.mod h1:IKiYUc0lWbZO4uSV0kWNzJSFnABNdrybpPWo46CGgFM=
 github.com/BurntSushi/toml v0.3.1 h1:WXkYYl6Yr3qBf1K79EBnL4mak0OimBfB0XUf9Vl28OQ=
 github.com/BurntSushi/toml v0.3.1/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03qcyfWMU=
 github.com/briandowns/spinner v1.12.0 h1:72O0PzqGJb6G3KgrcIOtL/JAGGZ5ptOMCn9cUHmqsmw=
@@ -39,6 +37,8 @@ github.com/russross/blackfriday/v2 v2.0.1 h1:lPqVAte+HuHNfhJ/0LC98ESWRz8afy9tM/0
 github.com/russross/blackfriday/v2 v2.0.1/go.mod h1:+Rmxgy9KzJVeS9/2gXHxylqXiyQDYRxCVz55jmeOWTM=
 github.com/shurcooL/sanitized_anchor_name v1.0.0 h1:PdmoCO6wvbs+7yrJyMORt4/BmY5IYyJwS/kOiWx8mHo=
 github.com/shurcooL/sanitized_anchor_name v1.0.0/go.mod h1:1NzhyTcUVG4SuEtjjoZeVRXNmyL/1OwPU0+IJeTBvfc=
+github.com/subpop/go-log v0.1.2 h1:NgbZR6frmeDtC+96d+UxOkt4X/JxO626fokwL56Dff0=
+github.com/subpop/go-log v0.1.2/go.mod h1:uAEovif98swmWm/8qYGrzGFahUIRQ/KwlBUpJuoOdds=
 github.com/urfave/cli/v2 v2.3.0 h1:qph92Y649prgesehzOrQjdWyxFOp/QVM+6imKHad91M=
 github.com/urfave/cli/v2 v2.3.0/go.mod h1:LJmUH05zAU44vOAcrfzZQKsZbVcdbOG8rtL3/XcUArI=
 golang.org/x/crypto v0.0.0-20190308221718-c2843e01d9a2/go.mod h1:djNgcEr1/C05ACkg1iLfiJU5Ep61QUkGW8qpdssI0+w=

@@ -6,7 +6,7 @@ import (
 	"os"
 	"os/exec"
 
-	"git.sr.ht/~spc/go-log"
+	"github.com/subpop/go-log"
 )
 
 type processStartedFunc func(pid int, stdout, stderr io.ReadCloser)
