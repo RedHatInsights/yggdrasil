@@ -15,8 +15,8 @@
     <allow send_destination="com.redhat.Yggdrasil1.Dispatcher1" />
   </policy>
 
-  <policy context="default">
-    <!-- Anyone can send messages to the Yggdrasil1 destination. -->
+  <policy user="root">
+    <!-- Only root can send messages to the Yggdrasil1 destination. -->
     <allow send_destination="com.redhat.Yggdrasil1" />
   </policy>
 </busconfig>
