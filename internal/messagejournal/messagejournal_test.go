@@ -61,11 +61,13 @@ func TestGetEntries(t *testing.T) {
 			description: "get journal entries - unfiltered empty",
 			entries:     []yggdrasil.WorkerMessage{},
 			input: Filter{
-				Persistent: true,
-				MessageID:  "",
-				Worker:     "",
-				Since:      "",
-				Until:      "",
+				Persistent:        true,
+				MessageID:         "",
+				Worker:            "",
+				Since:             "",
+				Until:             "",
+				TruncateFields:    map[string]int{},
+				TruncateAllFields: -1,
 			},
 			wantError: &errorJournal{fmt.Errorf("no journal entries found")},
 		},
@@ -75,11 +77,13 @@ func TestGetEntries(t *testing.T) {
 				placeholderWorkerMessageEntry,
 			},
 			input: Filter{
-				Persistent: true,
-				MessageID:  "",
-				Worker:     "",
-				Since:      "",
-				Until:      "",
+				Persistent:        true,
+				MessageID:         "",
+				Worker:            "",
+				Since:             "",
+				Until:             "",
+				TruncateFields:    map[string]int{},
+				TruncateAllFields: -1,
 			},
 			want: []map[string]string{
 				0: {
@@ -98,11 +102,13 @@ func TestGetEntries(t *testing.T) {
 				placeholderWorkerMessageEntry,
 			},
 			input: Filter{
-				Persistent: true,
-				MessageID:  "test-invalid-filtered-message-id",
-				Worker:     "",
-				Since:      "",
-				Until:      "",
+				Persistent:        true,
+				MessageID:         "test-invalid-filtered-message-id",
+				Worker:            "",
+				Since:             "",
+				Until:             "",
+				TruncateFields:    map[string]int{},
+				TruncateAllFields: -1,
 			},
 			wantError: &errorJournal{fmt.Errorf("no journal entries found")},
 		},
@@ -125,11 +131,13 @@ func TestGetEntries(t *testing.T) {
 				},
 			},
 			input: Filter{
-				Persistent: true,
-				MessageID:  "test-filtered-message-id",
-				Worker:     "",
-				Since:      "",
-				Until:      "",
+				Persistent:        true,
+				MessageID:         "test-filtered-message-id",
+				Worker:            "",
+				Since:             "",
+				Until:             "",
+				TruncateFields:    map[string]int{},
+				TruncateAllFields: -1,
 			},
 			want: []map[string]string{
 				0: {
@@ -138,6 +146,82 @@ func TestGetEntries(t *testing.T) {
 					"sent":         "2000-01-01 00:00:00 +0000 UTC",
 					"worker_event": "STOPPED",
 					"worker_data":  "{\"test\":\"test-event-data\"}",
+					"worker_name":  "test-worker",
+				},
+			},
+		},
+		{
+			description: "get journal entries - truncated field length",
+			entries: []yggdrasil.WorkerMessage{
+				placeholderWorkerMessageEntry,
+				{
+					MessageID:  "test-truncated-field-message-id",
+					Sent:       time.Date(2000, time.January, 1, 0, 0, 0, 0, time.UTC),
+					WorkerName: "test-worker",
+					ResponseTo: "test-response",
+					WorkerEvent: struct {
+						EventName uint              "json:\"event_name\""
+						EventData map[string]string "json:\"event_data\""
+					}{
+						5,
+						map[string]string{"test": "test-event-data"},
+					},
+				},
+			},
+			input: Filter{
+				Persistent:        true,
+				MessageID:         "test-truncated-field-message-id",
+				Worker:            "",
+				Since:             "",
+				Until:             "",
+				TruncateFields:    map[string]int{"test": 4},
+				TruncateAllFields: -1,
+			},
+			want: []map[string]string{
+				0: {
+					"message_id":   "test-truncated-field-message-id",
+					"response_to":  "test-response",
+					"sent":         "2000-01-01 00:00:00 +0000 UTC",
+					"worker_event": "STOPPED",
+					"worker_data":  "{\"test\":\"test...\"}",
+					"worker_name":  "test-worker",
+				},
+			},
+		},
+		{
+			description: "get journal entries - truncate all field lengths",
+			entries: []yggdrasil.WorkerMessage{
+				placeholderWorkerMessageEntry,
+				{
+					MessageID:  "test-truncate-all-fields-message-id",
+					Sent:       time.Date(2000, time.January, 1, 0, 0, 0, 0, time.UTC),
+					WorkerName: "test-worker",
+					ResponseTo: "test-response",
+					WorkerEvent: struct {
+						EventName uint              "json:\"event_name\""
+						EventData map[string]string "json:\"event_data\""
+					}{
+						5,
+						map[string]string{"test": "test-event-data"},
+					},
+				},
+			},
+			input: Filter{
+				Persistent:        true,
+				MessageID:         "test-truncate-all-fields-message-id",
+				Worker:            "",
+				Since:             "",
+				Until:             "",
+				TruncateFields:    map[string]int{},
+				TruncateAllFields: 4,
+			},
+			want: []map[string]string{
+				0: {
+					"message_id":   "test-truncate-all-fields-message-id",
+					"response_to":  "test-response",
+					"sent":         "2000-01-01 00:00:00 +0000 UTC",
+					"worker_event": "STOPPED",
+					"worker_data":  "{\"test\":\"test...\"}",
 					"worker_name":  "test-worker",
 				},
 			},
@@ -225,11 +309,12 @@ func TestBuildDynamicGetEntriesQuery(t *testing.T) {
 				initializedAt time.Time
 			}{
 				filter: Filter{
-					Persistent: true,
-					MessageID:  "",
-					Worker:     "",
-					Since:      "",
-					Until:      "",
+					Persistent:     true,
+					MessageID:      "",
+					Worker:         "",
+					Since:          "",
+					Until:          "",
+					TruncateFields: map[string]int{},
 				},
 				initializedAt: time.Now(),
 			},
@@ -243,11 +328,12 @@ func TestBuildDynamicGetEntriesQuery(t *testing.T) {
 				initializedAt time.Time
 			}{
 				filter: Filter{
-					Persistent: true,
-					MessageID:  "filtered-id",
-					Worker:     "filtered-worker",
-					Since:      "01-01-1970",
-					Until:      "01-01-2000",
+					Persistent:     true,
+					MessageID:      "filtered-id",
+					Worker:         "filtered-worker",
+					Since:          "01-01-1970", //TODO: fix test case to use YYYY-MM-DD
+					Until:          "01-01-2000",
+					TruncateFields: map[string]int{},
 				},
 				initializedAt: time.Now(),
 			},

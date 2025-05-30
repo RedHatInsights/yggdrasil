@@ -44,6 +44,10 @@
             @persistent: Filter journal entries to only contain entries from the persistent collection of
             journal entries spanning multiple sessions. By default, journal entries are collected from
             the active session.
+            @truncate_fields: Truncates the worker events data fields by the provided character count.
+            This field is an array with key/value pairs where the key is the name of the data field and
+            the value is the maximum length of the fields content separated by the '=' character.
+            @truncate_all_fields: Truncates all worker event data fields to the provided character count.
 
             @messages: Array of dictionary objects matching the input filter parameters.
             Each element in the array is a dictionary with key/value pairs as follows:
@@ -63,6 +67,8 @@
             <arg type="s" name="since" direction="in" />
             <arg type="s" name="until" direction="in" />
             <arg type="b" name="persistent" direction="in" />
+            <arg type="as" name="truncate_fields", direction="in" />
+            <arg type="u" name="truncate_all_fields", direction="in" />
             <arg type="aa{ss}" name="messages" direction="out" />
         </method>
 
