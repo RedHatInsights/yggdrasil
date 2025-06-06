@@ -33,7 +33,7 @@ if [[ "$ID" == "centos" ]] || [[ "$ID" == "rhel" ]] ; then
 fi
 
 dnf --setopt install_weak_deps=False install -y \
-  yggdrasil podman git-core python3-pip python3-pytest logrotate mosquitto
+  yggdrasil podman git-core python3-pip python3-pytest logrotate mosquitto go
 
 # Start the mosquitto service
 systemctl start mosquitto.service
@@ -57,6 +57,16 @@ EOF
 # Check for bootc/image-mode deployments which should not run dnf
 if ! command -v bootc >/dev/null || bootc status | grep -q 'type: null'; then
   echo "info: running in bootc/image-mode"
+fi
+
+# Install echo worker for downstream tests. Currently echo worker is not shipped as an rpm.
+if [ ! -f /etc/systemd/system/com.redhat.Yggdrasil1.Worker1.echo.service ]; then
+  go install github.com/redhatinsights/yggdrasil/worker/echo@latest
+  yggctl generate worker-data   --name echo   --program /usr/libexec/echo   --user root --output dbusfile_worker
+  mv ~/go/bin/echo /usr/libexec/echo
+  cp dbusfile_worker/dbus-1/system.d/com.redhat.Yggdrasil1.Worker1.echo.conf /etc/dbus-1/system.d/
+  cp dbusfile_worker/systemd/system/com.redhat.Yggdrasil1.Worker1.echo.service /etc/systemd/system/
+  cp dbusfile_worker/dbus-1/system-services/com.redhat.Yggdrasil1.Worker1.echo.service /usr/share/dbus-1/system-services/
 fi
 
 python3 -m venv venv
