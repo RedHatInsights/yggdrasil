@@ -16,12 +16,12 @@ require (
 	github.com/pelletier/go-toml v1.9.5
 	github.com/rjeczalik/notify v0.9.3
 	github.com/subpop/go-log v0.1.2
-	github.com/urfave/cli/v2 v2.27.6
+	github.com/urfave/cli/v2 v2.27.7
 )
 
 require (
-	github.com/BurntSushi/toml v1.4.0 // indirect
-	github.com/cpuguy83/go-md2man/v2 v2.0.5 // indirect
+	github.com/BurntSushi/toml v1.5.0 // indirect
+	github.com/cpuguy83/go-md2man/v2 v2.0.7 // indirect
 	github.com/gorilla/websocket v1.5.3 // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect
 	github.com/hashicorp/go-multierror v1.1.1 // indirect
