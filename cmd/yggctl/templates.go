@@ -2,7 +2,7 @@ package main
 
 var DBusServiceTemplate = `[D-BUS Service]
 Name=com.redhat.Yggdrasil1.Worker1.{{ .Name }}
-SystemdService=com.redhat.Yggdrasil1.Worker1.{{ .Name }}.Service
+SystemdService=com.redhat.Yggdrasil1.Worker1.{{ .Name }}.service
 `
 
 var DBusPolicyConfigTemplate = `<?xml version="1.0" encoding="UTF-8"?>
