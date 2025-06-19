@@ -52,6 +52,7 @@ cat <<'EOF' > /etc/yggdrasil/config.toml
 protocol = "mqtt"
 server = ["tcp://localhost:1883"]
 log-level = "debug"
+path-prefix = "yggdrasil"
 EOF
 
 # Check for bootc/image-mode deployments which should not run dnf
@@ -75,7 +76,7 @@ if [ ! -x /usr/libexec/yggdrasil/echo ]; then
 fi
 
 busctl -l
-
+yggctl workers list
 
 python3 -m venv venv
 # shellcheck disable=SC1091
