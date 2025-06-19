@@ -92,6 +92,9 @@ systemctl status com.redhat.Yggdrasil1.Worker1.echo.service | less
 journalctl -u yggdrasil -f
 journalctl -u com.redhat.Yggdrasil1.Worker1.echo.service
 
+cat /usr/local/lib/systemd/system/com.redhat.Yggdrasil1.Worker1.echo.service
+cat /usr/local/share/dbus-1/system-services/com.redhat.Yggdrasil1.Worker1.echo.service
+cat /usr/local/share/dbus-1/system.d/com.redhat.Yggdrasil1.Worker1.echo.conf
 
 if [ -d "$TMT_PLAN_DATA" ]; then
   cp ./junit.xml "$TMT_PLAN_DATA/junit.xml"

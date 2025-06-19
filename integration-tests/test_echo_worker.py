@@ -16,11 +16,16 @@ MQTT_SERVER_URL = "mqtt://localhost:1883"
 YGGDRASIL_CLIENT_ID_PATH = "/var/lib/yggdrasil/client-id"
 
 ECHO_WORKER_DIRECTIVE = "echo"
+PACKAGE_MANAGER_DIRECTIVE = "package_manager"
 
 ECHO_WORKER_SERVICE = "com.redhat.Yggdrasil1.Worker1.echo.service"
+PACKAGE_MANAGER_SERVICE = "com.redhat.Yggdrasil1.Worker1.package_manager.service"
 
 mqtt_message = """
 "hello"
+"""
+package_manager_message = """
+"command":"install","name":"zsh"
 """
 
 def get_yggdrasil_client_id():
@@ -43,7 +48,7 @@ def is_echo_worker_running():
     :return: Return true, when echo worker is running
     """
     proc = subprocess.run(
-        ["systemctl", "is-active", ECHO_WORKER_SERVICE],
+        ["systemctl", "is-active",ECHO_WORKER_SERVICE ],
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         universal_newlines=True,
@@ -53,6 +58,21 @@ def is_echo_worker_running():
     else:
         return False
 
+def is_package_manager_activated():
+    """
+    Check if echo worker is running
+    :return: Return true, when echo worker is running
+    """
+    proc = subprocess.run(
+        ["systemctl", "is-active", PACKAGE_MANAGER_SERVICE],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        universal_newlines=True,
+    )
+    if proc.returncode == 0 and proc.stdout.strip() == "active":
+        return True
+    else:
+        return False
 
 def test_echo_started_on_mqtt_message():
     """
@@ -108,6 +128,68 @@ def test_echo_started_on_mqtt_message():
     # Check if the echo worker service was started
     result = loop_until(
         function=is_echo_worker_running,
+        assertation=lambda res: res == True,
+        poll_sec=0.2,
+        timeout_sec=2
+    )
+    assert result is True
+
+    logger.info("The echo service was started")
+
+def test_package_manager_started_on_mqtt_message():
+    """
+    Test that echo worker service is automatically started,
+    when MQTT message is sent to yggdrasil service and this
+    message is dispatched to echo worker.
+    """
+    logger.info("Starting yggdrasil service")
+    proc = subprocess.run(
+        ["systemctl", "start", "yggdrasil.service"],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        universal_newlines=True,
+    )
+    # Check if the yggdrasil was started
+    assert proc.returncode == 0
+
+    client_id = get_yggdrasil_client_id()
+    assert client_id is not None
+
+    logger.info("Making sure that echo worker is stopped")
+    proc = subprocess.run(
+        ["systemctl", "stop", PACKAGE_MANAGER_SERVICE],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        universal_newlines=True,
+    )
+    assert proc.returncode == 0
+
+    logger.info("Sending MQTT message to MQTT broker")
+    logger.debug(f"yggd client ID: f{client_id}")
+
+    proc = subprocess.run(
+        [
+            f"echo '{package_manager_message}'"
+            "|"
+            f"yggctl generate data-message --directive {PACKAGE_MANAGER_DIRECTIVE} -"
+            "|"
+            f"mosquitto_pub --url {MQTT_SERVER_URL}/yggdrasil/{client_id}/data/in --stdin-line",
+        ],
+        shell=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        universal_newlines=True,
+    )
+    logger.debug(f"return code: {proc.returncode}")
+    logger.debug(f"stdout: {proc.stdout}")
+    logger.debug(f"stderr: {proc.stderr}")
+    assert proc.returncode == 0
+
+    time.sleep(1)
+
+    # Check if the echo worker service was started
+    result = loop_until(
+        function=is_package_manager_activated,
         assertation=lambda res: res == True,
         poll_sec=0.2,
         timeout_sec=2
