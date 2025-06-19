@@ -75,6 +75,7 @@ if [ ! -x /usr/libexec/yggdrasil/echo ]; then
   /usr/local/share/dbus-1/system-services/com.redhat.Yggdrasil1.Worker1.echo.service
 fi
 
+systemctl daemon-reload 
 busctl -l
 yggctl workers list
 
@@ -86,10 +87,10 @@ pip install -r integration-tests/requirements.txt
 
 pytest --junit-xml=./junit.xml -v integration-tests -vvv --log-level=DEBUG
 retval=$?
-
+busctl -l
 systemctl status com.redhat.Yggdrasil1.Worker1.echo.service | less
-
-
+journalctl -u yggdrasil -f
+journalctl -u com.redhat.Yggdrasil1.Worker1.echo.service
 
 
 if [ -d "$TMT_PLAN_DATA" ]; then
