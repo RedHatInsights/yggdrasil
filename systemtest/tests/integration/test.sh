@@ -74,14 +74,22 @@ if [ ! -x /usr/libexec/yggdrasil/echo ]; then
   /usr/local/share/dbus-1/system-services/com.redhat.Yggdrasil1.Worker1.echo.service
 fi
 
+busctl -l
+
+
 python3 -m venv venv
 # shellcheck disable=SC1091
 . venv/bin/activate
 
 pip install -r integration-tests/requirements.txt
 
-pytest --junit-xml=./junit.xml -v integration-tests
+pytest --junit-xml=./junit.xml -v integration-tests -vvv --log-level=DEBUG
 retval=$?
+
+systemctl status com.redhat.Yggdrasil1.Worker1.echo.service | less
+
+
+
 
 if [ -d "$TMT_PLAN_DATA" ]; then
   cp ./junit.xml "$TMT_PLAN_DATA/junit.xml"
