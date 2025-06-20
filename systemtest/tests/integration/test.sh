@@ -66,7 +66,7 @@ fi
 if [ ! -x /usr/libexec/yggdrasil/echo ]; then
   mkdir /usr/libexec/yggdrasil
   go install github.com/redhatinsights/yggdrasil/worker/echo@latest
-  mv ~/go/bin/echo /usr/libexec/yggdrasil/echo
+  cp ~/go/bin/echo /usr/libexec/yggdrasil/echo
 
   yggctl generate worker-data --name echo --program /usr/libexec/yggdrasil/echo --user yggdrasil --output dbusfile_worker
   cp dbusfile_worker/dbus-1/system.d/com.redhat.Yggdrasil1.Worker1.echo.conf /usr/share/dbus-1/system.d/
