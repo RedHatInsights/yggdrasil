@@ -4,6 +4,7 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
+	"net/url"
 	"os"
 	"os/signal"
 	"path/filepath"
@@ -355,6 +356,27 @@ func systemdWatchDog() {
 	}
 }
 
+// detectProtocolFromURL attempts to detect and return the first valid protocol and URL from the list of server URLs
+func detectProtocolFromURL(serverURLs []string) (string, string, error) {
+	for _, serverURL := range serverURLs {
+		parsedURL, err := url.Parse(serverURL)
+		if err != nil {
+			log.Errorf("error parsing server URL '%s': %v", serverURL, err)
+			continue
+		}
+
+		switch parsedURL.Scheme {
+		case "http", "https":
+			return "http", serverURL, nil
+		case "mqtt", "mqtts":
+			return "mqtt", serverURL, nil
+		default:
+			log.Warnf("unsupported protocol '%s' in server URL '%s'", parsedURL.Scheme, serverURL)
+		}
+	}
+	return "", "", fmt.Errorf("no protocols detected from %q", serverURLs)
+}
+
 // mainAction is main action of yggd
 func mainAction(c *cli.Context) error {
 
@@ -381,6 +403,22 @@ func mainAction(c *cli.Context) error {
 		return err
 	}
 	log.Infof("starting %v version %v", c.App.Name, c.App.Version)
+
+	// When no protocol is defined in the config, detect it from the first server entry
+	if config.DefaultConfig.Protocol == "none" && len(config.DefaultConfig.Server) > 0 {
+		log.Warnf(
+			"network protocol not specified in config file '%s' or CLI - detecting from server URL(s) %q",
+			c.String("config"),
+			config.DefaultConfig.Server,
+		)
+		protocol, serverURL, err := detectProtocolFromURL(config.DefaultConfig.Server)
+		if err != nil {
+			log.Warnf("error detecting protocol: %v", err)
+		} else {
+			config.DefaultConfig.Protocol = protocol
+			log.Infof("detected protocol '%s' from server URL '%s'", protocol, serverURL)
+		}
+	}
 
 	// Tries to create file containing client ID
 	err = setupClientID()
