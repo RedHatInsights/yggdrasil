@@ -6,7 +6,7 @@ toolchain go1.24.4
 
 require (
 	github.com/adrg/xdg v0.5.3
-	github.com/coreos/go-systemd/v22 v22.5.0
+	github.com/coreos/go-systemd/v22 v22.6.0
 	github.com/eclipse/paho.mqtt.golang v1.5.0
 	github.com/godbus/dbus/v5 v5.1.0
 	github.com/golang-migrate/migrate/v4 v4.18.3
