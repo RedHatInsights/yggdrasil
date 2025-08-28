@@ -32,14 +32,16 @@ jobs:
     additional_repos:
       - "copr://@yggdrasil/latest"
     targets:
-      - centos-stream-9-aarch64
-      - centos-stream-9-x86_64
       - centos-stream-10-aarch64
       - centos-stream-10-x86_64
+      - centos-stream-10-ppc64le
+      - centos-stream-10-s390x
       - fedora-all-aarch64
       - fedora-all-x86_64
-      - rhel-9-aarch64
-      - rhel-9-x86_64
+      - rhel-10-aarch64
+      - rhel-10-x86_64
+      - rhel-10-ppc64le
+      - rhel-10-s390x
 
   - job: copr_build
     trigger: commit
@@ -48,21 +50,21 @@ jobs:
     owner: "@yggdrasil"
     project: latest
     targets:
-      - centos-stream-9-aarch64
-      - centos-stream-9-x86_64
       - centos-stream-10-aarch64
       - centos-stream-10-x86_64
+      - centos-stream-10-ppc64le
+      - centos-stream-10-s390x
       - fedora-all-aarch64
       - fedora-all-x86_64
-      - rhel-9-aarch64
-      - rhel-9-x86_64
+      - rhel-10-aarch64
+      - rhel-10-x86_64
+      - rhel-10-ppc64le
+      - rhel-10-s390x
 
   - job: tests
     trigger: pull_request
     identifier: "unit/centos-stream"
     targets:
-      - centos-stream-9-aarch64
-      - centos-stream-9-x86_64
       - centos-stream-10-aarch64
       - centos-stream-10-x86_64
     labels:
@@ -80,12 +82,12 @@ jobs:
     trigger: pull_request
     identifier: "unit/rhel"
     targets:
-      rhel-9-aarch64:
+      rhel-10-aarch64:
         distros:
-          - RHEL-9-Nightly
-      rhel-9-x86_64:
+          - RHEL-10-Nightly
+      rhel-10-x86_64:
         distros:
-          - RHEL-9-Nightly
+          - RHEL-10-Nightly
     labels:
       - unit
     use_internal_tf: true
