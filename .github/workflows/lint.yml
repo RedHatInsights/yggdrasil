@@ -11,7 +11,7 @@ jobs:
   lint-commits:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 0
       - uses: aevea/commitsar@v0.20.2
@@ -21,7 +21,7 @@ jobs:
       - uses: actions/setup-go@v6
         with:
           go-version: "stable"
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - run: go get .
       - uses: golangci/golangci-lint-action@v8.0.0
         with:
@@ -32,7 +32,7 @@ jobs:
   lint-language:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: get-woke/woke-action@v0
         with:
           fail-on-error: true
