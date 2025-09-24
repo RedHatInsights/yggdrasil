@@ -45,7 +45,7 @@ var (
 
 func init() {
 	if PrefixDir == "" {
-		PrefixDir = "/usr/local"
+		PrefixDir = "/"
 	}
 	if BinDir == "" {
 		BinDir = filepath.Join(PrefixDir, "bin")
@@ -57,10 +57,10 @@ func init() {
 		LibexecDir = filepath.Join(PrefixDir, "libexec")
 	}
 	if DataDir == "" {
-		DataDir = filepath.Join(PrefixDir, "share")
+		DataDir = filepath.Join(PrefixDir, "usr", "share")
 	}
 	if DatarootDir == "" {
-		DatarootDir = filepath.Join(PrefixDir, "share")
+		DatarootDir = filepath.Join(PrefixDir, "usr", "share")
 	}
 	if ManDir == "" {
 		ManDir = filepath.Join(PrefixDir, "man")

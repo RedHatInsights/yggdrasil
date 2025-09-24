@@ -28,13 +28,13 @@ PROVIDER :=
 RELEASE = $(shell printf "0.%s.git.%s" $(shell git rev-list $(shell git describe --tags --abbrev=0 --always | tr -d '\n')..HEAD --count | tr -d '\n') $(shell git rev-parse --short HEAD | tr -d '\n'))
 
 # Installation directories
-PREFIX        ?= /usr/local
+PREFIX        ?= /
 BINDIR        ?= $(PREFIX)/bin
 SBINDIR       ?= $(PREFIX)/sbin
 LIBEXECDIR    ?= $(PREFIX)/libexec
 SYSCONFDIR    ?= $(PREFIX)/etc
-DATADIR       ?= $(PREFIX)/share
-DATAROOTDIR   ?= $(PREFIX)/share
+DATADIR       ?= $(PREFIX)/usr/share
+DATAROOTDIR   ?= $(PREFIX)/usr/share
 MANDIR        ?= $(DATADIR)/man
 DOCDIR        ?= $(DATADIR)/doc
 LOCALSTATEDIR ?= $(PREFIX)/var

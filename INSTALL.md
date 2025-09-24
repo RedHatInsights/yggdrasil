@@ -9,13 +9,13 @@ the `install` target. Additional variables can be used to further configure the
 installation prefix and related directories.
 
 ```
-PREFIX        ?= /usr/local
+PREFIX        ?= /
 BINDIR        ?= $(PREFIX)/bin
 SBINDIR       ?= $(PREFIX)/sbin
 LIBEXECDIR    ?= $(PREFIX)/libexec
 SYSCONFDIR    ?= $(PREFIX)/etc
-DATADIR       ?= $(PREFIX)/share
-DATAROOTDIR   ?= $(PREFIX)/share
+DATADIR       ?= $(PREFIX)/usr/share
+DATAROOTDIR   ?= $(PREFIX)/usr/share
 MANDIR        ?= $(DATADIR)/man
 DOCDIR        ?= $(PREFIX)/doc
 LOCALSTATEDIR ?= $(PREFIX)/var
