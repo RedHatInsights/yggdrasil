@@ -6,14 +6,12 @@ It indirectly tests that yggdrasil service dispatch MQTT message to
 import subprocess
 import logging
 import time
-from utils import loop_until
+from utils import loop_until, get_yggdrasil_client_id
 
 logger = logging.getLogger(__name__)
 
 # The scheme could be "mqtt://" or "mqtts://"
 MQTT_SERVER_URL = "mqtt://localhost:1883"
-
-YGGDRASIL_CLIENT_ID_PATH = "/var/lib/yggdrasil/client-id"
 
 ECHO_WORKER_DIRECTIVE = "echo"
 
@@ -22,20 +20,6 @@ ECHO_WORKER_SERVICE = "com.redhat.Yggdrasil1.Worker1.echo.service"
 mqtt_message = """
 "hello"
 """
-
-def get_yggdrasil_client_id():
-    """
-    Try to get yggdrasil client ID used in MQTT messages
-    :return: client ID string
-    """
-    logger.info("Getting yggdrasil client ID")
-    try:
-        with open(YGGDRASIL_CLIENT_ID_PATH, "r") as client_id_file:
-            client_id = client_id_file.read()
-    except IOError as err:
-        logger.error(f"unable to read '{YGGDRASIL_CLIENT_ID_PATH}': {err}")
-        client_id = None
-    return client_id
 
 def is_echo_worker_running():
     """
