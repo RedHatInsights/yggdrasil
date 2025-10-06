@@ -13,6 +13,10 @@
     <!-- Only members of the @worker_user@ group can send messages to
     Dispatcher1 destination. -->
     <allow send_destination="com.redhat.Yggdrasil1.Dispatcher1" />
+
+    <!-- Only @user@ can send messages to the Properties interface. -->
+    <allow send_destination="com.redhat.Yggdrasil1"
+        send_interface="org.freedesktop.DBus.Properties" />
   </policy>
 
   <policy user="root">
