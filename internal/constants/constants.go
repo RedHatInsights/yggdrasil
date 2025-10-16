@@ -26,11 +26,11 @@ var (
 // Installation directory prefix and paths. Values have hard-coded defaults but
 // can be changed at compile time by overriding the variable with an ldflag.
 var (
-	PrefixDir     string = filepath.Join("/", "usr", "local")
+	PrefixDir     string = filepath.Join("/")
 	SysconfDir    string = filepath.Join(PrefixDir, "etc")
 	LocalstateDir string = filepath.Join(PrefixDir, "var")
-	DataDir       string = filepath.Join(PrefixDir, "share")
-	LibDir        string = filepath.Join(PrefixDir, "lib")
+	DataDir       string = filepath.Join(PrefixDir, "usr", "share")
+	LibDir        string = filepath.Join(PrefixDir, "usr", "lib")
 
 	// ConfigDir is a path to a location where configuration data is assumed to
 	// be stored. For non-root users, this is set to $CONFIGURATION_DIRECTORY or
