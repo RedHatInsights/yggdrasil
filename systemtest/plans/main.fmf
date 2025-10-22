@@ -5,12 +5,5 @@ description: |
 discover:
     how: fmf
 
-prepare:
-    - name: Install packages
-      how: install
-      package:
-        - golang
-        - meson
-
 execute:
     how: tmt
