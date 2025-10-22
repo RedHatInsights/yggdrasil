@@ -20,4 +20,3 @@ COPR_REPO="${ID}-${VERSION_MAJOR}-$(uname -m)"
 dnf remove -y --noautoremove yggdrasil
 dnf copr -y enable packit/RedHatInsights-yggdrasil-"${ghprbPullId}" "${COPR_REPO}"
 dnf install -y yggdrasil --disablerepo=* --enablerepo=*yggdrasil*
-

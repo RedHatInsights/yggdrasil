@@ -2,15 +2,20 @@ summary: In-tree yggdrasil test suite
 description: |
   This test plan runs yggdrasil programs directly from within the
   source tree.
-discover:
-    how: fmf
 
 prepare:
-    - name: Install packages
-      how: install
-      package:
-        - golang
-        - meson
+  - name: install test dependencies
+    how: shell
+    script: ./systemtest/install-test-deps.sh
+
+discover:
+  - how: shell
+    tests:
+      - name: check for image mode reboot
+        test: ./systemtest/prepare-reboot.sh
+        duration: 20m
+    
+  - how: fmf
 
 execute:
     how: tmt
