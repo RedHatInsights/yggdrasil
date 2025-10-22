@@ -1,0 +1,6 @@
+ARG IMAGE=images.paas.redhat.com/testingfarm/rhel-bootc:10.2
+FROM $IMAGE
+
+COPY install-test-deps.sh /install-test-deps.sh
+RUN sh /install-test-deps.sh
+RUN touch /test-deps-installed
