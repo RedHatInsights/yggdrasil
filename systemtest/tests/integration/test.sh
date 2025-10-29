@@ -33,7 +33,7 @@ if [[ "$ID" == "centos" ]] || [[ "$ID" == "rhel" ]] ; then
 fi
 
 dnf --setopt install_weak_deps=False install -y \
-  yggdrasil podman git-core python3-pip python3-pytest logrotate mosquitto go
+  yggdrasil podman git-core python3-pip python3-pytest logrotate mosquitto go insights-client
 
 # Start the mosquitto service
 systemctl start mosquitto.service
@@ -81,8 +81,13 @@ fi
 python3 -m venv venv
 # shellcheck disable=SC1091
 . venv/bin/activate
-
+pip install --upgrade pip
 pip install -r integration-tests/requirements.txt
+
+if [ -n "${SETTINGS_URL+x}" ] && curl -I "$SETTINGS_URL" > /dev/null 2>&1; then
+  [ -f ./settings.toml ] && mv ./settings.toml.bak
+  curl "$SETTINGS_URL" -o ./settings.toml
+fi
 
 pytest --junit-xml=./junit.xml -v integration-tests
 retval=$?
