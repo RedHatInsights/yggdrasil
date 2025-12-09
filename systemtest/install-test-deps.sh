@@ -17,6 +17,12 @@ source /etc/os-release
 
 VERSION_MAJOR=$(echo "${VERSION_ID}" | cut -d '.' -f 1)
 
+if [ "$ID" == "rhel" ]; then
+  packages+=(
+    "insights-client"
+  )
+fi
+
 install_epel() {
   if [[ "$ID" == "centos" ]] || [[ "$ID" == "rhel" ]]; then
     if [[ "$VERSION_MAJOR" == "10" ]]; then
