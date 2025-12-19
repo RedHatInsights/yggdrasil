@@ -17,20 +17,13 @@ source /etc/os-release
 
 VERSION_MAJOR=$(echo "${VERSION_ID}" | cut -d '.' -f 1)
 
-if [ "$ID" == "rhel" ]; then
+# Add rhc, subscription-manager, and insights-client for integration tests
+# These are needed for tests using pytest-client-tools fixtures
+if [ "$ID" == "rhel" ] || [ "$ID" == "centos" ]; then
   packages+=(
+    "rhc"
+    "subscription-manager"
     "insights-client"
-    "subscription-manager"
-    "rhc"
-  )
-fi
-
-# For CentOS Stream, add rhc and subscription-manager
-# These are needed for integration tests that use pytest-client-tools
-if [ "$ID" == "centos" ]; then
-  packages+=(
-    "rhc"
-    "subscription-manager"
   )
 fi
 
@@ -60,6 +53,15 @@ install_epel() {
     fi
   fi
   dnf --setopt install_weak_deps=False install -y "${packages[@]}"
+
+  # Ensure insights-client config exists for pytest-client-tools fixtures
+  # Same approach as rhc: create empty config if missing
+  if [[ ! -d "/etc/insights-client/" ]]; then
+    mkdir -p /etc/insights-client/
+  fi
+  if [[ ! -f "/etc/insights-client/insights-client.conf" ]]; then
+    touch /etc/insights-client/insights-client.conf
+  fi
 }
 
 setup_yggdrasil() {
