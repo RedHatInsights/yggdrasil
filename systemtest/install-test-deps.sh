@@ -20,6 +20,17 @@ VERSION_MAJOR=$(echo "${VERSION_ID}" | cut -d '.' -f 1)
 if [ "$ID" == "rhel" ]; then
   packages+=(
     "insights-client"
+    "subscription-manager"
+    "rhc"
+  )
+fi
+
+# For CentOS Stream, add rhc and subscription-manager
+# These are needed for integration tests that use pytest-client-tools
+if [ "$ID" == "centos" ]; then
+  packages+=(
+    "rhc"
+    "subscription-manager"
   )
 fi
 
