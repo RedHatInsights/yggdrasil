@@ -8,6 +8,13 @@
         programmatic interaction with the yggdrasil system service.
     -->
     <interface name="com.redhat.Yggdrasil1">
+        <!--
+            ClientID:
+            
+            The value of the current client id on the active interface.
+        -->
+        <property name="ClientID" type="s" access="read" />
+
         <!-- 
             Dispatch:
             @directive: worker identifier for which the data is destined.

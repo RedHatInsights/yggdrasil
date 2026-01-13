@@ -210,6 +210,10 @@ func (c *Client) ListWorkers() (map[string]map[string]string, *dbus.Error) {
 	return c.dispatcher.FlattenDispatchers(), nil
 }
 
+func (c *Client) GetClientID() (string, *dbus.Error) {
+	return config.DefaultConfig.ClientID, nil
+}
+
 // MessageJournal implements the com.redhat.Yggdrasil1.MessageJournal method.
 func (c *Client) MessageJournal(
 	messageID string,
