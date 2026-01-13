@@ -35,11 +35,13 @@ type MessageJournal struct {
 // Filter is a data structure representing the filtering options
 // that are used when message journal entries are retrieved by yggctl.
 type Filter struct {
-	Persistent bool
-	MessageID  string
-	Worker     string
-	Since      string
-	Until      string
+	Persistent        bool
+	MessageID         string
+	Worker            string
+	Since             string
+	Until             string
+	TruncateFields    map[string]int
+	TruncateAllFields int
 }
 
 type errorJournal struct {
@@ -195,6 +197,13 @@ func (j *MessageJournal) GetEntries(filter Filter) ([]map[string]string, error) 
 			return nil, fmt.Errorf("cannot scan journal entry columns: %w", err)
 		}
 
+		if len(filter.TruncateFields) > 0 || filter.TruncateAllFields >= 0 {
+			err := truncateEventDataFields(&workerEventData, filter)
+			if err != nil {
+				return nil, fmt.Errorf("cannot truncate data field: %w", err)
+			}
+		}
+
 		// Convert the entry properties into a string format and append to the list of entries.
 		newMessage := map[string]string{
 			"message_id":   messageID,
@@ -223,6 +232,53 @@ func (j *MessageJournal) GetEntries(filter Filter) ([]map[string]string, error) 
 	return entries, nil
 }
 
+// truncateEventDataFields is a utility method that truncates message journal event
+// data fields by the lengths specified in the journal filter.
+// This process requires unmarshalling the worker event data,
+// extracting the specified field (if any), and truncating the
+// content of the field to the maximum length.
+func truncateEventDataFields(workerEventData *string, filter Filter) error {
+	var eventData map[string]string
+	err := json.Unmarshal([]byte(*workerEventData), &eventData)
+	if err != nil {
+		return fmt.Errorf("cannot unmarshal worker event data: %w", err)
+	}
+
+	// If truncating all fields is enabled (i.e. >= 0),
+	// then it should ignore filters for truncating individual fields.
+	if filter.TruncateAllFields >= 0 {
+		for field, fieldContent := range eventData {
+			if len(fieldContent) >= int(filter.TruncateAllFields) {
+				eventData[field] = fmt.Sprintf(
+					"%+v...",
+					eventData[field][:filter.TruncateAllFields],
+				)
+			}
+		}
+	} else {
+		for field, length := range filter.TruncateFields {
+			fieldContent, ok := eventData[field]
+			if !ok {
+				log.Debugf("cannot find specified field to truncate: %v", field)
+				continue
+			}
+			if len(fieldContent) >= length && length >= 0 {
+				eventData[field] = fmt.Sprintf("%+v...", eventData[field][:length])
+			}
+		}
+	}
+
+	truncatedEventData, err := json.Marshal(eventData)
+	if err != nil {
+		return fmt.Errorf(
+			"cannot marshal worker event data after truncating data: %w",
+			err,
+		)
+	}
+	*workerEventData = string(truncatedEventData)
+	return nil
+}
+
 // buildDynamicGetEntriesQuery is a utility method that builds the dynamic sql query
 // required to filter journal entry messages from the message journal database
 // when they are retrieved in the 'GetEntries' method.
@@ -240,6 +296,7 @@ func buildDynamicGetEntriesQuery(filter Filter, initializedAt time.Time) (string
 	if err != nil {
 		return "", fmt.Errorf("cannot parse query template parameters: %w", err)
 	}
+
 	var compiledQuery bytes.Buffer
 	err = queryTemplateParse.Execute(&compiledQuery,
 		struct {
