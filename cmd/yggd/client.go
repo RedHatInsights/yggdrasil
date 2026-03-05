@@ -60,6 +60,59 @@ func (c *Client) Connect() error {
 		return fmt.Errorf("cannot connect dispatcher: %w", err)
 	}
 
+	// set a transport RxHandlerFunc that calls the client's control and data
+	// receive handler functions.
+	err := c.transporter.SetRxHandler(
+		func(addr string, metadata map[string]interface{}, data []byte) error {
+			switch addr {
+			case "data":
+				var message yggdrasil.Data
+
+				if err := json.Unmarshal(data, &message); err != nil {
+					return fmt.Errorf("cannot unmarshal data message: %w", err)
+				}
+				if err := c.ReceiveDataMessage(&message); err != nil {
+					return fmt.Errorf("cannot process data message: %w", err)
+				}
+			case "control":
+				var message yggdrasil.Control
+
+				if err := json.Unmarshal(data, &message); err != nil {
+					return fmt.Errorf("cannot unmarshal control message: %w", err)
+				}
+				if err := c.ReceiveControlMessage(&message); err != nil {
+					return fmt.Errorf("cannot process control message: %w", err)
+				}
+			default:
+				return fmt.Errorf("unsupported destination type: %v", addr)
+			}
+			return nil
+		},
+	)
+	if err != nil {
+		return fmt.Errorf("cannot set RxHandler: %v", err)
+	}
+
+	_ = c.transporter.SetEventHandler(func(e transport.TransporterEvent) {
+		switch e {
+		case transport.TransporterEventConnected:
+			if err := c.dispatcher.EmitEvent(ipc.DispatcherEventConnectionRestored); err != nil {
+				log.Errorf("cannot emit event: %v", err)
+			}
+		case transport.TransporterEventDisconnected:
+			if err := c.dispatcher.EmitEvent(ipc.DispatcherEventUnexpectedDisconnect); err != nil {
+				log.Errorf("cannot emit event: %v", err)
+			}
+		}
+	})
+
+	// Connect the transporter before starting goroutines that publish messages.
+	// Otherwise the dispatcher may send to Dispatchers (e.g. after finding
+	// activatable workers) before the transport is fully connected.
+	if err := c.transporter.Connect(); err != nil {
+		return fmt.Errorf("cannot connect transporter: %w", err)
+	}
+
 	// Start a goroutine that receives values on the 'dispatchers' channel
 	// and publishes "connection-status" messages to MQTT.
 	go func() {
@@ -110,52 +163,6 @@ func (c *Client) Connect() error {
 		}
 	}()
 
-	// set a transport RxHandlerFunc that calls the client's control and data
-	// receive handler functions.
-	err := c.transporter.SetRxHandler(
-		func(addr string, metadata map[string]interface{}, data []byte) error {
-			switch addr {
-			case "data":
-				var message yggdrasil.Data
-
-				if err := json.Unmarshal(data, &message); err != nil {
-					return fmt.Errorf("cannot unmarshal data message: %w", err)
-				}
-				if err := c.ReceiveDataMessage(&message); err != nil {
-					return fmt.Errorf("cannot process data message: %w", err)
-				}
-			case "control":
-				var message yggdrasil.Control
-
-				if err := json.Unmarshal(data, &message); err != nil {
-					return fmt.Errorf("cannot unmarshal control message: %w", err)
-				}
-				if err := c.ReceiveControlMessage(&message); err != nil {
-					return fmt.Errorf("cannot process control message: %w", err)
-				}
-			default:
-				return fmt.Errorf("unsupported destination type: %v", addr)
-			}
-			return nil
-		},
-	)
-	if err != nil {
-		return fmt.Errorf("cannot set RxHandler: %v", err)
-	}
-
-	_ = c.transporter.SetEventHandler(func(e transport.TransporterEvent) {
-		switch e {
-		case transport.TransporterEventConnected:
-			if err := c.dispatcher.EmitEvent(ipc.DispatcherEventConnectionRestored); err != nil {
-				log.Errorf("cannot emit event: %v", err)
-			}
-		case transport.TransporterEventDisconnected:
-			if err := c.dispatcher.EmitEvent(ipc.DispatcherEventUnexpectedDisconnect); err != nil {
-				log.Errorf("cannot emit event: %v", err)
-			}
-		}
-	})
-
 	// Set up and export the com.redhat.Yggdrasil1 D-Bus interface.
 	if os.Getenv("DBUS_SESSION_BUS_ADDRESS") != "" {
 		log.Debugf("connecting to session bus: %v", os.Getenv("DBUS_SESSION_BUS_ADDRESS"))
@@ -202,7 +209,7 @@ func (c *Client) Connect() error {
 		}
 	}()
 
-	return c.transporter.Connect()
+	return nil
 }
 
 // ListWorkers implements the com.redhat.Yggdrasil1.ListWorkers method.
