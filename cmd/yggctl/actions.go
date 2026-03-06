@@ -178,6 +178,33 @@ func messageJournalAction(ctx *cli.Context) error {
 	return nil
 }
 
+// clientIDAction reads the com.redhat.Yggdrasil1.ClientID D-Bus property
+// from the local yggd instance and prints it to stdout
+func clientIDAction(ctx *cli.Context) error {
+	conn, err := connectBus()
+	if err != nil {
+		return cli.Exit(fmt.Errorf("cannot connect to bus: %w", err), 1)
+	}
+
+	obj := conn.Object("com.redhat.Yggdrasil1", "/com/redhat/Yggdrasil1")
+	propertyName := "com.redhat.Yggdrasil1.ClientID"
+	result, err := obj.GetProperty(propertyName)
+	if err != nil {
+		return cli.Exit(
+			fmt.Errorf("cannot get client ID from D-Bus property: '%s': %w", propertyName, err),
+			1,
+		)
+	}
+
+	clientID, ok := result.Value().(string)
+	if !ok {
+		return cli.Exit(fmt.Errorf("client ID has unexpected type %T", result.Value()), 1)
+	}
+
+	fmt.Println(clientID)
+	return nil
+}
+
 func workersAction(c *cli.Context) error {
 	conn, err := connectBus()
 	if err != nil {

@@ -12,6 +12,7 @@ import (
 
 	"github.com/godbus/dbus/v5"
 	"github.com/godbus/dbus/v5/introspect"
+	"github.com/godbus/dbus/v5/prop"
 	"github.com/google/uuid"
 	"github.com/redhatinsights/yggdrasil"
 	internaldbus "github.com/redhatinsights/yggdrasil/dbus"
@@ -170,6 +171,20 @@ func (c *Client) Connect() error {
 
 	if err := c.conn.Export(c, "/com/redhat/Yggdrasil1", "com.redhat.Yggdrasil1"); err != nil {
 		return fmt.Errorf("cannot export com.redhat.Yggdrasil1 interface: %v", err)
+	}
+
+	propMap := prop.Map{
+		// Currently, the only exported property is the client ID.
+		"com.redhat.Yggdrasil1": {
+			"ClientID": {
+				Value:    config.DefaultConfig.ClientID,
+				Writable: false,
+				Emit:     prop.EmitTrue,
+			},
+		},
+	}
+	if _, err := prop.Export(c.conn, "/com/redhat/Yggdrasil1", propMap); err != nil {
+		return fmt.Errorf("cannot export com.redhat.Yggdrasil1 properties: %v", err)
 	}
 
 	if err := c.conn.Export(introspect.Introspectable(internaldbus.InterfaceYggdrasil), "/com/redhat/Yggdrasil1", "org.freedesktop.DBus.Introspectable"); err != nil {
