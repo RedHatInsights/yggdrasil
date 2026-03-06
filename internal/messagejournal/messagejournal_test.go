@@ -216,7 +216,8 @@ func TestBuildDynamicGetEntriesQuery(t *testing.T) {
 			filter        Filter
 			initializedAt time.Time
 		}
-		want string
+		wantQuery string
+		wantArgs  []interface{}
 	}{
 		{
 			description: "build dynamic get entries sql query - unfiltered",
@@ -233,8 +234,8 @@ func TestBuildDynamicGetEntriesQuery(t *testing.T) {
 				},
 				initializedAt: time.Now(),
 			},
-			want: "SELECT * FROM journal " +
-				"ORDER BY sent",
+			wantQuery: "SELECT * FROM journal ORDER BY sent",
+			wantArgs:  nil,
 		},
 		{
 			description: "build dynamic get entries sql query - filtered",
@@ -251,23 +252,24 @@ func TestBuildDynamicGetEntriesQuery(t *testing.T) {
 				},
 				initializedAt: time.Now(),
 			},
-			want: "SELECT * FROM journal " +
-				"INTERSECT SELECT * FROM journal WHERE message_id='filtered-id' " +
-				"INTERSECT SELECT * FROM journal WHERE worker_name='filtered-worker' " +
-				"INTERSECT SELECT * FROM journal WHERE sent>='01-01-1970' " +
-				"INTERSECT SELECT * FROM journal WHERE sent<='01-01-2000' " +
+			wantQuery: "SELECT * FROM journal " +
+				"INTERSECT SELECT * FROM journal WHERE message_id=? " +
+				"INTERSECT SELECT * FROM journal WHERE worker_name=? " +
+				"INTERSECT SELECT * FROM journal WHERE sent>=? " +
+				"INTERSECT SELECT * FROM journal WHERE sent<=? " +
 				"ORDER BY sent",
+			wantArgs: []interface{}{"filtered-id", "filtered-worker", "01-01-1970", "01-01-2000"},
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-			query, err := buildDynamicGetEntriesQuery(test.input.filter, test.input.initializedAt)
-			if err != nil {
-				t.Fatal(err)
+			query, args := buildDynamicGetEntriesQuery(test.input.filter, test.input.initializedAt)
+			if query != test.wantQuery {
+				t.Errorf("query: got %q, want %q", query, test.wantQuery)
 			}
-			if !cmp.Equal(query, test.want) {
-				t.Errorf("%#v != %#v", query, test.want)
+			if !cmp.Equal(args, test.wantArgs) {
+				t.Errorf("args: got %#v, want %#v", args, test.wantArgs)
 			}
 		})
 	}

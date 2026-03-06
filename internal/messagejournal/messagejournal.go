@@ -1,13 +1,12 @@
 package messagejournal
 
 import (
-	"bytes"
 	"database/sql"
 	"embed"
 	"encoding/json"
 	"fmt"
 	"reflect"
-	"text/template"
+	"strings"
 	"time"
 
 	"github.com/golang-migrate/migrate/v4"
@@ -158,17 +157,14 @@ func (j *MessageJournal) AddEntry(entry yggdrasil.WorkerMessage) error {
 // that meet the criteria of the provided message journal filter.
 func (j *MessageJournal) GetEntries(filter Filter) ([]map[string]string, error) {
 	entries := []map[string]string{}
-	queryString, err := buildDynamicGetEntriesQuery(filter, j.initializedAt)
-	if err != nil {
-		return nil, fmt.Errorf("cannot build dynamic sql query: %w", err)
-	}
+	queryString, args := buildDynamicGetEntriesQuery(filter, j.initializedAt)
 
 	preparedQuery, err := j.database.Prepare(queryString)
 	if err != nil {
 		return nil, fmt.Errorf("cannot prepare query to retrieve journal entries: %w", err)
 	}
 
-	rows, err := preparedQuery.Query()
+	rows, err := preparedQuery.Query(args...)
 	if err != nil {
 		return nil, fmt.Errorf("cannot execute query to retrieve journal entries: %w", err)
 	}
@@ -226,35 +222,31 @@ func (j *MessageJournal) GetEntries(filter Filter) ([]map[string]string, error) 
 // buildDynamicGetEntriesQuery is a utility method that builds the dynamic sql query
 // required to filter journal entry messages from the message journal database
 // when they are retrieved in the 'GetEntries' method.
-func buildDynamicGetEntriesQuery(filter Filter, initializedAt time.Time) (string, error) {
-	queryTemplate := template.New("dynamicGetEntriesQuery")
-	queryTemplateParse, err := queryTemplate.Parse(
-		`SELECT * FROM journal ` +
-			`{{if .MessageID}}INTERSECT SELECT * FROM journal WHERE message_id='{{.MessageID}}' {{end}}` +
-			`{{if .Worker}}INTERSECT SELECT * FROM journal WHERE worker_name='{{.Worker}}' {{end}}` +
-			`{{if .Since}}INTERSECT SELECT * FROM journal WHERE sent>='{{.Since}}' {{end}}` +
-			`{{if .Until}}INTERSECT SELECT * FROM journal WHERE sent<='{{.Until}}' {{end}}` +
-			`{{if not .Persistent}}INTERSECT SELECT * FROM journal WHERE sent>='{{.InitializedAt}}' {{end}}` +
-			`ORDER BY sent`,
-	)
-	if err != nil {
-		return "", fmt.Errorf("cannot parse query template parameters: %w", err)
+func buildDynamicGetEntriesQuery(filter Filter, initializedAt time.Time) (string, []interface{}) {
+	queryConditions := []struct {
+		ok        bool
+		statement string
+		arg       interface{}
+	}{
+		{
+			filter.MessageID != "",
+			"INTERSECT SELECT * FROM journal WHERE message_id=?",
+			filter.MessageID,
+		},
+		{filter.Worker != "", "INTERSECT SELECT * FROM journal WHERE worker_name=?", filter.Worker},
+		{filter.Since != "", "INTERSECT SELECT * FROM journal WHERE sent>=?", filter.Since},
+		{filter.Until != "", "INTERSECT SELECT * FROM journal WHERE sent<=?", filter.Until},
+		{!filter.Persistent, "INTERSECT SELECT * FROM journal WHERE sent>=?", initializedAt},
 	}
-	var compiledQuery bytes.Buffer
-	err = queryTemplateParse.Execute(&compiledQuery,
-		struct {
-			InitializedAt string
-			Persistent    bool
-			MessageID     string
-			Worker        string
-			Since         string
-			Until         string
-		}{
-			initializedAt.String(), filter.Persistent,
-			filter.MessageID, filter.Worker, filter.Since, filter.Until,
-		})
-	if err != nil {
-		return "", fmt.Errorf("cannot compile query template: %w", err)
+
+	parts := []string{"SELECT * FROM journal"}
+	var args []interface{}
+	for _, queryCondition := range queryConditions {
+		if queryCondition.ok {
+			parts = append(parts, queryCondition.statement)
+			args = append(args, queryCondition.arg)
+		}
 	}
-	return compiledQuery.String(), nil
+	parts = append(parts, "ORDER BY sent")
+	return strings.Join(parts, " "), args
 }
