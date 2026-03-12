@@ -25,6 +25,51 @@ type MQTT struct {
 	eventHandler   EventHandlerFunc
 }
 
+// newLastWillPayload returns the JSON payload for the MQTT LastWill message
+// (connection status offline). A fresh payload is built each time so
+// message-id and timestamp are distinct per connection.
+func newLastWillPayload() ([]byte, error) {
+	return json.Marshal(&yggdrasil.ConnectionStatus{
+		Type:      yggdrasil.MessageTypeConnectionStatus,
+		MessageID: uuid.New().String(),
+		Version:   1,
+		Sent:      time.Now(),
+		Content: struct {
+			CanonicalFacts map[string]interface{}       "json:\"canonical_facts\""
+			Dispatchers    map[string]map[string]string "json:\"dispatchers\""
+			State          yggdrasil.ConnectionState    "json:\"state\""
+			Tags           map[string]string            "json:\"tags,omitempty\""
+			ClientVersion  string                       "json:\"client_version,omitempty\""
+		}{
+			State:         yggdrasil.ConnectionStateOffline,
+			ClientVersion: constants.Version,
+		},
+	})
+}
+
+// setBinaryLastWill configures the MQTT Last Will on the given options.
+// For auto-reconnect, this must be applied to the *mqtt.ClientOptions passed
+// to OnReconnecting: paho copies options into the client at NewClient, so
+// mutating an external ClientOptions pointer after Connect does not change the
+// CONNECT packet used on subsequent reconnects.
+func setBinaryLastWill(opts *mqtt.ClientOptions) error {
+	data, err := newLastWillPayload()
+	if err != nil {
+		return err
+	}
+	opts.SetBinaryWill(
+		fmt.Sprintf(
+			"%v/%v/control/out",
+			config.DefaultConfig.PathPrefix,
+			opts.ClientID,
+		),
+		data,
+		1,
+		false,
+	)
+	return nil
+}
+
 // NewMQTTTransport creates a transport suitable for transmitting data over a
 // set of MQTT topics.
 func NewMQTTTransport(clientID string, brokers []string, tlsConfig *tls.Config) (*MQTT, error) {
@@ -49,20 +94,25 @@ func NewMQTTTransport(clientID string, brokers []string, tlsConfig *tls.Config) 
 	opts.SetOnConnectHandler(func(c mqtt.Client) {
 		t.events <- TransporterEventConnected
 
-		opts := c.OptionsReader()
-		for _, url := range opts.Servers() {
+		reader := c.OptionsReader()
+
+		for _, url := range reader.Servers() {
 			log.Tracef("connected to broker: %v", url)
 		}
 
 		// Publish a throwaway message in case the topic does not exist;
 		// this is a workaround for the Akamai MQTT broker implementation.
 		go func() {
-			topic := fmt.Sprintf("%v/%v/data/out", config.DefaultConfig.PathPrefix, opts.ClientID())
+			topic := fmt.Sprintf(
+				"%v/%v/data/out",
+				config.DefaultConfig.PathPrefix,
+				reader.ClientID(),
+			)
 			c.Publish(topic, 0, false, []byte{})
 		}()
 
 		var topic string
-		topic = fmt.Sprintf("%v/%v/data/in", config.DefaultConfig.PathPrefix, opts.ClientID())
+		topic = fmt.Sprintf("%v/%v/data/in", config.DefaultConfig.PathPrefix, reader.ClientID())
 		c.Subscribe(topic, 1, func(c mqtt.Client, m mqtt.Message) {
 			go func() {
 				if t.receiveHandler == nil {
@@ -75,7 +125,7 @@ func NewMQTTTransport(clientID string, brokers []string, tlsConfig *tls.Config) 
 		})
 		log.Tracef("subscribed to topic: %v", topic)
 
-		topic = fmt.Sprintf("%v/%v/control/in", config.DefaultConfig.PathPrefix, opts.ClientID())
+		topic = fmt.Sprintf("%v/%v/control/in", config.DefaultConfig.PathPrefix, reader.ClientID())
 		c.Subscribe(topic, 1, func(c mqtt.Client, m mqtt.Message) {
 			go func() {
 				if t.receiveHandler == nil {
@@ -100,6 +150,10 @@ func NewMQTTTransport(clientID string, brokers []string, tlsConfig *tls.Config) 
 	})
 
 	opts.SetReconnectingHandler(func(c mqtt.Client, co *mqtt.ClientOptions) {
+		// Fresh will for this CONNECT (paho passes &client.options here).
+		if err := setBinaryLastWill(co); err != nil {
+			log.Errorf("cannot marshal LastWill message to JSON: %v", err)
+		}
 		if config.DefaultConfig.MQTTReconnectDelay > 0 {
 			log.Infof(
 				"delaying for %v before reconnecting...",
@@ -110,32 +164,9 @@ func NewMQTTTransport(clientID string, brokers []string, tlsConfig *tls.Config) 
 		log.Debugf("reconnecting to broker: %v", co.Servers)
 	})
 
-	data, err := json.Marshal(&yggdrasil.ConnectionStatus{
-		Type:      yggdrasil.MessageTypeConnectionStatus,
-		MessageID: uuid.New().String(),
-		Version:   1,
-		Sent:      time.Now(),
-		Content: struct {
-			CanonicalFacts map[string]interface{}       "json:\"canonical_facts\""
-			Dispatchers    map[string]map[string]string "json:\"dispatchers\""
-			State          yggdrasil.ConnectionState    "json:\"state\""
-			Tags           map[string]string            "json:\"tags,omitempty\""
-			ClientVersion  string                       "json:\"client_version,omitempty\""
-		}{
-			State:         yggdrasil.ConnectionStateOffline,
-			ClientVersion: constants.Version,
-		},
-	})
-	if err != nil {
-		return nil, fmt.Errorf("cannot marshal message to JSON: %w", err)
+	if err := setBinaryLastWill(opts); err != nil {
+		return nil, fmt.Errorf("cannot marshal LastWill message to JSON: %w", err)
 	}
-
-	opts.SetBinaryWill(
-		fmt.Sprintf("%v/%v/control/out", config.DefaultConfig.PathPrefix, opts.ClientID),
-		data,
-		1,
-		false,
-	)
 
 	t.opts = opts
 	t.client = mqtt.NewClient(opts)
@@ -178,6 +209,9 @@ func (t *MQTT) ReloadTLSConfig(tlsConfig *tls.Config) error {
 	defer client.Disconnect(1)
 
 	t.opts.SetTLSConfig(tlsConfig.Clone())
+	if err := setBinaryLastWill(t.opts); err != nil {
+		return fmt.Errorf("cannot marshal LastWill message to JSON: %w", err)
+	}
 	t.client = mqtt.NewClient(t.opts)
 	return t.Connect()
 }
