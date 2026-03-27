@@ -9,13 +9,7 @@ prepare:
     script: ./systemtest/install-test-deps.sh
 
 discover:
-  - how: shell
-    tests:
-      - name: check for image mode reboot
-        test: ./systemtest/prepare-reboot.sh
-        duration: 20m
-    
-  - how: fmf
+  how: fmf
 
 execute:
-    how: tmt
+  how: tmt

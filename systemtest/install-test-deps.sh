@@ -52,15 +52,12 @@ install_epel() {
 }
 
 setup_yggdrasil() {
-  # Print yggd version
   echo "yggd version"
   yggd --version
 
-  # Print information about installed yggdrasil RPM package
   echo "yggdrasil RPM installed:"
   rpm -qi yggdrasil
 
-  # Configure yggdrasil service to use local mosquitto MQTT broker
   cat << 'EOF' > /etc/yggdrasil/config.toml
 # yggdrasil global configuration settings
 protocol = "mqtt"
@@ -86,34 +83,5 @@ EOF
   fi
 }
 
-get_image_name() {
-  if command -v jq > /dev/null; then
-    IMAGE=$(bootc status --format=json | jq -r '.status.booted.image.image.image')
-  else
-    IMAGE=$(bootc status --format=humanreadable | grep 'Booted image' | cut -d' ' -f 4)
-  fi
-  echo "$IMAGE"
-}
-
-is_bootc() {
-  command -v bootc > /dev/null &&
-    ! bootc status --format=humanreadable | grep -q 'System is not deployed via bootc'
-}
-
-if is_bootc; then
-  echo "info: running in bootc/image-mode, preparing new image"
-  # TODO: fix for non testing-farm image mode environments
-  IMAGE=$(get_image_name)
-  echo "info: current image is $IMAGE"
-
-  (podman pull $IMAGE || podman pull containers-storage:$IMAGE) || bootc image copy-to-storage --target $IMAGE
-  podman build --build-arg IMAGE=$IMAGE -t localhost/yggdrasil-test:latest -f Containerfile systemtest/
-
-  echo "info: switching to new bootc image and rebooting"
-  bootc switch --transport containers-storage localhost/yggdrasil-test:latest
-else
-  echo "info: installing dependencies"
-  install_epel
-  setup_yggdrasil
-  echo "info: dependencies installed successfully"
-fi
+install_epel
+setup_yggdrasil
