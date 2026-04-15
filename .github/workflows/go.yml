@@ -15,10 +15,10 @@ jobs:
       - name: Updating ...
         run: sudo apt-get -qq update
 
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v6
 
       - name: Setup go
-        uses: actions/setup-go@v2
+        uses: actions/setup-go@v6
         with:
           go-version: ${{ matrix.go }}
 
