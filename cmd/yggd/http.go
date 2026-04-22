@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/redhatinsights/yggdrasil"
 	"github.com/subpop/go-log"
@@ -20,10 +21,15 @@ var (
 // initHTTPClient initializes the HTTP Client that is used by the get and post
 // functions.
 func initHTTPClient(config *tls.Config, ua string) {
+	transport := http.DefaultTransport.(*http.Transport).Clone()
+	transport.TLSClientConfig = config
+	transport.IdleConnTimeout = 30 * time.Second
+	transport.ResponseHeaderTimeout = 30 * time.Second
+
 	client = &http.Client{
-		Transport: http.DefaultTransport.(*http.Transport).Clone(),
+		Transport: transport,
+		Timeout:   30 * time.Second,
 	}
-	client.Transport.(*http.Transport).TLSClientConfig = config
 
 	userAgent = ua
 }
