@@ -6,6 +6,8 @@ It indirectly tests that yggdrasil service dispatch MQTT message to
 import subprocess
 import logging
 import time
+import pytest
+
 from utils import loop_until, get_yggdrasil_client_id
 
 logger = logging.getLogger(__name__)
@@ -38,6 +40,7 @@ def is_echo_worker_running():
         return False
 
 
+@pytest.mark.tier1
 def test_echo_started_on_mqtt_message():
     """
     Test that echo worker service is automatically started,

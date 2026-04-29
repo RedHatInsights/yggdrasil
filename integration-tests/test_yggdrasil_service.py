@@ -4,9 +4,12 @@ This Python module contains integration tests for yggdrasil service.
 
 import subprocess
 import logging
+import pytest
 
 logger = logging.getLogger(__name__)
 
+
+@pytest.mark.tier1
 def test_status_yggdrasil_service():
     """
     This test tries to get status of yggdrasil service
@@ -20,6 +23,8 @@ def test_status_yggdrasil_service():
     )
     assert "yggdrasil system service" in proc.stdout
 
+
+@pytest.mark.tier1
 def test_start_yggdrasil_service():
     """
     This test tries to start yggdrasil service
@@ -54,6 +59,8 @@ def test_start_yggdrasil_service():
     assert proc.stdout.strip() == "active"
     logger.info("The yggdrasil service was started")
 
+
+@pytest.mark.tier1
 def test_stop_yggdrasil_service():
     """
     This test tries to start and then stop yggdrasil service.

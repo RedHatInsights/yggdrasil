@@ -1,9 +1,11 @@
 import subprocess
 import logging
+import pytest
 
 logger = logging.getLogger(__name__)
 
 
+@pytest.mark.tier1
 def test_local_privilege_escalation():
     """
     :id: 09ca0098-6dcd-465b-9f10-262776b858b0
