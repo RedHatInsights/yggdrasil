@@ -10,6 +10,7 @@ from utils import (
 )
 
 
+@pytest.mark.tier1
 def test_yggdrasil_publishes_canonical_facts(external_candlepin, rhc, test_config):
     """
     :title: Verify Yggdrasil publishes canonical facts using default facts file.
