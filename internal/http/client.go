@@ -26,16 +26,31 @@ type Client struct {
 // NewHTTPClient creates a client with the given TLS configuration and
 // user-agent string.
 func NewHTTPClient(config *tls.Config, ua string) *Client {
+	transport := http.DefaultTransport.(*http.Transport).Clone()
+	transport.TLSClientConfig = config.Clone()
+
 	client := http.Client{
-		Transport: http.DefaultTransport.(*http.Transport).Clone(),
+		Transport: transport,
 	}
-	client.Transport.(*http.Transport).TLSClientConfig = config.Clone()
 
 	return &Client{
 		Client:    client,
 		userAgent: ua,
 		Retries:   0,
 	}
+}
+
+// SetIdleConnTimeout sets the maximum amount of time an idle (keep-alive)
+// connection will remain idle before closing itself.
+func (c *Client) SetIdleConnTimeout(d time.Duration) {
+	c.Transport.(*http.Transport).IdleConnTimeout = d
+}
+
+// SetResponseHeaderTimeout sets the maximum amount of time to wait for a
+// server's response headers after fully writing the request (including its
+// body). This time does not include the time to read the response body.
+func (c *Client) SetResponseHeaderTimeout(d time.Duration) {
+	c.Transport.(*http.Transport).ResponseHeaderTimeout = d
 }
 
 func (c *Client) Get(url string) (*http.Response, error) {

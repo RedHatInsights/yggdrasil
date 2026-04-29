@@ -12,25 +12,27 @@ import (
 )
 
 const (
-	FlagNameLogLevel                 = "log-level"
-	FlagNameCertFile                 = "cert-file"
-	FlagNameKeyFile                  = "key-file"
-	FlagNameCaRoot                   = "ca-root"
-	FlagNameServer                   = "server"
-	FlagNameClientID                 = "client-id"
-	FlagNamePathPrefix               = "path-prefix"
-	FlagNameProtocol                 = "protocol"
-	FlagNameDataHost                 = "data-host"
-	FlagNameFactsFile                = "facts-file"
-	FlagNameHTTPRetries              = "http-retries"
-	FlagNameHTTPTimeout              = "http-timeout"
-	FlagNameMQTTConnectRetry         = "mqtt-connect-retry"
-	FlagNameMQTTConnectRetryInterval = "mqtt-connect-retry-interval"
-	FlagNameMQTTAutoReconnect        = "mqtt-auto-reconnect"
-	FlagNameMQTTReconnectDelay       = "mqtt-reconnect-delay"
-	FlagNameMQTTConnectTimeout       = "mqtt-connect-timeout"
-	FlagNameMQTTPublishTimeout       = "mqtt-publish-timeout"
-	FlagNameMessageJournal           = "message-journal"
+	FlagNameLogLevel                  = "log-level"
+	FlagNameCertFile                  = "cert-file"
+	FlagNameKeyFile                   = "key-file"
+	FlagNameCaRoot                    = "ca-root"
+	FlagNameServer                    = "server"
+	FlagNameClientID                  = "client-id"
+	FlagNamePathPrefix                = "path-prefix"
+	FlagNameProtocol                  = "protocol"
+	FlagNameDataHost                  = "data-host"
+	FlagNameFactsFile                 = "facts-file"
+	FlagNameHTTPRetries               = "http-retries"
+	FlagNameHTTPTimeout               = "http-timeout"
+	FlagNameHTTPIdleConnTimeout       = "http-idle-conn-timeout"
+	FlagNameHTTPResponseHeaderTimeout = "http-response-header-timeout"
+	FlagNameMQTTConnectRetry          = "mqtt-connect-retry"
+	FlagNameMQTTConnectRetryInterval  = "mqtt-connect-retry-interval"
+	FlagNameMQTTAutoReconnect         = "mqtt-auto-reconnect"
+	FlagNameMQTTReconnectDelay        = "mqtt-reconnect-delay"
+	FlagNameMQTTConnectTimeout        = "mqtt-connect-timeout"
+	FlagNameMQTTPublishTimeout        = "mqtt-publish-timeout"
+	FlagNameMessageJournal            = "message-journal"
 )
 
 var DefaultConfig = Config{
@@ -83,6 +85,15 @@ type Config struct {
 	// HTTPTimeout is the duration the client will wait before cancelling an
 	// HTTP request.
 	HTTPTimeout time.Duration
+
+	// HTTPIdleConnTimeout is the maximum amount of time an idle (keep-alive)
+	// HTTP connection will remain idle before closing itself.
+	HTTPIdleConnTimeout time.Duration
+
+	// HTTPResponseHeaderTimeout is the maximum amount of time to wait for a
+	// server's response headers after fully writing the request (including its
+	// body). This time does not include the time to read the response body.
+	HTTPResponseHeaderTimeout time.Duration
 
 	// MQTTConnectRetry is the MQTT client option to enable connection retry
 	// logic when performing the initial connection.

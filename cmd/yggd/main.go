@@ -53,25 +53,27 @@ func generateDocumentation(c *cli.Context) error {
 // CLI flags and arguments.
 func setupDefaultConfig(c *cli.Context) {
 	config.DefaultConfig = config.Config{
-		LogLevel:                 c.String(config.FlagNameLogLevel),
-		ClientID:                 c.String(config.FlagNameClientID),
-		Server:                   c.StringSlice(config.FlagNameServer),
-		CertFile:                 c.String(config.FlagNameCertFile),
-		KeyFile:                  c.String(config.FlagNameKeyFile),
-		CARoot:                   c.StringSlice(config.FlagNameCaRoot),
-		PathPrefix:               c.String(config.FlagNamePathPrefix),
-		Protocol:                 c.String(config.FlagNameProtocol),
-		DataHost:                 c.String(config.FlagNameDataHost),
-		FactsFile:                c.String(config.FlagNameFactsFile),
-		HTTPRetries:              c.Int(config.FlagNameHTTPRetries),
-		HTTPTimeout:              c.Duration(config.FlagNameHTTPTimeout),
-		MQTTConnectRetry:         c.Bool(config.FlagNameMQTTConnectRetry),
-		MQTTConnectRetryInterval: c.Duration(config.FlagNameMQTTConnectRetryInterval),
-		MQTTAutoReconnect:        c.Bool(config.FlagNameMQTTAutoReconnect),
-		MQTTReconnectDelay:       c.Duration(config.FlagNameMQTTReconnectDelay),
-		MQTTConnectTimeout:       c.Duration(config.FlagNameMQTTConnectTimeout),
-		MQTTPublishTimeout:       c.Duration(config.FlagNameMQTTPublishTimeout),
-		MessageJournal:           c.String(config.FlagNameMessageJournal),
+		LogLevel:                  c.String(config.FlagNameLogLevel),
+		ClientID:                  c.String(config.FlagNameClientID),
+		Server:                    c.StringSlice(config.FlagNameServer),
+		CertFile:                  c.String(config.FlagNameCertFile),
+		KeyFile:                   c.String(config.FlagNameKeyFile),
+		CARoot:                    c.StringSlice(config.FlagNameCaRoot),
+		PathPrefix:                c.String(config.FlagNamePathPrefix),
+		Protocol:                  c.String(config.FlagNameProtocol),
+		DataHost:                  c.String(config.FlagNameDataHost),
+		FactsFile:                 c.String(config.FlagNameFactsFile),
+		HTTPRetries:               c.Int(config.FlagNameHTTPRetries),
+		HTTPTimeout:               c.Duration(config.FlagNameHTTPTimeout),
+		HTTPIdleConnTimeout:       c.Duration(config.FlagNameHTTPIdleConnTimeout),
+		HTTPResponseHeaderTimeout: c.Duration(config.FlagNameHTTPResponseHeaderTimeout),
+		MQTTConnectRetry:          c.Bool(config.FlagNameMQTTConnectRetry),
+		MQTTConnectRetryInterval:  c.Duration(config.FlagNameMQTTConnectRetryInterval),
+		MQTTAutoReconnect:         c.Bool(config.FlagNameMQTTAutoReconnect),
+		MQTTReconnectDelay:        c.Duration(config.FlagNameMQTTReconnectDelay),
+		MQTTConnectTimeout:        c.Duration(config.FlagNameMQTTConnectTimeout),
+		MQTTPublishTimeout:        c.Duration(config.FlagNameMQTTPublishTimeout),
+		MessageJournal:            c.String(config.FlagNameMessageJournal),
 	}
 }
 
@@ -175,6 +177,7 @@ func setupClient(
 			tlsConfig,
 			UserAgent,
 			time.Second*5,
+			config.DefaultConfig.HTTPResponseHeaderTimeout,
 		)
 		if err != nil {
 			return nil, nil, cli.Exit(fmt.Errorf("cannot create HTTP transport: %w", err), 1)
@@ -227,6 +230,17 @@ func setupMessageJournal(client *Client) error {
 	return nil
 }
 
+// configuredHTTPClient creates an HTTP client with all config-driven settings
+// applied (retries, timeouts).
+func configuredHTTPClient(tlsConfig *tls.Config) *http.Client {
+	client := http.NewHTTPClient(tlsConfig, UserAgent)
+	client.Retries = config.DefaultConfig.HTTPRetries
+	client.Timeout = config.DefaultConfig.HTTPTimeout
+	client.SetIdleConnTimeout(config.DefaultConfig.HTTPIdleConnTimeout)
+	client.SetResponseHeaderTimeout(config.DefaultConfig.HTTPResponseHeaderTimeout)
+	return client
+}
+
 // setupTLS tries to set up new TLS config and HTTP client
 func setupTLS() (*http.Client, *tls.Config, error) {
 	tlsConfig, err := config.DefaultConfig.CreateTLSConfig()
@@ -234,11 +248,7 @@ func setupTLS() (*http.Client, *tls.Config, error) {
 		return nil, nil, cli.Exit(fmt.Errorf("cannot create TLS config: %w", err), 1)
 	}
 
-	httpClient := http.NewHTTPClient(tlsConfig, UserAgent)
-	httpClient.Retries = config.DefaultConfig.HTTPRetries
-	httpClient.Timeout = config.DefaultConfig.HTTPTimeout
-
-	return httpClient, tlsConfig, nil
+	return configuredHTTPClient(tlsConfig), tlsConfig, nil
 }
 
 // publishConnectionStatus tries to publish connection status to server
@@ -331,8 +341,7 @@ func monitorCertificate(
 		log.Info("transport TLS configuration reloaded")
 
 		log.Debug("setting dispatcher HTTP client")
-		httpClient := http.NewHTTPClient(cfg, UserAgent)
-		dispatcher.HTTPClient = httpClient
+		dispatcher.HTTPClient = configuredHTTPClient(cfg)
 		log.Info("dispatcher HTTP client updated")
 	}
 }
@@ -599,6 +608,19 @@ func main() {
 		altsrc.NewDurationFlag(&cli.DurationFlag{
 			Name:   config.FlagNameHTTPTimeout,
 			Usage:  "Wait for `DURATION` before cancelling an HTTP request",
+			Value:  30 * time.Second,
+			Hidden: true,
+		}),
+		altsrc.NewDurationFlag(&cli.DurationFlag{
+			Name:   config.FlagNameHTTPIdleConnTimeout,
+			Usage:  "Close idle HTTP connections after `DURATION`",
+			Value:  30 * time.Second,
+			Hidden: true,
+		}),
+		altsrc.NewDurationFlag(&cli.DurationFlag{
+			Name:   config.FlagNameHTTPResponseHeaderTimeout,
+			Usage:  "Wait for `DURATION` for response headers before cancelling an HTTP request",
+			Value:  30 * time.Second,
 			Hidden: true,
 		}),
 		altsrc.NewBoolFlag(&cli.BoolFlag{

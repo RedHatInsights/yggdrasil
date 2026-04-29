@@ -27,16 +27,17 @@ type HTTPResponse struct {
 // HTTP is a Transporter that sends and receives data and control
 // messages by sending HTTP requests to a URL.
 type HTTP struct {
-	clientID        string
-	client          *internalhttp.Client
-	server          string
-	dataHandler     RxHandlerFunc
-	pollingInterval time.Duration
-	disconnected    atomic.Value
-	userAgent       string
-	isTLS           atomic.Value
-	events          chan TransporterEvent
-	eventHandler    EventHandlerFunc
+	clientID              string
+	client                *internalhttp.Client
+	responseHeaderTimeout time.Duration
+	server                string
+	dataHandler           RxHandlerFunc
+	pollingInterval       time.Duration
+	disconnected          atomic.Value
+	userAgent             string
+	isTLS                 atomic.Value
+	events                chan TransporterEvent
+	eventHandler          EventHandlerFunc
 }
 
 func NewHTTPTransport(
@@ -45,20 +46,24 @@ func NewHTTPTransport(
 	tlsConfig *tls.Config,
 	userAgent string,
 	pollingInterval time.Duration,
+	responseHeaderTimeout time.Duration,
 ) (*HTTP, error) {
 	disconnected := atomic.Value{}
 	disconnected.Store(false)
 	isTls := atomic.Value{}
 	isTls.Store(tlsConfig != nil)
+	client := internalhttp.NewHTTPClient(tlsConfig.Clone(), userAgent)
+	client.SetResponseHeaderTimeout(responseHeaderTimeout)
 	return &HTTP{
-		clientID:        clientID,
-		client:          internalhttp.NewHTTPClient(tlsConfig.Clone(), userAgent),
-		pollingInterval: pollingInterval,
-		disconnected:    disconnected,
-		server:          server,
-		userAgent:       userAgent,
-		isTLS:           isTls,
-		events:          make(chan TransporterEvent),
+		clientID:              clientID,
+		client:                client,
+		responseHeaderTimeout: responseHeaderTimeout,
+		pollingInterval:       pollingInterval,
+		disconnected:          disconnected,
+		server:                server,
+		userAgent:             userAgent,
+		isTLS:                 isTls,
+		events:                make(chan TransporterEvent),
 	}, nil
 }
 
@@ -142,9 +147,12 @@ func (t *HTTP) Connect() error {
 	return nil
 }
 
-// ReloadTLSConfig creates a new HTTP client with the provided TLS config.
+// ReloadTLSConfig creates a new HTTP client with the provided TLS config,
+// preserving any timeout settings stored on the transport.
 func (t *HTTP) ReloadTLSConfig(tlsConfig *tls.Config) error {
-	*t.client = *internalhttp.NewHTTPClient(tlsConfig, t.userAgent)
+	client := internalhttp.NewHTTPClient(tlsConfig, t.userAgent)
+	client.SetResponseHeaderTimeout(t.responseHeaderTimeout)
+	*t.client = *client
 	t.isTLS.Store(tlsConfig != nil)
 	return nil
 }

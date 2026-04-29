@@ -10,6 +10,7 @@ from utils import (
 )
 
 
+@pytest.mark.tier1
 def test_yggdrasil_publishes_canonical_facts(external_candlepin, rhc, test_config):
     """
     :title: Verify Yggdrasil publishes canonical facts using default facts file.
@@ -101,7 +102,7 @@ def wait_for_canonical_facts(timeout: int = 30) -> dict:
 
     topic = f"{path_prefix}/{client_id}/control/out"
 
-    client = mqtt.Client()
+    client = mqtt.Client(callback_api_version=mqtt.CallbackAPIVersion.VERSION2)
     client.on_message = on_message
     client.connect(host, port, 60)
     client.subscribe(topic)

@@ -7,6 +7,7 @@ import (
 	"log"
 	"net"
 	"net/http"
+	"net/http/httptest"
 	"net/url"
 	"testing"
 	"time"
@@ -164,6 +165,7 @@ func TestTx(t *testing.T) {
 				nil,
 				"testUA",
 				time.Second,
+				0,
 			)
 			if err != nil {
 				t.Fatalf("cannot create new transport: %v", err)
@@ -193,5 +195,44 @@ func TestTx(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+// TestReloadTLSConfigPreservesResponseHeaderTimeout verifies that the
+// responseHeaderTimeout set at construction is not lost when ReloadTLSConfig
+// replaces the internal HTTP client.
+func TestReloadTLSConfigPreservesResponseHeaderTimeout(t *testing.T) {
+	// Slow server: delays response headers long enough to reliably trigger a
+	// 1 ms ResponseHeaderTimeout.
+	slow := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		time.Sleep(50 * time.Millisecond)
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer slow.Close()
+
+	ht, err := transport.NewHTTPTransport(
+		"test",
+		slow.Listener.Addr().String(),
+		nil,
+		"testUA",
+		time.Second,
+		time.Millisecond, // responseHeaderTimeout: 1 ms — fires before slow server responds
+	)
+	if err != nil {
+		t.Fatalf("cannot create transport: %v", err)
+	}
+
+	if _, _, _, err := ht.Tx("data", nil, []byte("x")); err == nil {
+		t.Fatal("expected timeout error before TLS reload, got nil")
+	}
+
+	if err := ht.ReloadTLSConfig(nil); err != nil {
+		t.Fatalf("ReloadTLSConfig: %v", err)
+	}
+
+	if _, _, _, err := ht.Tx("data", nil, []byte("x")); err == nil {
+		t.Fatal(
+			"expected timeout error after TLS reload, got nil — responseHeaderTimeout was not preserved",
+		)
 	}
 }
