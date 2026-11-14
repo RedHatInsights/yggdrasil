@@ -1,5 +1,20 @@
 version: 1
 
+# SETTINGS_URL is delivered as an encrypted Testing Farm secret below, so the
+# location of the served configuration is not advertised in plain text. The
+# decrypted value is the URL of a sanitized (secret-free) settings.toml;
+# credential values never appear in that file — they are delivered separately
+# as Testing Farm secrets (PYTEST_CLIENT_TOOLS_* environment variables
+# override same-named keys from the downloaded file; those blobs are added to
+# this same map by the sync job at cutover). Gating pipelines pass the same
+# URL at request time.
+#
+# To regenerate this entry:
+#   testing-farm encrypt <url> --git-url https://github.com/RedHatInsights/yggdrasil
+# (authenticates with the team token; keep entries scalar — the sync job's
+# layout validation requires it).
+# See: https://docs.testing-farm.io/Testing%20Farm/0.1/test-request.html#secrets-in-repo-config
 environments:
-  secrets:
-    SETTINGS_URL: "ea2a89aa-6a78-40e0-906e-140f623c45b0,pIb1izy0RD7/HmGTDxSfegfe+hcOA3OhmKICwN/GbcRWb8D1lSFFvjhdOZhBTklniswqRy0OyWVsCZuuFSzpl1/dYv+4Uftk2fsGHlvyKpiA0V70dmigzDEJ9Jxd520Scs5Ppof6Ese4h38WfcrONkcDRuaJaA9khwlPm6EnFTH/w8Xs3DihOnkWOX3swxRT25ari5/wCE8NHkKLATM2QKBastW5I4KaMuJQ91fj4Y3cXmNyrDyBs6X6rtYv997DMBD7hmTDs6o2zn9y5p25k1AzcTXT/ph7w+k1VKZ8hXy3YG1zyMc47SQ9VbIlQw7bkStjf4c8vmP8ZfzDOUc2I6V5kmOhuRoPa/TETl5DEbIDlCv8m/k2RFscq4wrxwPN1PnVLhzdfP3Hbmu9gt5WTY0lDCtYpoyOpUV4MT4WIHTbaRk60KYqf4kgRsx3gUqlPFppFQJbzqfpvwWXd0Xb0s+JTxohF4FsvrQPZMIZFjVBrCWvZpiCsT+R4f5zuS1w3+tqMutzby1HaSUcD83YE++0wKDxi3DmuJmmuzkbC1nZECIM641g/TNjvt+CCyGBuaO3m1xATdxBDayvc4mB+HTVCVSqlkdhK9oFqLLeW7ZA1dng06qzefrD5wuazdfDfLGAzqHnLAfDKcYv+y/NE96MilEKxYbIyfW7ziMrsO4="
+  default:
+    secrets:
+      SETTINGS_URL: "f59f9cfd-119c-40db-a0e5-c4e9ef277da5,NiOZf38jEiAvRaVhq7xvR4R5JoL0AG0DKnnGBcuDQ/1jpD/FXuiN5C6rnm3ttV0I6EjGm0vOHFfl/nAf4eE2qC+sGH7z7D8nkaNjy3UptuVBb2e7YktXdhhlH7b3637/KZQQRYbu5NeDv0y+uNscTBqzn1NJ6M9//f68a7vFAttOLVigP+Kz0kVzF4dXNmkxfV4tbfmuM2U97RVMWJqnrK/iZVA9w3RV2Ry6+oo9v+1bWugAbYl+yiKDkJWvz9X2xajeOaF0ZVHW/qv2wCW2UgFGkm2rYDTL520VaJ0o61Y4Y6t/sKhA2uAn7/cd8I6+XpyO+GjEGQ8UC3nBnAcYS9Ag0ZEeekF6ae+ZoNr6YMVqYZQVqhSf4Uk0lu2KTYMfYxMQcMF8iroEegTvwISS2dDzDK1jtDRtiiLRpm36i0ZoSPSFhmZZNqvQ+ou66MYurXOTZuCA11O61qlAJI7jEvKMsdAN9FPhkcG9Fi5nxIIcaT+CQ/6D/h0imkf5mGBL8SJ57ULcyZAgLzv3jcIiOUph1eduxX/rCD3CvEjtD49V4MlN4FIMsAn2yjQWRT330BnMWn96cE7x7ovp9GoMB21csx/yhiJeIiEdz0cw8vqejYElJ92m5E/b9T78+jQo3uWoOxSAYgDdnQXmfmIB9o8gTqEvwGmB7crNoZQW8Ik="

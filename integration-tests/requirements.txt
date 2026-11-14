@@ -1,2 +1,3 @@
 git+https://github.com/RedHatInsights/pytest-client-tools@main
 paho-mqtt
+dynaconf>=3.2.13,<4  # CVE-2026-33154 (SSTI in @jinja resolver) fixed in 3.2.13; capped <4 to stay on the 3.x API
