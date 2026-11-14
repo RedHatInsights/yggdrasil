@@ -138,3 +138,44 @@ to be written without needing to worry about much of the D-Bus requirements
 outlined above.
 
 See `worker/echo` for a reference implementation of a worker program.
+
+## Integration tests
+
+The Python integration tests under `integration-tests/` are configured through
+[pytest-client-tools](https://github.com/RedHatInsights/pytest-client-tools)
+(dynaconf). Non-secret configuration is downloaded at test time from the HTTP
+server selected by the `SETTINGS_URL` variable: the served `settings.toml` is
+sanitized and contains **no secrets**. **Secrets are not stored in the
+repository or on the server** and must be provided as environment variables:
+
+| Environment variable | Purpose |
+|----------------------|---------|
+| `PYTEST_CLIENT_TOOLS_CANDLEPIN__USERNAME` | Candlepin (subscription-manager) username |
+| `PYTEST_CLIENT_TOOLS_CANDLEPIN__PASSWORD` | Candlepin (subscription-manager) password (secret) |
+| `PYTEST_CLIENT_TOOLS_CANDLEPIN__ACTIVATION_KEYS` | Candlepin activation keys (secret) |
+| `PYTEST_CLIENT_TOOLS_SERVICE_ACCOUNT__CLIENT_SECRET` | Service-account client secret (secret) |
+| `PYTEST_CLIENT_TOOLS_AUTH_PROXY__USERNAME` | Authenticated proxy username (secret) |
+| `PYTEST_CLIENT_TOOLS_AUTH_PROXY__PASSWORD` | Authenticated proxy password (secret) |
+
+The mapping rule is `PYTEST_CLIENT_TOOLS_<SECTION>__<KEY>` for nested keys and
+`PYTEST_CLIENT_TOOLS_<KEY>` for top-level keys, with each `.` replaced by `__`
+and the whole name uppercased. Values are parsed as TOML, and environment
+variables take precedence over `settings.toml`. The `ENV_FOR_DYNACONF`
+variable selects the environment (`default`, `stage`, `prod`, …) matching the
+environments in `settings.toml`.
+
+When `SETTINGS_URL` is set, `systemtest/tests/integration/test.sh` downloads
+`settings.toml` from it before running the tests; any previously downloaded
+file is kept as `settings.toml.bak`. For local runs without `SETTINGS_URL`, a
+`settings.toml` (and/or `.secrets.toml` for local secret overrides) can be
+placed in the repository root; these files are git-ignored and must never be
+committed.
+
+For example, to run the tests locally:
+
+```bash
+export ENV_FOR_DYNACONF=stage
+read -s PYTEST_CLIENT_TOOLS_CANDLEPIN__PASSWORD
+export PYTEST_CLIENT_TOOLS_CANDLEPIN__PASSWORD
+pytest -v integration-tests
+```
