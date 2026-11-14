@@ -1,0 +1,12 @@
+# Downloaded dynaconf settings (see SETTINGS_URL in
+# systemtest/tests/integration/test.sh) — never commit; the served file
+# is sanitized; secrets come from its @vault: sentinels (CI) or
+# PYTEST_CLIENT_TOOLS_* variables (local runs).
+settings.toml
+
+# Local dynaconf secrets file — never commit secrets.
+.secrets.toml
+
+# Backup made by the SETTINGS_URL download path in
+# systemtest/tests/integration/test.sh.
+settings.toml.bak

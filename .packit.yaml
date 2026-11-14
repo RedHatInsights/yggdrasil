@@ -91,3 +91,18 @@ jobs:
     labels:
       - unit
     use_internal_tf: true
+    # Deliver REQUIRE_SETTINGS=1 to the Testing Farm environment so that
+    # a missing SETTINGS_URL (Testing Farm secret delivery failure)
+    # fails the run instead of silently skipping the credentialed tests
+    # (see systemtest/tests/integration/test.sh). The public-ranch jobs
+    # (unit/centos-stream, unit/fedora) deliberately set nothing: they
+    # receive no Testing Farm secrets by design.
+    tf_extra_params:
+      environments:
+        - variables:
+            REQUIRE_SETTINGS: "1"
+            # Non-secret OS trust bundle (contains the Red Hat Internal
+            # Root CA): lets the guest complete the TLS handshake with
+            # Vault on Packit-submitted runs, which do not pass through
+            # the Jenkins pipelines that export it pipeline-side.
+            REQUESTS_CA_BUNDLE: /etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem
