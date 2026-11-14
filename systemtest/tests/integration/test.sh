@@ -13,8 +13,12 @@ python3 -m venv venv
 pip install --upgrade pip
 pip install -r integration-tests/requirements.txt
 
+# Non-secret test configuration is downloaded from the HTTP server
+# selected by SETTINGS_URL (the served file is sanitized). Secrets must
+# be provided as PYTEST_CLIENT_TOOLS_* environment variables, which take
+# precedence over settings.toml (see README.md, "Integration tests").
 if [ -n "${SETTINGS_URL+x}" ] && curl -I "$SETTINGS_URL" > /dev/null 2>&1; then
-  [ -f ./settings.toml ] && mv ./settings.toml.bak
+  [ -f ./settings.toml ] && mv ./settings.toml ./settings.toml.bak
   curl "$SETTINGS_URL" -o ./settings.toml
 fi
 
